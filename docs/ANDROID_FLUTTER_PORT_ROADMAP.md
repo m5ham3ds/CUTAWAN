@@ -435,3 +435,18 @@ Do not show controls as working until their underlying Android/media operation i
 ### Branch-cleanup note
 
 The GitHub connection available for this session can read and update file contents and refs, but does not expose a branch-ref deletion operation. No branch has been deleted by this session. Delete the unwanted branch refs from the repository's GitHub **Branches** page after verifying that `main` contains the required content.
+
+## 18. Mobile UI implementation update (2026-11-19)
+
+The Flutter shell now adopts the phone-first navigation and information architecture inspired by AutoClip's existing responsive web interface, while remaining a native Flutter application:
+
+- Four bottom destinations: source input, jobs/projects, clip review, and Caption Studio.
+- Model Center is reachable from the app-bar action.
+- Source input presents a URL field and local-file entry point, with clip count, target duration, aspect ratio, captions, and speaker-tracking preferences.
+- Jobs and Review pages have explicit empty states that explain the pending media/job integration.
+- Caption Studio separates visual presets from animation choices and makes it clear that its sample preview is static.
+- Warm charcoal and muted amber theme replaces the generic violet theme, with mobile spacing and Material 3 controls.
+
+The Flutter screen currently provides a UI and preference interaction shell. URL ingestion, file-picker integration, job persistence, media preview, actual animated rendering, AI inference, and export remain unimplemented. Buttons that would trigger those operations state that they are not yet connected instead of reporting a false success.
+
+The current widget tests cover the four primary destinations, caption preset/animation separation, and honest empty states for Jobs and Review. A new Android ARM64 build is being verified from `main` after this UI update.
