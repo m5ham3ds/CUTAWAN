@@ -22,7 +22,7 @@ void main() {
 
     expect(find.text('اصنع أسلوبك الخاص'), findsOneWidget);
     expect(find.text('Beast'), findsOneWidget);
-    await tester.tap(find.byType(DropdownButtonFormField<String>));
+    await tester.tap(find.byType(DropdownButtonFormField));
     await tester.pumpAndSettle();
     expect(find.text('Karaoke Fill'), findsOneWidget);
   });
