@@ -2,19 +2,37 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:cutawan_mobile/app.dart';
 
 void main() {
-  testWidgets('Cutawan mobile shell opens and shows its main destinations', (tester) async {
+  testWidgets('mobile shell shows the four AutoClip-inspired destinations', (tester) async {
     await tester.pumpWidget(const CutawanApp());
 
     expect(find.text('CUTAWAN'), findsOneWidget);
-    expect(find.text('إنشاء'), findsOneWidget);
-    expect(find.text('مشاريعي'), findsOneWidget);
-    expect(find.text('الكابشن'), findsOneWidget);
-    expect(find.text('النماذج'), findsOneWidget);
+    expect(find.text('إدخال'), findsOneWidget);
+    expect(find.text('المهام'), findsOneWidget);
+    expect(find.text('المراجعة'), findsOneWidget);
+    expect(find.text('الاستوديو'), findsOneWidget);
+    expect(find.textContaining('فيديو طويل يدخل'), findsOneWidget);
+  });
 
-    await tester.tap(find.text('الكابشن'));
+  testWidgets('caption studio keeps visual presets separate from animation choices', (tester) async {
+    await tester.pumpWidget(const CutawanApp());
+
+    await tester.tap(find.text('الاستوديو'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Caption Studio'), findsOneWidget);
+    expect(find.text('اصنع أسلوبك الخاص'), findsOneWidget);
     expect(find.text('Beast'), findsOneWidget);
+    expect(find.text('Karaoke Fill'), findsOneWidget);
+  });
+
+  testWidgets('jobs and review pages explain that processing is not connected yet', (tester) async {
+    await tester.pumpWidget(const CutawanApp());
+
+    await tester.tap(find.text('المهام'));
+    await tester.pumpAndSettle();
+    expect(find.text('لا توجد مهام بعد'), findsOneWidget);
+
+    await tester.tap(find.text('المراجعة'));
+    await tester.pumpAndSettle();
+    expect(find.text('لا توجد مقاطع للمراجعة'), findsOneWidget);
   });
 }
