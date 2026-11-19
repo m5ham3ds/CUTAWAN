@@ -371,7 +371,7 @@ class _CaptionStudioPageState extends State<CaptionStudioPage> {
           onChanged: (value) { if (value != null) setState(() => _animationId = value); },
         ),
         const SizedBox(height: 12),
-        Text('\${selectedStyle.name} · \${selectedAnimation.name}: \${selectedAnimation.description}',
+        Text('${selectedStyle.name} · ${selectedAnimation.name}: ${selectedAnimation.description}',
             style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
         const SizedBox(height: 20),
         const _StatusNote(text: 'إعدادات التصميم موجودة، لكن المعاينة الحركية ومحرر الخطوط والألوان والتصدير المتطابق ستربط بمحرك الوسائط لاحقًا.'),
