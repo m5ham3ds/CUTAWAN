@@ -26,6 +26,10 @@ flutter build apk --debug --target-platform android-arm64
 
 The project targets Flutter 3.47.6 for the initial baseline. The CI workflow uses the same version to keep local and automated builds aligned.
 
+## Latest verified build
+
+GitHub Actions run [44555130724](https://github.com/m5ham3ds/CUTAWAN/actions/runs/44555130724) passed formatting, static analysis, widget tests, and the ARM64 debug APK build. The uploaded artifact is named `cutawan-mobile-arm64-debug` and can be downloaded from the run's **Artifacts** section. This is a debug shell build only; physical-device installation and all video/model engines still require verification/integration.
+
 ## Next
 
 1. Add the versioned project/job contract and local file import.
