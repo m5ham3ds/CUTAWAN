@@ -15,6 +15,10 @@ still pre-1.0, minor bumps carry new features and patch bumps carry fixes.
 
 ### Improved
 
+- Exported karaoke captions now keep the line stable while the active word pops; a separate transparent/base layer prevents other words from shifting and matches the preview size (`scripts/bench-caption-stability.ts`).
+- Loudness is now measured on the same stereo mix used for export, with a bounded re-measurement step after peak limiting so mono and transient-heavy clips land closer to the -14 LUFS target (`scripts/bench-loudness.ts`).
+- Tighten cuts now apply 5 ms fades at internal audio joins to reduce clicks without changing clip duration or picture/caption timing (`scripts/bench-tighten-joins.ts`).
+
 - The setup wizard no longer shows the unavailable "Claude subscription" card. Claude models can be used through OpenRouter instead.
 
 ### Fixed
