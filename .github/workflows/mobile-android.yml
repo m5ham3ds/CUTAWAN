@@ -1,0 +1,66 @@
+name: Mobile Android (Flutter)
+
+on:
+  push:
+    branches: [android-flutter-port]
+    paths:
+      - "mobile/flutter_app/**"
+      - ".github/workflows/mobile-android.yml"
+  pull_request:
+    branches: [android-flutter-port]
+    paths:
+      - "mobile/flutter_app/**"
+      - ".github/workflows/mobile-android.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  flutter-android:
+    name: Analyze, test, and build ARM64 debug APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: mobile/flutter_app
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: "3.47.6"
+          cache: true
+
+      - name: Generate Android platform files
+        run: |
+          if [ ! -d android ]; then
+            flutter create --platforms=android --org com.m5ham3ds --project-name cutawan_mobile .
+          fi
+
+      - name: Resolve dependencies
+        run: flutter pub get
+
+      - name: Format
+        run: dart format --output=none --set-exit-if-changed lib test
+
+      - name: Analyze
+        run: flutter analyze --fatal-infos
+
+      - name: Test
+        run: flutter test --reporter expanded
+
+      - name: Build ARM64 debug APK
+        run: flutter build apk --debug --target-platform android-arm64
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: cutawan-mobile-arm64-debug
+          path: mobile/flutter_app/build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
