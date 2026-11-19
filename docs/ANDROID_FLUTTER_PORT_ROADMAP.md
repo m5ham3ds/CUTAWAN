@@ -1,6 +1,6 @@
 # Android / Flutter Port — Product and Engineering Roadmap
 
-**Status:** Architecture plan, baseline verified; implementation not yet started.  
+**Status:** Baseline and roadmap committed; Phase 1 Flutter shell implemented. GitHub Actions successfully formatted, analyzed, tested, built, and uploaded an ARM64 debug APK. Physical-device installation and runtime verification remain open.  
 **Working repository:** `m5ham3ds/CUTAWAN`  
 **Working branch:** `android-flutter-port`  
 **Baseline:** Cutawan v0.14.0, commit `084d0b2933f64800ee5ca1b22269704f060e65f5`  
@@ -281,17 +281,19 @@ Choose one primary renderer. A hybrid is allowed only where a measured feature g
 
 ## 12. Phased implementation and acceptance gates
 
-### Phase 0 — Baseline and design (current)
+### Phase 0 — Baseline and design (completed)
 - Verify repository snapshot and preserve desktop baseline.
 - Record licenses, model provenance, and dependency inventory.
 - Approve module boundaries, data contracts, and renderer spike criteria.
 - **Gate:** plan and baseline are committed on the mobile work branch; `main` remains unchanged.
 
-### Phase 1 — Flutter Android shell
-- Add a generated Flutter Android project under `mobile/flutter_app/`.
-- Add app navigation, theme, project library shell, and typed domain models.
-- Add CI that runs Flutter analyze/tests and creates an ARM64 debug APK.
-- **Gate:** app installs and opens on Android; no Electron runtime is involved.
+### Phase 1 — Flutter Android shell (implementation/build gate passed; device gate open)
+- Added the Flutter source project under `mobile/flutter_app/`.
+- Added Create, Projects, Caption Studio, and AI Model Center screens, initial clip preferences, the 12 existing caption styles, and a separate proposed animation catalogue.
+- Added GitHub Actions workflow `.github/workflows/mobile-android.yml` using Flutter 3.47.6.
+- Run `44555130724` passed formatting, `flutter analyze --fatal-infos`, `flutter test`, ARM64 debug APK build, and artifact upload.
+- Artifact: `cutawan-mobile-arm64-debug` (41,818,489 bytes; SHA-256 `f4fecaf83a8fcb220ecb68e6cc5c64906366df92d6a059ad3b8353d44cbf7708`; expires 2026-12-03).
+- **Remaining gate:** install the APK on a physical Android device and verify startup/navigation. Native media/model integration is not yet present.
 
 ### Phase 2 — Project contract and local media
 - Define versioned project JSON and migration tests.
@@ -381,3 +383,15 @@ The existing 93 desktop test files must remain intact. Port pure-domain behavior
 6. Only after these gates pass, port candidate discovery, speaker-aware reframing, and the full Caption Studio.
 
 **Current limitation:** this planning environment can inspect and edit repository files, but it does not have the Flutter/Dart SDK installed. Flutter compilation must therefore be verified in the new GitHub Actions workflow or in the user's Android development environment; no APK should be described as built until that workflow actually passes.
+
+
+## 16. Phase 1 execution record
+
+- Working repository: `m5ham3ds/CUTAWAN`; all mobile work remains on `android-flutter-port`.
+- The repository's `main` branch was checked and remains at baseline commit `084d0b2933f64800ee5ca1b22269704f060e65f5`.
+- Flutter baseline: 3.47.6.
+- GitHub Actions run: https://github.com/m5ham3ds/CUTAWAN/actions/runs/44555130724
+- Result: success. Formatting, static analysis, widget tests, ARM64 debug APK build, and artifact upload all passed.
+- Artifact name: `cutawan-mobile-arm64-debug`; size 41,818,489 bytes; expires 2026-12-03.
+- Artifact SHA-256: `f4fecaf83a8fcb220ecb68e6cc5c64906366df92d6a059ad3b8353d44cbf7708`.
+- Not yet verified: installation/startup on a physical device, real media import, URL ingestion, transcription, local inference, speaker-aware reframing, animated caption rendering, and final media export. Those remain later acceptance gates.
