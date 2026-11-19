@@ -2,7 +2,7 @@ name: Mobile Android (Flutter)
 
 on:
   push:
-    branches: [android-flutter-port]
+    branches: [main]
     paths:
       - "mobile/flutter_app/**"
       - ".github/workflows/mobile-android.yml"
