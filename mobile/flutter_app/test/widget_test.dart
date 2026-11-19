@@ -22,9 +22,10 @@ void main() {
 
     expect(find.text('اصنع أسلوبك الخاص'), findsOneWidget);
     expect(find.text('Beast'), findsOneWidget);
-    await tester.scrollUntilVisible(find.text('حركة النص'), 160);
+    await tester.scrollUntilVisible(find.text('Word Pop'), 220);
     await tester.pumpAndSettle();
-    await tester.tap(find.byType(DropdownButtonFormField));
+    expect(find.text('Word Pop'), findsOneWidget);
+    await tester.tap(find.text('Word Pop'));
     await tester.pumpAndSettle();
     expect(find.text('Karaoke Fill'), findsOneWidget);
   });
