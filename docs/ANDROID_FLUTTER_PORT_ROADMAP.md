@@ -2,7 +2,7 @@
 
 **Status:** Baseline and roadmap committed; Phase 1 Flutter shell implemented. GitHub Actions successfully formatted, analyzed, tested, built, and uploaded an ARM64 debug APK. Physical-device installation and runtime verification remain open.  
 **Working repository:** `m5ham3ds/CUTAWAN`  
-**Working branch:** `android-flutter-port`  
+**Working branch:** `main` (all implementation updates are committed directly to the default branch).  
 **Baseline:** Cutawan v0.14.0, commit `084d0b2933f64800ee5ca1b22269704f060e65f5`  
 **Decision:** Preserve the existing desktop application. Add a native Android application using Flutter, and reuse/port selected domain logic and assets. Do not wrap the Electron application in a WebView.
 
@@ -285,7 +285,7 @@ Choose one primary renderer. A hybrid is allowed only where a measured feature g
 - Verify repository snapshot and preserve desktop baseline.
 - Record licenses, model provenance, and dependency inventory.
 - Approve module boundaries, data contracts, and renderer spike criteria.
-- **Gate:** plan and baseline are committed on the mobile work branch; `main` remains unchanged.
+- **Gate:** plan and baseline are retained on `main`; no feature branch is used for this project.
 
 ### Phase 1 — Flutter Android shell (implementation/build gate passed; device gate open)
 - Added the Flutter source project under `mobile/flutter_app/`.
@@ -375,7 +375,7 @@ The existing 93 desktop test files must remain intact. Port pure-domain behavior
 
 ## 15. Immediate next implementation steps
 
-1. Keep all work on `android-flutter-port`; do not change `main` or the upstream repository.
+1. Commit all project work directly to `main`; do not create additional feature branches or alter the upstream `JeremySNR/cutawan` repository.
 2. Add the Flutter project using a supported Flutter SDK template rather than hand-writing version-sensitive Android Gradle boilerplate.
 3. Add a minimal ARM64 Android CI workflow and verify an installable shell APK.
 4. Define and test the versioned mobile project contract before porting complex pipeline logic.
@@ -387,11 +387,51 @@ The existing 93 desktop test files must remain intact. Port pure-domain behavior
 
 ## 16. Phase 1 execution record
 
-- Working repository: `m5ham3ds/CUTAWAN`; all mobile work remains on `android-flutter-port`.
-- The repository's `main` branch was checked and remains at baseline commit `084d0b2933f64800ee5ca1b22269704f060e65f5`.
+- Working repository: `m5ham3ds/CUTAWAN`; all work is maintained directly on `main`.
+- Original imported Cutawan source baseline: `084d0b2933f64800ee5ca1b22269704f060e65f5`. `main` now also contains the mobile shell, its successful CI workflow, and subsequent mainline quality fixes.
 - Flutter baseline: 3.47.6.
 - GitHub Actions run: https://github.com/m5ham3ds/CUTAWAN/actions/runs/44555130724
 - Result: success. Formatting, static analysis, widget tests, ARM64 debug APK build, and artifact upload all passed.
 - Artifact name: `cutawan-mobile-arm64-debug`; size 41,818,489 bytes; expires 2026-12-03.
 - Artifact SHA-256: `f4fecaf83a8fcb220ecb68e6cc5c64906366df92d6a059ad3b8353d44cbf7708`.
 - Not yet verified: installation/startup on a physical device, real media import, URL ingestion, transcription, local inference, speaker-aware reframing, animated caption rendering, and final media export. Those remain later acceptance gates.
+
+
+## 17. Mainline consolidation and mobile-interface source selection (2026-11-19)
+
+### Repository workflow
+
+- The implementation target is the user's existing repository, `m5ham3ds/CUTAWAN`.
+- The default branch `main` is the only branch to be used for ongoing work. No more feature branches are to be created.
+- The previous `android-flutter-port` branch was created against the user's explicit preference; it is a cleanup item, not the working branch.
+- A review of all 32 non-main branches compared their heads with `main` and inspected branch-specific commit summaries and changed paths. Most functionality on older branches is already present in later mainline releases/merge commits (including editorial ranking, adaptive presenter/screen layouts, rejected-bound repair, temporal layout checks, OpenRouter setup, and recovered updater fixes). Several branches are only stale pointers or contain desktop/website/release-only changes.
+- Three quality fixes absent from the current mainline were recovered directly into `main`: stable karaoke word-pop layout, stereo-aware loudness measurement with bounded limiter refinement, and click-reducing fades at tighten-cut audio joins. Focused unit tests and three deterministic benchmark scripts were added.
+- The old source branch could not be merged cleanly as a whole; its pull request was closed after the selected changes were ported to current mainline files. Do not merge that stale branch wholesale.
+- Experimental shot-style triage, Metachlorian/B-roll handoff, and desktop promotional/website/design-system experiments were not merged: they are not validated for this Android implementation, and the shot-style thresholds are explicitly provisional.
+
+### Four-source interface audit
+
+The GitHub file trees of the four candidate projects were enumerated, and their READMEs, project manifests, and representative application/UI/pipeline files were inspected. This was a repository-structure and source-file audit, not a full binary archive download of every external repository.
+
+| Candidate | Existing interface | Android/mobile finding | Decision |
+| --- | --- | --- | --- |
+| Cutawan (`JeremySNR/cutawan`) | Electron + React desktop application | No Android, iOS, Flutter, or native mobile project | Keep as the principal domain/pipeline/caption reference; rebuild the interface in Flutter |
+| AutoClip (`artbyjazi/autoclip`) | React + Vite + Tailwind web interface; Ingest, Job Progress, Review, Settings, clip player, caption editor, and trim controls | Responsive small-screen web layout through Tailwind breakpoints, but not an Android APK or native mobile code; backend is Python/FastAPI | Use as the mobile interaction/layout reference, not as an Android runtime/backend |
+| AI YouTube Shorts Generator (`Anil-matcha/AI-Youtube-Shorts-Generator`) | Python scripts and pipeline modules | No mobile UI or Flutter/Android project | Reuse ideas from its highlight/downloader pipeline only where justified |
+| Auto Video Editor (`kiy0ni/auto-video-editor`) | Python CLI and Tkinter desktop GUI | No responsive phone interface or native Android project | Use selected audio/moment-analysis concepts only |
+
+**Decision:** none of the four repositories provides a native Android mobile application. AutoClip is the only candidate among the four with a web interface that adapts to phone-sized layouts. The application will continue on the user's Cutawan repository because it contains the richer clipping/editorial/caption/reframing domain, while its Flutter screens will be designed using the mobile-responsive flows from AutoClip (source ingest, job progress, clip review, trim/caption editing, settings). Do not embed AutoClip in a WebView, depend on its Python/FastAPI backend, or claim it is a native phone app.
+
+### Required next UI structure
+
+1. **Create / Ingest:** prominent local-file and supported-link source cards; clear source status and storage estimate; clip count, duration band, aspect ratio, and caption toggle.
+2. **Jobs:** durable task status, current stage, progress, cancel/retry/resume, and an honest error/recovery state.
+3. **Review:** vertically stacked clip cards with preview, score explanation, clip timestamps, reordering, keep/reject, and per-clip retry.
+4. **Clip / Caption Studio:** mobile timeline/trim controls, separate caption visual preset and animation selectors, RTL-safe preview, colors, font, size, position, and export-parity settings.
+5. **Models / Settings:** model size, runtime compatibility, license, download/integrity status, storage usage, and explicit local/remote mode.
+
+Do not show controls as working until their underlying Android/media operation is implemented and tested.
+
+### Branch-cleanup note
+
+The GitHub connection available for this session can read and update file contents and refs, but does not expose a branch-ref deletion operation. No branch has been deleted by this session. Delete the unwanted branch refs from the repository's GitHub **Branches** page after verifying that `main` contains the required content.
