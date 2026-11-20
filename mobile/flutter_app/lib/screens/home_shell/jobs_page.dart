@@ -126,7 +126,7 @@ class JobsPage extends StatelessWidget {
             Row(children: [
               Expanded(child: _MetricCard(label: 'كل المشاريع', value: '${items.length}', icon: Icons.video_library_outlined)),
               const SizedBox(width: 9),
-              Expanded(child: _MetricCard(label: 'مكتملة', value: '${items.where((p) => p.job.status == ProjectJobStatus.completed).length}', icon: Icons.check_circle_outline_rounded, tint: CutawanTheme.cyan)),
+              Expanded(child: _MetricCard(label: 'مكتملة', value: '${items.where((p) => p.job.status == ProjectJobStatus.completed).length}', icon: Icons.check_circle_outline_rounded, tint: Theme.of(context).colorScheme.secondary)),
               const SizedBox(width: 9),
               Expanded(child: _MetricCard(label: 'قيد العمل', value: '${items.where((p) => p.job.status == ProjectJobStatus.running).length}', icon: Icons.pending_outlined)),
             ]),

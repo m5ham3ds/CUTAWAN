@@ -68,7 +68,9 @@ class _HomeShellState extends State<HomeShell> with SingleTickerProviderStateMix
       final projects = await _repository.listProjects();
       if (mounted) _projects.value = projects;
     } catch (error) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تعذّر قراءة سجل المشاريع: $error')));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تعذّر قراءة سجل المشاريع: $error')));
+      }
     }
   }
 

@@ -35,37 +35,6 @@ class _Eyebrow extends StatelessWidget {
   }
 }
 
-class _PageHeading extends StatelessWidget {
-  const _PageHeading({required this.title, required this.subtitle, this.trailing});
-  final String title;
-  final String subtitle;
-  final Widget? trailing;
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
-      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(title, style: theme.textTheme.headlineMedium),
-        const SizedBox(height: 6),
-        Text(subtitle, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-      ])),
-      if (trailing != null) trailing!,
-    ]);
-  }
-}
-
-class _SectionHeading extends StatelessWidget {
-  const _SectionHeading(this.title, {this.action, this.onTap});
-  final String title;
-  final String? action;
-  final VoidCallback? onTap;
-  @override
-  Widget build(BuildContext context) => Row(children: [
-    Expanded(child: Text(title, style: Theme.of(context).textTheme.titleMedium)),
-    if (action != null && onTap != null) TextButton(onPressed: onTap, child: Text(action!)),
-  ]);
-}
-
 class _Panel extends StatelessWidget {
   const _Panel({required this.child, this.padding = const EdgeInsets.all(17), this.accent = false});
   final Widget child;
@@ -147,7 +116,10 @@ class _EmptyState extends StatelessWidget {
       Text(title, textAlign: TextAlign.center, style: theme.textTheme.titleLarge),
       const SizedBox(height: 7),
       Text(description, textAlign: TextAlign.center, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-      if (action != null && onAction != null) ...[const SizedBox(height: 19), FilledButton.tonal(onPressed: onAction, child: Text(action!))],
+      if (action != null && onAction != null) ...[
+        const SizedBox(height: 19),
+        FilledButton.tonal(onPressed: onAction, child: Text(action!)),
+      ],
     ]));
   }
 }
@@ -160,11 +132,11 @@ class _StatusBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final color = switch (status) {
-      ProjectJobStatus.completed => CutawanTheme.cyan,
+      ProjectJobStatus.completed => theme.colorScheme.secondary,
       ProjectJobStatus.running => theme.colorScheme.primary,
-      ProjectJobStatus.failed => CutawanTheme.danger,
+      ProjectJobStatus.failed => theme.colorScheme.error,
       ProjectJobStatus.cancelled => theme.colorScheme.onSurfaceVariant,
-      ProjectJobStatus.prepared => CutawanTheme.warning,
+      ProjectJobStatus.prepared => theme.colorScheme.tertiary,
     };
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
