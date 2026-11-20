@@ -227,6 +227,262 @@ class LocalProjectRepository {
     if (await artifacts.exists()) await artifacts.delete(recursive: true);
   }
 
+
+  Future<CutawanProject> saveJobState(
+    String projectId, {
+    ProjectJobStatus? status,
+    String? stage,
+    double? progress,
+    bool? cancelRequested,
+  }) async {
+    final project = await load(projectId);
+    if (project == null) throw StateError('Project not found: $projectId');
+    final nextProgress = progress ?? project.job.progress;
+    if (!nextProgress.isFinite || nextProgress < 0 || nextProgress > 1) {
+      throw const FormatException('Job progress must be between 0 and 1.');
+    }
+    final now = DateTime.now().toUtc();
+    final updated = project.copyWith(
+      updatedAtUtc: now,
+      job: project.job.copyWith(
+        status: status,
+        stage: stage,
+        progress: nextProgress,
+        cancelRequested: cancelRequested,
+        updatedAtUtc: now,
+      ),
+    );
+    await save(updated);
+    return updated;
+  }
+
+  Future<void> saveStageCheckpoint(
+    String projectId, {
+    required String stage,
+    required String fingerprint,
+    required List<String> artifactPaths,
+  }) async {
+    if (!RegExp(r'^[a-zA-Z0-9_-]{1,160} {
+    if (!RegExp(r'^[a-zA-Z0-9_-]{3,160}$').hasMatch(id)) {
+      throw const FormatException('Project ID is invalid.');
+    }
+  }
+}
+).hasMatch(stage) ||
+        !RegExp(r'^[a-f0-9]{64} {
+    if (!RegExp(r'^[a-zA-Z0-9_-]{3,160}$').hasMatch(id)) {
+      throw const FormatException('Project ID is invalid.');
+    }
+  }
+}
+).hasMatch(fingerprint)) {
+      throw const FormatException('Checkpoint stage or fingerprint is invalid.');
+    }
+    final directory = await _artifactDirectory(projectId);
+    final artifacts = <String>[];
+    for (final relative in artifactPaths) {
+      final normalized = relative.replaceAll('\\', '/');
+      if (normalized.startsWith('/') ||
+          normalized.split('/').any((part) => part == '..' || part.isEmpty)) {
+        throw const FormatException('Checkpoint artifact path is unsafe.');
+      }
+      final file = File('${directory.path}${Platform.pathSeparator}${normalized.replaceAll('/', Platform.pathSeparator)}');
+      final targetPath = await file.resolveSymbolicLinks().catchError((_) => file.absolute.path);
+      final rootPath = await directory.resolveSymbolicLinks();
+      if (!targetPath.startsWith(rootPath + Platform.pathSeparator) ||
+          !await file.exists() || await file.length() <= 0) {
+        throw FormatException('Checkpoint artifact is missing or outside its project: $relative');
+      }
+      artifacts.add(normalized);
+    }
+    final payload = <String, Object?>{
+      'schemaVersion': 1,
+      'stage': stage,
+      'fingerprint': fingerprint,
+      'artifactPaths': artifacts,
+      'completedAtUtc': DateTime.now().toUtc().toIso8601String(),
+    };
+    final target = File('${directory.path}${Platform.pathSeparator}checkpoint_$stage.json');
+    final temporary = File('${target.path}.tmp');
+    await temporary.writeAsString(jsonEncode(payload), flush: true);
+    if (await target.exists()) await target.delete();
+    await temporary.rename(target.path);
+  }
+
+  Future<bool> hasValidStageCheckpoint(
+    String projectId, {
+    required String stage,
+    required String fingerprint,
+  }) async {
+    if (!RegExp(r'^[a-zA-Z0-9_-]{1,160} {
+    if (!RegExp(r'^[a-zA-Z0-9_-]{3,160}$').hasMatch(id)) {
+      throw const FormatException('Project ID is invalid.');
+    }
+  }
+}
+).hasMatch(stage) ||
+        !RegExp(r'^[a-f0-9]{64} {
+    if (!RegExp(r'^[a-zA-Z0-9_-]{3,160}$').hasMatch(id)) {
+      throw const FormatException('Project ID is invalid.');
+    }
+  }
+}
+).hasMatch(fingerprint)) {
+      return false;
+    }
+    final directory = await _artifactDirectory(projectId);
+    final target = File('${directory.path}${Platform.pathSeparator}checkpoint_$stage.json');
+    if (!await target.exists()) return false;
+    try {
+      final decoded = jsonDecode(await target.readAsString());
+      if (decoded is! Map<String, dynamic> ||
+          decoded['schemaVersion'] != 1 ||
+          decoded['stage'] != stage ||
+          decoded['fingerprint'] != fingerprint ||
+          decoded['artifactPaths'] is! List<dynamic>) {
+        return false;
+      }
+      final rootPath = await directory.resolveSymbolicLinks();
+      for (final raw in decoded['artifactPaths'] as List<dynamic>) {
+        if (raw is! String) return false;
+        final normalized = raw.replaceAll('\\', '/');
+        if (normalized.startsWith('/') ||
+            normalized.split('/').any((part) => part == '..' || part.isEmpty)) {
+          return false;
+        }
+        final file = File('${directory.path}${Platform.pathSeparator}${normalized.replaceAll('/', Platform.pathSeparator)}');
+        final targetPath = await file.resolveSymbolicLinks().catchError((_) => '');
+        if (targetPath.isEmpty ||
+            !targetPath.startsWith(rootPath + Platform.pathSeparator) ||
+            !await file.exists() ||
+            await file.length() <= 0) {
+          return false;
+        }
+      }
+      return true;
+    } on FormatException {
+      return false;
+    } on FileSystemException {
+      return false;
+    } on TypeError {
+      return false;
+    }
+  }
+
+  Future<String> exportFilePath(String projectId, String clipId) async {
+    if (!RegExp(r'^[a-zA-Z0-9_-]{1,160} {
+    if (!RegExp(r'^[a-zA-Z0-9_-]{3,160}$').hasMatch(id)) {
+      throw const FormatException('Project ID is invalid.');
+    }
+  }
+}
+).hasMatch(clipId)) {
+      throw const FormatException('Clip ID is invalid.');
+    }
+    final directory = await _exportDirectory(projectId);
+    return '${directory.path}${Platform.pathSeparator}$clipId.mp4';
+  }
+
+  Future<String> subtitleFilePath(
+    String projectId,
+    String clipId, {
+    required String extension,
+  }) async {
+    if (!RegExp(r'^[a-zA-Z0-9_-]{1,160} {
+    if (!RegExp(r'^[a-zA-Z0-9_-]{3,160}$').hasMatch(id)) {
+      throw const FormatException('Project ID is invalid.');
+    }
+  }
+}
+).hasMatch(clipId) ||
+        !const {'srt', 'ass'}.contains(extension)) {
+      throw const FormatException('Subtitle path is invalid.');
+    }
+    final directory = await _subtitleDirectory(projectId);
+    return '${directory.path}${Platform.pathSeparator}$clipId.$extension';
+  }
+
+  Future<void> saveExportRecord(
+    String projectId,
+    Map<String, Object?> record,
+  ) async {
+    final clipId = record['clipId'];
+    if (clipId is! String || !RegExp(r'^[a-zA-Z0-9_-]{1,160} {
+    if (!RegExp(r'^[a-zA-Z0-9_-]{3,160}$').hasMatch(id)) {
+      throw const FormatException('Project ID is invalid.');
+    }
+  }
+}
+).hasMatch(clipId)) {
+      throw const FormatException('Export record clip ID is invalid.');
+    }
+    final uri = record['outputUri'];
+    final digest = record['sha256'];
+    final size = record['sizeBytes'];
+    if (uri is! String || uri.trim().isEmpty ||
+        digest is! String || !RegExp(r'^[a-f0-9]{64} {
+    if (!RegExp(r'^[a-zA-Z0-9_-]{3,160}$').hasMatch(id)) {
+      throw const FormatException('Project ID is invalid.');
+    }
+  }
+}
+).hasMatch(digest) ||
+        size is! num || size < 2048 ||
+        record['durationMs'] is! num || (record['durationMs'] as num) <= 0 ||
+        record['width'] is! num || (record['width'] as num) <= 0 ||
+        record['height'] is! num || (record['height'] as num) <= 0 ||
+        record['validated'] != true) {
+      throw const FormatException('Export record is incomplete or unvalidated.');
+    }
+    final directory = await _exportDirectory(projectId);
+    final target = File('${directory.path}${Platform.pathSeparator}$clipId.json');
+    final temporary = File('${target.path}.tmp');
+    await temporary.writeAsString(jsonEncode(record), flush: true);
+    if (await target.exists()) await target.delete();
+    await temporary.rename(target.path);
+  }
+
+  Future<List<Map<String, dynamic>>> loadExportRecords(String projectId) async {
+    final directory = await _exportDirectory(projectId);
+    final records = <Map<String, dynamic>>[];
+    await for (final entity in directory.list(followLinks: false)) {
+      if (entity is! File ||
+          !entity.path.endsWith('.json') ||
+          entity.uri.pathSegments.last == 'manifest.json') continue;
+      final decoded = jsonDecode(await entity.readAsString());
+      if (decoded is Map<String, dynamic>) records.add(decoded);
+    }
+    records.sort((a, b) => (b['createdAtUtc'] as String? ?? '')
+        .compareTo(a['createdAtUtc'] as String? ?? ''));
+    return records;
+  }
+
+  Future<void> saveExportManifest(
+    String projectId,
+    Map<String, Object?> manifest,
+  ) async {
+    final directory = await _exportDirectory(projectId);
+    final target = File('${directory.path}${Platform.pathSeparator}manifest.json');
+    final temporary = File('${target.path}.tmp');
+    await temporary.writeAsString(jsonEncode(manifest), flush: true);
+    if (await target.exists()) await target.delete();
+    await temporary.rename(target.path);
+  }
+
+  Future<Directory> _exportDirectory(String projectId) async {
+    final artifacts = await _artifactDirectory(projectId);
+    final directory = Directory('${artifacts.path}${Platform.pathSeparator}exports');
+    if (!await directory.exists()) await directory.create(recursive: true);
+    return directory;
+  }
+
+  Future<Directory> _subtitleDirectory(String projectId) async {
+    final artifacts = await _artifactDirectory(projectId);
+    final directory = Directory('${artifacts.path}${Platform.pathSeparator}subtitles');
+    if (!await directory.exists()) await directory.create(recursive: true);
+    return directory;
+  }
+
   void _validateId(String id) {
     if (!RegExp(r'^[a-zA-Z0-9_-]{3,160}$').hasMatch(id)) {
       throw const FormatException('Project ID is invalid.');

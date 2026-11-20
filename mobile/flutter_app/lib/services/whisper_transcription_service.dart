@@ -26,6 +26,7 @@ class WhisperTranscriptionService {
     required String sourceUri,
     required int sourceDurationMs,
     void Function(int percent)? onProgress,
+    void Function(String stage, int? percent)? onStage,
   }) async {
     AudioExtractionResult? extracted;
     WhisperEngine? engine;
@@ -36,7 +37,9 @@ class WhisperTranscriptionService {
           'ثبّت نموذج Whisper Base متعدد اللغات من مركز النماذج أولاً.',
         );
       }
+      onStage?.call('extracting', null);
       extracted = await _audioExtractor.extract(sourceUri);
+      onStage?.call('transcribing', 0);
       final pcm = await WhisperAudio.readWav(extracted.wavFile);
       if (pcm.isEmpty) {
         throw const FormatException(

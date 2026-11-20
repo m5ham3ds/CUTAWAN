@@ -81,6 +81,100 @@ void main() {
     expect(await repository.listProjects(), isEmpty);
   });
 
+
+  test('job stage updates and cancellation state persist', () async {
+    final project = makeProject();
+    await repository.save(project);
+    await repository.saveJobState(
+      project.id,
+      status: ProjectJobStatus.running,
+      stage: 'transcribing',
+      progress: 0.4,
+    );
+    final running = await repository.load(project.id);
+    expect(running!.job.status, ProjectJobStatus.running);
+    expect(running.job.stage, 'transcribing');
+    expect(running.job.progress, 0.4);
+    await repository.cancelJob(project.id);
+    final cancelled = await repository.load(project.id);
+    expect(cancelled!.job.status, ProjectJobStatus.cancelled);
+    expect(cancelled.job.cancelRequested, isTrue);
+    await expectLater(
+      repository.saveJobState(project.id, progress: 1.1),
+      throwsA(isA<FormatException>()),
+    );
+  });
+
+  test('stage checkpoints validate fingerprints and all referenced artifacts', () async {
+    final project = makeProject();
+    await repository.save(project);
+    final artifactDirectory = Directory(
+      '\${directory.path}\${Platform.pathSeparator}artifacts'
+      '\${Platform.pathSeparator}\${project.id}',
+    );
+    await artifactDirectory.create(recursive: true);
+    final artifact = File(
+      '\${artifactDirectory.path}\${Platform.pathSeparator}transcript.json',
+    );
+    await artifact.writeAsString('{"ok":true}');
+    final fingerprint = List.filled(64, 'a').join();
+    final otherFingerprint = List.filled(64, 'b').join();
+    await repository.saveStageCheckpoint(
+      project.id,
+      stage: 'transcribing',
+      fingerprint: fingerprint,
+      artifactPaths: const ['transcript.json'],
+    );
+    expect(
+      await repository.hasValidStageCheckpoint(
+        project.id,
+        stage: 'transcribing',
+        fingerprint: fingerprint,
+      ),
+      isTrue,
+    );
+    expect(
+      await repository.hasValidStageCheckpoint(
+        project.id,
+        stage: 'transcribing',
+        fingerprint: otherFingerprint,
+      ),
+      isFalse,
+    );
+    await artifact.delete();
+    expect(
+      await repository.hasValidStageCheckpoint(
+        project.id,
+        stage: 'transcribing',
+        fingerprint: fingerprint,
+      ),
+      isFalse,
+    );
+  });
+
+  test('checkpoint rejects traversal and invalid hashes', () async {
+    final project = makeProject();
+    await repository.save(project);
+    await expectLater(
+      repository.saveStageCheckpoint(
+        project.id,
+        stage: 'render_clip',
+        fingerprint: 'invalid',
+        artifactPaths: const [],
+      ),
+      throwsA(isA<FormatException>()),
+    );
+    await expectLater(
+      repository.saveStageCheckpoint(
+        project.id,
+        stage: 'render_clip',
+        fingerprint: List.filled(64, 'a').join(),
+        artifactPaths: const ['../../outside'],
+      ),
+      throwsA(isA<FormatException>()),
+    );
+  });
+
   test('repository rejects an unsafe project ID', () async {
     await expectLater(
       repository.load('../secrets'),

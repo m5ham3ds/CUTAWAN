@@ -37,6 +37,32 @@ class AndroidVideoPicker {
     return inspectVideo(Uri.file(path).toString());
   }
 
+  static Future<String> fingerprintVideo(String uri) async {
+    final result = await _channel.invokeMapMethod<String, Object?>(
+      'fingerprintVideo',
+      <String, Object?>{'uri': uri},
+    );
+    final fingerprint = result?['sha256'];
+    if (fingerprint is! String ||
+        !RegExp(r'^[a-f0-9]{64}
+    final result = await _channel.invokeMapMethod<String, Object?>(
+      'inspectVideo',
+      <String, Object?>{'uri': uri},
+    );
+    if (result == null) {
+      throw const FormatException('Android returned no video metadata.');
+    }
+    return VideoAssetMetadata.fromJson(
+      Map<String, dynamic>.from(result),
+    );
+  }
+}
+).hasMatch(fingerprint)) {
+      throw const FormatException('Android returned an invalid source SHA-256 fingerprint.');
+    }
+    return fingerprint;
+  }
+
   static Future<VideoAssetMetadata> inspectVideo(String uri) async {
     final result = await _channel.invokeMapMethod<String, Object?>(
       'inspectVideo',
