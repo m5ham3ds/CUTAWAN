@@ -138,7 +138,9 @@ void main() {
 
       await tester.pumpWidget(const SizedBox.shrink());
       await pumpUi(tester);
-      await tester.pumpWidget(CutawanApp(repository: repository));
+      await tester.pumpWidget(
+        CutawanApp(repository: repository, storageUsageBytes: () async => 0),
+      );
       await pumpUi(tester);
       await tester.tap(find.text('المهام'));
       await pumpUi(tester);
