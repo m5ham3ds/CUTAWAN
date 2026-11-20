@@ -161,7 +161,12 @@ class _CreatePageState extends State<CreatePage> {
     setState(() => _isImporting = true);
     try {
       final source = await AndroidVideoPicker.pickVideo();
-      if (!mounted) return;
+      if (!mounted) {
+        if (source != null) {
+          await AndroidVideoPicker.releasePersistedPermission(source.uri);
+        }
+        return;
+      }
       if (source == null) {
         _showMessage('تم إلغاء اختيار الفيديو.');
         return;
@@ -236,7 +241,10 @@ class _CreatePageState extends State<CreatePage> {
           if (mounted) setState(() => _downloadProgress = progress);
         },
       );
-      if (!mounted) return;
+      if (!mounted) {
+        await downloader.deleteDownloadedVideo(source.uri);
+        return;
+      }
       final project = CutawanProject.create(
         source: source,
         preferences: ClipPreferences(
