@@ -146,12 +146,12 @@ class _CutawanTopBar extends StatelessWidget {
     final width = MediaQuery.sizeOf(context).width;
     final compact = width < 390;
     return Padding(
-      padding: EdgeInsets.fromLTRB(compact ? 12 : 20, 13, compact ? 12 : 20, 12),
+      padding: EdgeInsets.fromLTRB(compact ? 8 : 20, 10, compact ? 8 : 20, 10),
       child: Row(children: [
-        Container(width: 40, height: 40, decoration: BoxDecoration(color: scheme.primary, borderRadius: BorderRadius.circular(14), boxShadow: [BoxShadow(color: scheme.primary.withValues(alpha: 0.18), blurRadius: 18, offset: const Offset(0, 6))]), child: Icon(Icons.auto_awesome_rounded, color: scheme.onPrimary, size: 21)),
+        Container(width: compact ? 34 : 40, height: compact ? 34 : 40, decoration: BoxDecoration(color: scheme.primary, borderRadius: BorderRadius.circular(13), boxShadow: [BoxShadow(color: scheme.primary.withValues(alpha: 0.18), blurRadius: 18, offset: const Offset(0, 6))]), child: Icon(Icons.auto_awesome_rounded, color: scheme.onPrimary, size: 21)),
         SizedBox(width: compact ? 8 : 12),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('CUTAWAN', maxLines: 1, style: theme.textTheme.titleMedium?.copyWith(letterSpacing: 0.4, fontWeight: FontWeight.w900, fontSize: compact ? 14 : 17)),
+          Text('CUTAWAN', maxLines: 1, style: theme.textTheme.titleMedium?.copyWith(letterSpacing: 0.4, fontWeight: FontWeight.w900, fontSize: compact ? 12 : 17)),
           if (!compact)
             Text('AI CREATOR STUDIO', maxLines: 1, style: theme.textTheme.labelSmall?.copyWith(color: scheme.onSurfaceVariant, letterSpacing: 0.7, fontSize: 8)),
         ])),
@@ -180,7 +180,7 @@ class _TopBarAction extends StatelessWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(14),
         onTap: () { HapticFeedback.selectionClick(); onTap(); },
-        child: SizedBox(width: 44, height: 44, child: Icon(icon, size: 20, color: accent ? scheme.primary : scheme.onSurface)),
+        child: SizedBox(width: 40, height: 40, child: Icon(icon, size: 19, color: accent ? scheme.primary : scheme.onSurface)),
       ),
     ));
   }
@@ -198,8 +198,8 @@ class _CutawanNavigationBar extends StatelessWidget {
     final bottom = MediaQuery.paddingOf(context).bottom;
     final compact = MediaQuery.sizeOf(context).width < 390;
     return Container(
-      margin: EdgeInsets.fromLTRB(compact ? 6 : 14, 0, compact ? 6 : 14, bottom > 0 ? 8 : 13),
-      padding: EdgeInsets.fromLTRB(compact ? 3 : 7, 8, compact ? 3 : 7, 8),
+      margin: EdgeInsets.fromLTRB(compact ? 4 : 14, 0, compact ? 4 : 14, bottom > 0 ? 8 : 13),
+      padding: EdgeInsets.fromLTRB(compact ? 1 : 7, 6, compact ? 1 : 7, 6),
       decoration: BoxDecoration(color: scheme.surfaceContainer.withValues(alpha: 0.96), borderRadius: BorderRadius.circular(24), border: Border.all(color: scheme.outlineVariant), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.24), blurRadius: 28, offset: const Offset(0, 10))]),
       child: ClipRect(child: Row(children: List.generate(destinations.length, (index) {
         final item = destinations[index];

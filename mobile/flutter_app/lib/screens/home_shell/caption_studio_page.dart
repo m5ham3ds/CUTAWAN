@@ -254,13 +254,22 @@ class _CaptionStudioPageState extends State<CaptionStudioPage> with SingleTicker
               setState(() => _fontFamily = value);
             } },
         ),
-        SwitchListTile(contentPadding: EdgeInsets.zero, title: const Text('نص عريض'), value: _bold, onChanged: (value) => setState(() => _bold = value)),
-        SwitchListTile(contentPadding: EdgeInsets.zero, title: const Text('أحرف كبيرة للإنجليزية'), value: _uppercase, onChanged: (value) => setState(() => _uppercase = value)),
+        Material(
+          color: Colors.transparent,
+          child: SwitchListTile(contentPadding: EdgeInsets.zero, title: const Text('نص عريض'), value: _bold, onChanged: (value) => setState(() => _bold = value)),
+        ),
+        Material(
+          color: Colors.transparent,
+          child: SwitchListTile(contentPadding: EdgeInsets.zero, title: const Text('أحرف كبيرة للإنجليزية'), value: _uppercase, onChanged: (value) => setState(() => _uppercase = value)),
+        ),
         Text('حجم الخط · ${(_fontScale * 100).toStringAsFixed(1)}%'),
         Slider(value: _fontScale, min: 0.025, max: 0.075, divisions: 50, onChanged: (value) => setState(() => _fontScale = value)),
         Text('موضع النص · ${(_positionY * 100).round()}% من أعلى الإطار'),
         Slider(value: _positionY, min: 0.1, max: 0.9, divisions: 80, onChanged: (value) => setState(() => _positionY = value)),
-        SwitchListTile(contentPadding: EdgeInsets.zero, title: const Text('إظهار إطار الأمان'), value: _showSafeFrame, onChanged: (value) => setState(() => _showSafeFrame = value)),
+        Material(
+          color: Colors.transparent,
+          child: SwitchListTile(contentPadding: EdgeInsets.zero, title: const Text('إظهار إطار الأمان'), value: _showSafeFrame, onChanged: (value) => setState(() => _showSafeFrame = value)),
+        ),
         const SizedBox(height: 8),
         const _Eyebrow('الألوان', icon: Icons.color_lens_outlined),
         const SizedBox(height: 8),

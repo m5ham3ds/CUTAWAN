@@ -147,7 +147,10 @@ void main() {
 
       expect(find.text('interview'), findsOneWidget);
       final cancelButton = find.byKey(ValueKey('cancel-job-${savedProjects.single.id}'));
+      await tester.drag(find.byType(ListView).first, const Offset(0, -700));
+      await tester.pump();
       await tester.ensureVisible(cancelButton);
+      await tester.pump();
       await tester.tap(cancelButton);
       await pumpUi(tester);
       final cancelledProject = await repository.load(savedProjects.single.id);
