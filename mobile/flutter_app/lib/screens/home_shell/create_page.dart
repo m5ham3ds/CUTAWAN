@@ -463,24 +463,30 @@ class _CreatePageState extends State<CreatePage> {
         const SizedBox(height: 14),
         _Panel(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-          child: SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            secondary: const Icon(Icons.closed_caption_outlined),
-            title: const Text('كابشن ذكي'),
-            subtitle: const Text('تفريغ الكلام وتطبيق النمط والحركة المختارين.'),
-            value: _captions,
-            onChanged: (value) => setState(() => _captions = value),
+          child: Material(
+            color: Colors.transparent,
+            child: SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              secondary: const Icon(Icons.closed_caption_outlined),
+              title: const Text('كابشن ذكي'),
+              subtitle: const Text('تفريغ الكلام وتطبيق النمط والحركة المختارين.'),
+              value: _captions,
+              onChanged: (value) => setState(() => _captions = value),
+            ),
           ),
         ),
         _Panel(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-          child: SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            secondary: const Icon(Icons.face_retouching_natural_outlined),
-            title: const Text('تتبع الوجه والتأطير'),
-            subtitle: const Text('يُحفظ كخيار للمشروع؛ التنفيذ الكامل يتطلب محرك الرؤية.'),
-            value: _speakerTracking,
-            onChanged: (value) => setState(() => _speakerTracking = value),
+          child: Material(
+            color: Colors.transparent,
+            child: SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              secondary: const Icon(Icons.face_retouching_natural_outlined),
+              title: const Text('تتبع الوجه والتأطير'),
+              subtitle: const Text('يُحفظ كخيار للمشروع؛ التنفيذ الكامل يتطلب محرك الرؤية.'),
+              value: _speakerTracking,
+              onChanged: (value) => setState(() => _speakerTracking = value),
+            ),
           ),
         ),
         if (_captions) ...[
