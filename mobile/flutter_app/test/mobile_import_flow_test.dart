@@ -1,12 +1,21 @@
 import 'dart:io';
 
 import 'package:flutter/widgets.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:cutawan_mobile/app.dart';
 import 'package:cutawan_mobile/services/local_project_repository.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+Future<void> pumpUi(WidgetTester tester) async {
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 500));
+  await tester.pump();
+}
+
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   const mediaChannel = MethodChannel('com.cutawan.mobile/media');
 
   final metadata = <String, Object?>{
@@ -49,16 +58,16 @@ void main() {
     'import saves project, reopen restores it, cancel persists and media can be re-inspected',
     (tester) async {
       await tester.pumpWidget(CutawanApp(repository: repository));
-      await tester.pumpAndSettle();
+      await pumpUi(tester);
 
       await tester.tap(find.text('اختيار فيديو'));
-      await tester.pumpAndSettle();
+      await pumpUi(tester);
 
       expect(methods, contains('pickVideo'));
       expect(find.text('تم استيراد الفيديو وحفظ المشروع محليًا.'), findsOneWidget);
 
       await tester.tap(find.text('المهام'));
-      await tester.pumpAndSettle();
+      await pumpUi(tester);
       expect(find.text('interview'), findsOneWidget);
       expect(
         find.text('المصدر محفوظ — جاهز للتحليل (لم يبدأ المحرك)'),
@@ -66,21 +75,21 @@ void main() {
       );
 
       await tester.pumpWidget(const SizedBox.shrink());
-      await tester.pumpAndSettle();
+      await pumpUi(tester);
       await tester.pumpWidget(CutawanApp(repository: repository));
-      await tester.pumpAndSettle();
+      await pumpUi(tester);
       await tester.tap(find.text('المهام'));
-      await tester.pumpAndSettle();
+      await pumpUi(tester);
 
       expect(find.text('interview'), findsOneWidget);
       await tester.tap(find.text('إلغاء السجل'));
-      await tester.pumpAndSettle();
+      await pumpUi(tester);
       expect(find.text('أُلغي سجل المهمة'), findsOneWidget);
 
       await tester.tap(find.text('المراجعة'));
-      await tester.pumpAndSettle();
+      await pumpUi(tester);
       await tester.tap(find.text('إعادة فحص الوصول والبيانات'));
-      await tester.pumpAndSettle();
+      await pumpUi(tester);
 
       expect(methods, contains('inspectVideo'));
       expect(
