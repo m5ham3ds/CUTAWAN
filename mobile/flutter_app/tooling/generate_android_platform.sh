@@ -159,146 +159,45 @@ flutter pub get
 # Media3 Transformer powers native clip trimming and aspect-fit export.
 python3 - <<'PY'
 from pathlib import Path
-import re
 
-kts = Path("android/app/build.gradle.kts")
-groovy = Path("android/app/build.gradle")
+kts = Path('android/app/build.gradle.kts')
+groovy = Path('android/app/build.gradle')
 if kts.is_file():
     path = kts
-    source = path.read_text()
     dependencies = [
         '    implementation("androidx.media3:media3-transformer:1.11.1")',
         '    implementation("androidx.media3:media3-effect:1.11.1")',
         '    implementation("androidx.media3:media3-common:1.11.1")',
     ]
-else:
+elif groovy.is_file():
     path = groovy
-    source = path.read_text()
     dependencies = [
         '    implementation "androidx.media3:media3-transformer:1.11.1"',
         '    implementation "androidx.media3:media3-effect:1.11.1"',
         '    implementation "androidx.media3:media3-common:1.11.1"',
     ]
-
-match = re.search(r'(?m)^(\s*)dependencies\s*\{\s*# whisper.cpp defaults BUILD_SHARED_LIBS=ON on Android. llama.cpp exports
-# the same libggml-*.so names, so compile Whisper's private GGML as static
-# archives. Apply only to the pinned package and fail closed if source drifts.
-python3 - <<'PY'
-from pathlib import Path
-
-candidates = sorted(
-    Path.home().glob(
-        '.pub-cache/hosted/pub.dev/whisper_cpp_flutter_plus-0.5.1/'
-        'ios/whisper_cpp_flutter_plus/Sources/WhisperCppCore/CMakeLists.txt'
-    )
-)
-if len(candidates) != 1:
-    raise SystemExit(
-        'Expected exactly one pinned whisper_cpp_flutter_plus 0.5.1 '
-        f'WhisperCppCore CMakeLists.txt, found {len(candidates)}'
-    )
-path = candidates[0]
-source = path.read_text()
-anchor = 'option(BUILD_SHARED_LIBS "build shared libraries" ${BUILD_SHARED_LIBS_DEFAULT})'
-patch = '''if (ANDROID)
-    set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build Whisper GGML statically to avoid llama.cpp .so collisions" FORCE)
-else()
-    option(BUILD_SHARED_LIBS "build shared libraries" ${BUILD_SHARED_LIBS_DEFAULT})
-endif()'''
-if patch not in source:
-    if source.count(anchor) != 1:
-        raise SystemExit('Whisper CMake source changed; refusing an unverified GGML patch.')
-    source = source.replace(anchor, patch)
-    path.write_text(source)
-if patch not in path.read_text():
-    raise SystemExit('Whisper Android static-GGML patch did not persist.')
-print('Verified Android static GGML patch in', path)
-PY
-
-# Ensure both JNI plugins were resolved before Gradle starts.
-python3 - <<'PY'
-import json
-from pathlib import Path
-
-metadata = Path('.flutter-plugins-dependencies')
-if not metadata.is_file():
-    raise SystemExit('Flutter did not create .flutter-plugins-dependencies')
-data = json.loads(metadata.read_text())
-plugins = {item.get('name') for item in data.get('plugins', {}).get('android', [])}
-required = {'whisper_cpp_flutter_plus', 'llama_flutter_android'}
-missing = sorted(required - plugins)
-if missing:
-    raise SystemExit(f'Missing required Android plugins: {missing}')
-print('Verified native plugins:', ', '.join(sorted(required)))
-PY
-, source)
-if not match:
-    source += "\n\ndependencies {\n" + "\n".join(dependencies) + "\n}\n"
 else:
-    for line in dependencies:
-        artifact = line.split("androidx.media3:")[1].split(":")[0]
-        if f"androidx.media3:{artifact}:1.11.1" not in source:
-            source = source[:match.end()] + "\n" + line + source[match.end():]
-            match = re.search(r'(?m)^(\s*)dependencies\s*\{\s*# whisper.cpp defaults BUILD_SHARED_LIBS=ON on Android. llama.cpp exports
-# the same libggml-*.so names, so compile Whisper's private GGML as static
-# archives. Apply only to the pinned package and fail closed if source drifts.
-python3 - <<'PY'
-from pathlib import Path
+    raise SystemExit('Flutter did not generate an Android Gradle file.')
 
-candidates = sorted(
-    Path.home().glob(
-        '.pub-cache/hosted/pub.dev/whisper_cpp_flutter_plus-0.5.1/'
-        'ios/whisper_cpp_flutter_plus/Sources/WhisperCppCore/CMakeLists.txt'
-    )
-)
-if len(candidates) != 1:
-    raise SystemExit(
-        'Expected exactly one pinned whisper_cpp_flutter_plus 0.5.1 '
-        f'WhisperCppCore CMakeLists.txt, found {len(candidates)}'
-    )
-path = candidates[0]
 source = path.read_text()
-anchor = 'option(BUILD_SHARED_LIBS "build shared libraries" ${BUILD_SHARED_LIBS_DEFAULT})'
-patch = '''if (ANDROID)
-    set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build Whisper GGML statically to avoid llama.cpp .so collisions" FORCE)
-else()
-    option(BUILD_SHARED_LIBS "build shared libraries" ${BUILD_SHARED_LIBS_DEFAULT})
-endif()'''
-if patch not in source:
-    if source.count(anchor) != 1:
-        raise SystemExit('Whisper CMake source changed; refusing an unverified GGML patch.')
-    source = source.replace(anchor, patch)
-    path.write_text(source)
-if patch not in path.read_text():
-    raise SystemExit('Whisper Android static-GGML patch did not persist.')
-print('Verified Android static GGML patch in', path)
-PY
-
-# Ensure both JNI plugins were resolved before Gradle starts.
-python3 - <<'PY'
-import json
-from pathlib import Path
-
-metadata = Path('.flutter-plugins-dependencies')
-if not metadata.is_file():
-    raise SystemExit('Flutter did not create .flutter-plugins-dependencies')
-data = json.loads(metadata.read_text())
-plugins = {item.get('name') for item in data.get('plugins', {}).get('android', [])}
-required = {'whisper_cpp_flutter_plus', 'llama_flutter_android'}
-missing = sorted(required - plugins)
-if missing:
-    raise SystemExit(f'Missing required Android plugins: {missing}')
-print('Verified native plugins:', ', '.join(sorted(required)))
-PY
-, source)
-
-for artifact in ("transformer", "effect", "common"):
-    if f"androidx.media3:media3-{artifact}:1.11.1" not in source:
-        raise SystemExit(f"Media3 {artifact} dependency was not installed.")
+lines = source.splitlines()
+block_index = next((i for i, line in enumerate(lines) if line.strip() == 'dependencies {'), None)
+if block_index is None:
+    lines.extend(['', 'dependencies {', *dependencies, '}'])
+else:
+    for dependency in reversed(dependencies):
+        coordinate = dependency.split('androidx.media3:')[1].split(':')[0]
+        expected = 'androidx.media3:' + coordinate + ':1.11.1'
+        if expected not in source:
+            lines.insert(block_index + 1, dependency)
+source = '\n'.join(lines) + '\n'
+for artifact in ('transformer', 'effect', 'common'):
+    expected = 'androidx.media3:media3-' + artifact + ':1.11.1'
+    if expected not in source:
+        raise SystemExit('Missing Media3 dependency: ' + expected)
 path.write_text(source)
-print("Verified Media3 Transformer/effect/common 1.11.1 dependencies.")
+print('Verified Media3 Transformer/effect/common 1.11.1 dependencies.')
 PY
-
 # whisper.cpp defaults BUILD_SHARED_LIBS=ON on Android. llama.cpp exports
 # the same libggml-*.so names, so compile Whisper's private GGML as static
 # archives. Apply only to the pinned package and fail closed if source drifts.
