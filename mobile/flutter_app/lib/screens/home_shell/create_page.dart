@@ -203,10 +203,10 @@ class _CreatePageState extends State<CreatePage> {
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
       children: [
-        const _Eyebrow('مساحة العمل  /  مشروع جديد'),
+        const _Eyebrow('مساحة العمل  /  مشروع جديد', icon: Icons.auto_awesome_rounded),
         const SizedBox(height: 14),
         Text(
-          'فيديو طويل يدخل.\nمقاطع أقوى تخرج.',
+          'من المصدر إلى\nمقاطع تستحق المشاهدة.',
           style: theme.textTheme.headlineMedium?.copyWith(
             height: 1.08,
             fontWeight: FontWeight.w800,
@@ -215,14 +215,28 @@ class _CreatePageState extends State<CreatePage> {
         ),
         const SizedBox(height: 10),
         Text(
-          'اختر المصدر، ثم اضبط عدد المقاطع والمدة والتكوين قبل التحليل.',
+          'ارفع الفيديو، حدّد أسلوب القصّ، واترك مساحة العمل ترتّب خطوات المعالجة.',
           style: theme.textTheme.bodyMedium?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
             height: 1.55,
           ),
         ),
-        const SizedBox(height: 28),
-        const _Eyebrow('01  /  مصدر الفيديو'),
+        const SizedBox(height: 20),
+        _Panel(
+          accent: true,
+          child: Row(children: [
+            Container(width: 46, height: 46, decoration: BoxDecoration(color: theme.colorScheme.primary.withValues(alpha: 0.16), borderRadius: BorderRadius.circular(15)), child: Icon(Icons.movie_creation_outlined, color: theme.colorScheme.primary)),
+            const SizedBox(width: 13),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('مساحة إنشاء جديدة', style: theme.textTheme.titleSmall),
+              const SizedBox(height: 3),
+              Text('إعداداتك محفوظة داخل المشروع ويمكن تعديلها قبل المعالجة.', style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+            ])),
+            Icon(Icons.arrow_back_rounded, color: theme.colorScheme.primary),
+          ]),
+        ),
+        const SizedBox(height: 24),
+        const _Eyebrow('01  /  مصدر الفيديو', icon: Icons.video_file_outlined),
         const SizedBox(height: 8),
         TextField(
           controller: _urlController,
@@ -287,7 +301,7 @@ class _CreatePageState extends State<CreatePage> {
         const SizedBox(height: 30),
         const Divider(),
         const SizedBox(height: 18),
-        const _Eyebrow('02  /  إعدادات المقاطع'),
+        const _Eyebrow('02  /  إعدادات المقاطع', icon: Icons.tune_rounded),
         const SizedBox(height: 14),
         Text('عدد المقاطع', style: theme.textTheme.titleSmall),
         const SizedBox(height: 10),
@@ -397,19 +411,27 @@ class _CreatePageState extends State<CreatePage> {
           },
         ),
         const SizedBox(height: 14),
-        SwitchListTile(
-          contentPadding: EdgeInsets.zero,
-          title: const Text('إضافة الكابشن'),
-          subtitle: const Text('تطبيق تصميم وحركة على الكلام'),
-          value: _captions,
-          onChanged: (value) => setState(() => _captions = value),
+        _Panel(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+          child: SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            secondary: const Icon(Icons.closed_caption_outlined),
+            title: const Text('كابشن ذكي'),
+            subtitle: const Text('تفريغ الكلام وتطبيق النمط والحركة المختارين.'),
+            value: _captions,
+            onChanged: (value) => setState(() => _captions = value),
+          ),
         ),
-        SwitchListTile(
-          contentPadding: EdgeInsets.zero,
-          title: const Text('تتبع المتحدث'),
-          subtitle: const Text('إعداد محفوظ؛ يحتاج محرك الرؤية'),
-          value: _speakerTracking,
-          onChanged: (value) => setState(() => _speakerTracking = value),
+        _Panel(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+          child: SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            secondary: const Icon(Icons.face_retouching_natural_outlined),
+            title: const Text('تتبع الوجه والتأطير'),
+            subtitle: const Text('يُحفظ كخيار للمشروع؛ التنفيذ الكامل يتطلب محرك الرؤية.'),
+            value: _speakerTracking,
+            onChanged: (value) => setState(() => _speakerTracking = value),
+          ),
         ),
         if (_captions) ...[
           const SizedBox(height: 12),

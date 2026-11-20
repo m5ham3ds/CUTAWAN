@@ -106,27 +106,36 @@ class JobsPage extends StatelessWidget {
         return ListView(
           padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
           children: [
-            const _Eyebrow('مساحة العمل  /  سجل المعالجة'),
+            const _Eyebrow('مساحة العمل  /  سجل المعالجة', icon: Icons.grid_view_rounded),
             const SizedBox(height: 14),
             Text(
-              'المهام والمشاريع',
+              'مساحة مشاريعك',
               style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                     fontWeight: FontWeight.w800,
                   ),
             ),
             const SizedBox(height: 8),
             Text(
-              'تُحفظ حالة كل مهمة ومراحلها محليًا؛ ويمكن متابعة المعالجة من شاشة المراجعة.',
+              'تابع حالة كل مشروع، مساحة الملفات، وما يحتاج إلى خطوة تالية.',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
             ),
             const SizedBox(height: 16),
+            const SizedBox(height: 18),
+            Row(children: [
+              Expanded(child: _MetricCard(label: 'كل المشاريع', value: '${items.length}', icon: Icons.video_library_outlined)),
+              const SizedBox(width: 9),
+              Expanded(child: _MetricCard(label: 'مكتملة', value: '${items.where((p) => p.job.status == ProjectJobStatus.completed).length}', icon: Icons.check_circle_outline_rounded, tint: CutawanTheme.cyan)),
+              const SizedBox(width: 9),
+              Expanded(child: _MetricCard(label: 'قيد العمل', value: '${items.where((p) => p.job.status == ProjectJobStatus.running).length}', icon: Icons.pending_outlined)),
+            ]),
+            const SizedBox(height: 20),
             FutureBuilder<int>(
               future: storageFuture,
               builder: (context, snapshot) => Card(
                 child: ListTile(
-                  leading: const Icon(Icons.storage_outlined),
+                  leading: Container(width: 42, height: 42, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(13)), child: Icon(Icons.storage_outlined, color: Theme.of(context).colorScheme.primary)),
                   title: const Text('مساحة تنزيلات Cutawan'),
                   subtitle: Text(
                     snapshot.hasData
@@ -145,17 +154,18 @@ class JobsPage extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             if (items.isEmpty)
-              const _EmptyState(
-                icon: Icons.pending_actions_outlined,
-                title: 'لا توجد مهام بعد',
-                description:
-                    'استورد فيديو من شاشة الإدخال ليظهر المشروع وسجل المهمة هنا.',
+              _EmptyState(
+                icon: Icons.video_collection_outlined,
+                title: 'مساحة العمل فارغة حالياً',
+                description: 'ابدأ باستيراد فيديو من شاشة الإنشاء. سيظهر كل مشروع هنا مع حالة المعالجة ومساحة التخزين.',
+                action: 'إنشاء مشروع',
+                onAction: onOpenReview,
               )
             else
               for (final project in items)
                 Card(
                   child: Padding(
-                    padding: const EdgeInsets.all(14),
+                    padding: const EdgeInsets.all(17),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -166,14 +176,14 @@ class JobsPage extends StatelessWidget {
                               ),
                         ),
                         const SizedBox(height: 6),
-                        Text(project.source.displayName),
+                        Text(project.source.displayName, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
                         const SizedBox(height: 8),
                         Wrap(
                           spacing: 8,
                           runSpacing: 4,
                           crossAxisAlignment: WrapCrossAlignment.center,
                           children: [
-                            Text(_jobStatusLabel(project.job.status)),
+                            _StatusBadge(label: _jobStatusLabel(project.job.status), status: project.job.status),
                             Chip(label: Text(project.job.stage)),
                             if (project.job.canCancel)
                               TextButton.icon(
@@ -189,7 +199,10 @@ class JobsPage extends StatelessWidget {
                           ],
                         ),
                         const SizedBox(height: 8),
+                        const SizedBox(height: 7),
                         LinearProgressIndicator(
+                          borderRadius: BorderRadius.circular(99),
+                          backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                           value: project.job.status == ProjectJobStatus.prepared ? 0 : project.job.progress,
                           minHeight: 5,
                         ),

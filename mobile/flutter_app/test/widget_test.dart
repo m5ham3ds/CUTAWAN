@@ -44,11 +44,12 @@ void main() {
     await tester.pumpWidget(const CutawanApp());
 
     expect(find.text('CUTAWAN'), findsOneWidget);
-    expect(find.text('إدخال'), findsOneWidget);
-    expect(find.text('المهام'), findsOneWidget);
+    expect(find.text('AI CREATOR STUDIO'), findsOneWidget);
+    expect(find.text('إنشاء'), findsOneWidget);
+    expect(find.text('المشاريع'), findsOneWidget);
     expect(find.text('المراجعة'), findsOneWidget);
     expect(find.text('الاستوديو'), findsOneWidget);
-    expect(find.textContaining('فيديو طويل يدخل'), findsOneWidget);
+    expect(find.textContaining('من المصدر إلى'), findsOneWidget);
   });
 
   testWidgets('caption studio exposes 12 presets, RTL preview and separate animation controls', (tester) async {
