@@ -36,6 +36,10 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
     await tester.pumpWidget(const CutawanApp());
     await tester.pump();
+    final appBar = find.byType(_CutawanTopBar);
+    final createList = find.byType(ListView).first;
+    expect(appBar, findsNothing);
+    expect(createList, findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
