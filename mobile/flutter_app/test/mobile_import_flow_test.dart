@@ -146,9 +146,11 @@ void main() {
       await pumpUi(tester);
 
       expect(find.text('interview'), findsOneWidget);
-      await tester.tap(find.text('إلغاء السجل'));
+      final cancelButton = find.byKey(ValueKey('cancel-job-${savedProjects.single.id}'));
+      await tester.ensureVisible(cancelButton);
+      await tester.tap(cancelButton);
       await pumpUi(tester);
-      expect(find.text('أُلغي سجل المهمة'), findsOneWidget);
+      expect(find.textContaining('أُلغي سجل المهمة'), findsOneWidget);
 
       await tester.tap(find.text('المراجعة'));
       await pumpUi(tester);

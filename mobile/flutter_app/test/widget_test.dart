@@ -64,7 +64,7 @@ void main() {
     expect(find.byType(AnimatedBuilder), findsWidgets);
     expect(find.descendant(of: find.byKey(const ValueKey('caption-style-presets')), matching: find.byType(ChoiceChip)), findsNWidgets(12));
     expect(find.text('Beast'), findsOneWidget);
-    expect(find.text('Karaoke'), findsOneWidget);
+    expect(find.byKey(const ValueKey('caption-style-karaoke')), findsOneWidget);
     expect(find.text('معاينة اتجاه النص'), findsOneWidget);
     expect(find.text('حفظ إعدادات الاستوديو في المشروع'), findsOneWidget);
 

@@ -123,13 +123,22 @@ class JobsPage extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             const SizedBox(height: 18),
-            Row(children: [
-              Expanded(child: _MetricCard(label: 'كل المشاريع', value: '${items.length}', icon: Icons.video_library_outlined)),
-              const SizedBox(width: 9),
-              Expanded(child: _MetricCard(label: 'مكتملة', value: '${items.where((p) => p.job.status == ProjectJobStatus.completed).length}', icon: Icons.check_circle_outline_rounded, tint: Theme.of(context).colorScheme.secondary)),
-              const SizedBox(width: 9),
-              Expanded(child: _MetricCard(label: 'قيد العمل', value: '${items.where((p) => p.job.status == ProjectJobStatus.running).length}', icon: Icons.pending_outlined)),
-            ]),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final gap = 9.0;
+                final columns = constraints.maxWidth < 390 ? 2 : 3;
+                final width = (constraints.maxWidth - gap * (columns - 1)) / columns;
+                return Wrap(
+                  spacing: gap,
+                  runSpacing: gap,
+                  children: [
+                    SizedBox(width: width, child: _MetricCard(label: 'كل المشاريع', value: '${items.length}', icon: Icons.video_library_outlined)),
+                    SizedBox(width: width, child: _MetricCard(label: 'مكتملة', value: '${items.where((p) => p.job.status == ProjectJobStatus.completed).length}', icon: Icons.check_circle_outline_rounded, tint: Theme.of(context).colorScheme.secondary)),
+                    SizedBox(width: width, child: _MetricCard(label: 'قيد العمل', value: '${items.where((p) => p.job.status == ProjectJobStatus.running).length}', icon: Icons.pending_outlined)),
+                  ],
+                );
+              },
+            ),
             const SizedBox(height: 20),
             FutureBuilder<int>(
               future: storageFuture,
@@ -187,6 +196,7 @@ class JobsPage extends StatelessWidget {
                             Chip(label: Text(project.job.stage)),
                             if (project.job.canCancel)
                               TextButton.icon(
+                                key: ValueKey('cancel-job-${project.id}'),
                                 onPressed: () => _cancel(context, project),
                                 icon: const Icon(Icons.cancel_outlined),
                                 label: const Text('إلغاء السجل'),
