@@ -179,10 +179,7 @@ class VideoExportService {
     }
   }
 
-  static bool _validCaptionCues(
-    List<Map<String, Object?>> cues,
-    int clipDurationMs,
-  ) {
+  static bool _validCaptionCues(List<Map<String, Object?>> cues, int clipDurationMs) {
     var previousStart = -1;
     for (final cue in cues) {
       final start = cue['startMs'];
@@ -262,231 +259,27 @@ class VideoExportService {
     }
     for (final key in ['textColor', 'highlightColor', 'outlineColor']) {
       final color = style[key];
-      if (color is! String || !RegExp(r'^#[0-9A-Fa-f]{6}
-    List<Map<String, Object?>> shots,
-    int clipDurationMs,
-    double sourceAspectRatio,
-    double targetAspectRatio,
-  ) {
-    if (shots.isEmpty) return true;
-    if (!sourceAspectRatio.isFinite ||
-        sourceAspectRatio <= 0 ||
-        !targetAspectRatio.isFinite ||
-        targetAspectRatio <= 0) {
-      return false;
-    }
-    var cursor = 0;
-    for (final shot in shots) {
-      final start = shot['startMs'];
-      final end = shot['endMs'];
-      final mode = shot['mode'];
-      if (start is! int ||
-          end is! int ||
-          mode is! String ||
-          start != cursor ||
-          end <= start ||
-          end > clipDurationMs ||
-          (mode != 'fit' && mode != 'crop')) {
-        return false;
-      }
-      final region = shot['region'];
-      if (mode == 'fit') {
-        if (region != null) return false;
-      } else {
-        if (region is! Map) return false;
-        final x = region['x'];
-        final y = region['y'];
-        final width = region['width'];
-        final height = region['height'];
-        if (x is! num ||
-            y is! num ||
-            width is! num ||
-            height is! num ||
-            !x.toDouble().isFinite ||
-            !y.toDouble().isFinite ||
-            !width.toDouble().isFinite ||
-            !height.toDouble().isFinite ||
-            x < 0 ||
-            y < 0 ||
-            width <= 0 ||
-            height <= 0 ||
-            x + width > 1.0001 ||
-            y + height > 1.0001 ||
-            ((sourceAspectRatio * width.toDouble() / height.toDouble()) -
-                        targetAspectRatio)
-                    .abs() >
-                targetAspectRatio * 0.03) {
-          return false;
-        }
-      }
-      cursor = end;
-    }
-    return cursor == clipDurationMs;
-  }
-
-  Future<bool> verifyExport({
-    required String outputUri,
-    required String sha256,
-    required int sizeBytes,
-    required int durationMs,
-    required int width,
-    required int height,
-  }) async {
-    if (outputUri.trim().isEmpty ||
-        !ProcessingJobService.isSha256(sha256) ||
-        sizeBytes < 2048 ||
-        durationMs <= 0 ||
-        width <= 0 ||
-        height <= 0) {
-      return false;
-    }
-    try {
-      final result = await _channel.invokeMapMethod<String, dynamic>(
-        'verifyExport',
-        <String, Object?>{
-          'outputUri': outputUri,
-          'sha256': sha256,
-          'sizeBytes': sizeBytes,
-          'durationMs': durationMs,
-          'width': width,
-          'height': height,
-        },
-      );
-      return result?['valid'] == true &&
-          result?['sha256'] == sha256 &&
-          (result?['sizeBytes'] as num?)?.toInt() == sizeBytes &&
-          (result?['durationMs'] as num?)?.toInt() == durationMs &&
-          (result?['width'] as num?)?.toInt() == width &&
-          (result?['height'] as num?)?.toInt() == height &&
-          result?['hasVideo'] == true;
-    } on PlatformException {
-      return false;
-    }
-  }
-
-  Future<void> cancelRender(String renderId) async {
-    await _channel.invokeMethod<bool>(
-      'cancelRender',
-      <String, Object?>{'renderId': renderId},
-    );
-  }
-}
-).hasMatch(color)) {
+      if (color is! String || !_isHexColor(color)) {
         return false;
       }
     }
     final box = style['highlightBoxColor'];
-    return box == null ||
-        (box is String && RegExp(r'^#[0-9A-Fa-f]{6}
-    List<Map<String, Object?>> shots,
-    int clipDurationMs,
-    double sourceAspectRatio,
-    double targetAspectRatio,
-  ) {
-    if (shots.isEmpty) return true;
-    if (!sourceAspectRatio.isFinite ||
-        sourceAspectRatio <= 0 ||
-        !targetAspectRatio.isFinite ||
-        targetAspectRatio <= 0) {
+    return box == null || (box is String && _isHexColor(box));
+  }
+
+  static bool _isHexColor(String value) {
+    if (value.length != 7 || value.codeUnitAt(0) != 35) {
       return false;
     }
-    var cursor = 0;
-    for (final shot in shots) {
-      final start = shot['startMs'];
-      final end = shot['endMs'];
-      final mode = shot['mode'];
-      if (start is! int ||
-          end is! int ||
-          mode is! String ||
-          start != cursor ||
-          end <= start ||
-          end > clipDurationMs ||
-          (mode != 'fit' && mode != 'crop')) {
+    for (final unit in value.codeUnits.skip(1)) {
+      final isDigit = unit >= 48 && unit <= 57;
+      final isUpperHex = unit >= 65 && unit <= 70;
+      final isLowerHex = unit >= 97 && unit <= 102;
+      if (!isDigit && !isUpperHex && !isLowerHex) {
         return false;
       }
-      final region = shot['region'];
-      if (mode == 'fit') {
-        if (region != null) return false;
-      } else {
-        if (region is! Map) return false;
-        final x = region['x'];
-        final y = region['y'];
-        final width = region['width'];
-        final height = region['height'];
-        if (x is! num ||
-            y is! num ||
-            width is! num ||
-            height is! num ||
-            !x.toDouble().isFinite ||
-            !y.toDouble().isFinite ||
-            !width.toDouble().isFinite ||
-            !height.toDouble().isFinite ||
-            x < 0 ||
-            y < 0 ||
-            width <= 0 ||
-            height <= 0 ||
-            x + width > 1.0001 ||
-            y + height > 1.0001 ||
-            ((sourceAspectRatio * width.toDouble() / height.toDouble()) -
-                        targetAspectRatio)
-                    .abs() >
-                targetAspectRatio * 0.03) {
-          return false;
-        }
-      }
-      cursor = end;
     }
-    return cursor == clipDurationMs;
-  }
-
-  Future<bool> verifyExport({
-    required String outputUri,
-    required String sha256,
-    required int sizeBytes,
-    required int durationMs,
-    required int width,
-    required int height,
-  }) async {
-    if (outputUri.trim().isEmpty ||
-        !ProcessingJobService.isSha256(sha256) ||
-        sizeBytes < 2048 ||
-        durationMs <= 0 ||
-        width <= 0 ||
-        height <= 0) {
-      return false;
-    }
-    try {
-      final result = await _channel.invokeMapMethod<String, dynamic>(
-        'verifyExport',
-        <String, Object?>{
-          'outputUri': outputUri,
-          'sha256': sha256,
-          'sizeBytes': sizeBytes,
-          'durationMs': durationMs,
-          'width': width,
-          'height': height,
-        },
-      );
-      return result?['valid'] == true &&
-          result?['sha256'] == sha256 &&
-          (result?['sizeBytes'] as num?)?.toInt() == sizeBytes &&
-          (result?['durationMs'] as num?)?.toInt() == durationMs &&
-          (result?['width'] as num?)?.toInt() == width &&
-          (result?['height'] as num?)?.toInt() == height &&
-          result?['hasVideo'] == true;
-    } on PlatformException {
-      return false;
-    }
-  }
-
-  Future<void> cancelRender(String renderId) async {
-    await _channel.invokeMethod<bool>(
-      'cancelRender',
-      <String, Object?>{'renderId': renderId},
-    );
-  }
-}
-).hasMatch(box));
+    return true;
   }
   static bool _validReframeShots(
     List<Map<String, Object?>> shots,
