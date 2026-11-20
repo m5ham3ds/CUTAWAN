@@ -106,10 +106,28 @@ class _HomeShellState extends State<HomeShell> with SingleTickerProviderStateMix
   @override
   Widget build(BuildContext context) {
     final pages = <Widget>[
-      CreatePage(repository: _repository, onProjectSaved: _reloadProjects),
-      JobsPage(projects: _projects, repository: _repository, onProjectsChanged: _reloadProjects, onOpenReview: () => _selectDestination(2), storageUsageBytes: widget.storageUsageBytes),
-      ReviewPage(projects: _projects, repository: _repository, onProjectsChanged: _reloadProjects),
-      TickerMode(enabled: _selectedIndex == 3, child: CaptionStudioPage(projects: _projects, repository: _repository, onProjectsChanged: _reloadProjects)),
+      TickerMode(
+        enabled: _selectedIndex == 0,
+        child: CreatePage(repository: _repository, onProjectSaved: _reloadProjects),
+      ),
+      TickerMode(
+        enabled: _selectedIndex == 1,
+        child: JobsPage(
+          projects: _projects,
+          repository: _repository,
+          onProjectsChanged: _reloadProjects,
+          onOpenReview: () => _selectDestination(2),
+          storageUsageBytes: widget.storageUsageBytes,
+        ),
+      ),
+      TickerMode(
+        enabled: _selectedIndex == 2,
+        child: ReviewPage(projects: _projects, repository: _repository, onProjectsChanged: _reloadProjects),
+      ),
+      TickerMode(
+        enabled: _selectedIndex == 3,
+        child: CaptionStudioPage(projects: _projects, repository: _repository, onProjectsChanged: _reloadProjects),
+      ),
     ];
     return Directionality(
       textDirection: TextDirection.rtl,
