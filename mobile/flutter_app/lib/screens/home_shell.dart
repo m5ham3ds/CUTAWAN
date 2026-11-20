@@ -18,6 +18,7 @@ import '../services/qwen_model_manager.dart';
 import '../services/candidate_discovery_service.dart';
 import '../services/local_editorial_annotation_service.dart';
 import '../services/ai_model_gateway.dart';
+import '../services/android_reframe_analysis_service.dart';
 
 
 class HomeShell extends StatefulWidget {
@@ -1056,7 +1057,9 @@ class _ReviewPageState extends State<ReviewPage> {
             );
             localModelUsed =
                 candidateSet.candidates.any((item) => item.modelAnnotated);
-            if (localModelUsed) modelUsedLabel = 'Qwen المحلي';
+            if (localModelUsed) {
+              modelUsedLabel = 'Qwen المحلي';
+            }
           }
         }
       } catch (error) {
@@ -1773,7 +1776,9 @@ class _ModelsPageState extends State<ModelsPage> {
       _credentials.readExecutionMode(),
       _credentials.hasCloudConsent(),
     ]);
-    if (!mounted) return;
+    if (!mounted) {
+      return;
+    }
     setState(() {
       _keySaved = values[0] as bool;
       final savedBase = values[1] as String?;
@@ -1786,7 +1791,9 @@ class _ModelsPageState extends State<ModelsPage> {
   }
 
   Future<void> _selectProvider(AiProviderId? provider) async {
-    if (provider == null || _remoteBusy) return;
+    if (provider == null || _remoteBusy) {
+      return;
+    }
     setState(() {
       _provider = provider;
       _remoteModels = [];
@@ -1803,7 +1810,9 @@ class _ModelsPageState extends State<ModelsPage> {
       final whisperFile =
           await _whisper.findCatalogModel(WhisperModelCatalog.base);
       final qwenFile = await _qwen.findInstalled();
-      if (!mounted) return;
+      if (!mounted) {
+      return;
+    }
       setState(() {
         _whisperInstalled = whisperFile != null;
         _qwenInstalled = qwenFile != null;
@@ -1821,7 +1830,9 @@ class _ModelsPageState extends State<ModelsPage> {
 
   Future<bool> _hasFreeSpace(int requiredBytes) async {
     final available = await AndroidVideoPicker.availableStorageBytes();
-    if (available >= requiredBytes) return true;
+    if (available >= requiredBytes) {
+      return true;
+    }
     if (mounted) {
       setState(() => _error =
           'المساحة الحرة غير كافية. المطلوب نحو ${_formatBytes(requiredBytes)}، والمتاح ${_formatBytes(available)}.');
@@ -1830,10 +1841,14 @@ class _ModelsPageState extends State<ModelsPage> {
   }
 
   Future<void> _downloadWhisper() async {
-    if (_busy) return;
+    if (_busy) {
+      return;
+    }
     final required = WhisperModelCatalog.base.approximateBytes +
         96 * 1024 * 1024;
-    if (!await _hasFreeSpace(required)) return;
+    if (!await _hasFreeSpace(required)) {
+      return;
+    }
     setState(() {
       _busy = true;
       _progress = 0;
@@ -1842,19 +1857,29 @@ class _ModelsPageState extends State<ModelsPage> {
     try {
       await for (final update
           in _whisper.downloadCatalogModel(WhisperModelCatalog.base)) {
-        if (mounted) setState(() => _progress = update.fraction);
+        if (mounted) {
+          setState(() => _progress = update.fraction);
+        }
       }
       await _refreshModels();
     } catch (error) {
-      if (mounted) setState(() => _error = 'فشل تنزيل/التحقق من Whisper: $error');
+      if (mounted) {
+        setState(() => _error = 'فشل تنزيل/التحقق من Whisper: $error');
+      }
     } finally {
-      if (mounted) setState(() { _busy = false; _progress = null; });
+      if (mounted) {
+        setState(() { _busy = false; _progress = null; });
+      }
     }
   }
 
   Future<void> _downloadQwen() async {
-    if (_busy) return;
-    if (!await _hasFreeSpace(QwenModelManager.minimumFreeBytes)) return;
+    if (_busy) {
+      return;
+    }
+    if (!await _hasFreeSpace(QwenModelManager.minimumFreeBytes)) {
+      return;
+    }
     setState(() {
       _busy = true;
       _progress = 0;
@@ -1862,39 +1887,61 @@ class _ModelsPageState extends State<ModelsPage> {
     });
     try {
       await _qwen.download(onProgress: (update) {
-        if (mounted) setState(() => _progress = update.fraction);
+        if (mounted) {
+          setState(() => _progress = update.fraction);
+        }
       });
       await _refreshModels();
     } catch (error) {
-      if (mounted) setState(() => _error = 'فشل تنزيل/التحقق من Qwen: $error');
+      if (mounted) {
+        setState(() => _error = 'فشل تنزيل/التحقق من Qwen: $error');
+      }
     } finally {
-      if (mounted) setState(() { _busy = false; _progress = null; });
+      if (mounted) {
+        setState(() { _busy = false; _progress = null; });
+      }
     }
   }
 
   Future<void> _deleteWhisper() async {
-    if (_busy) return;
+    if (_busy) {
+      return;
+    }
     try {
       final model = await _whisper.find(WhisperModelCatalog.base.fileName);
-      if (model != null) await model.delete();
-      if (mounted) setState(() => _whisperInstalled = false);
+      if (model != null) {
+        await model.delete();
+      }
+      if (mounted) {
+        setState(() => _whisperInstalled = false);
+      }
     } catch (error) {
-      if (mounted) setState(() => _error = 'تعذّر حذف نموذج Whisper: $error');
+      if (mounted) {
+        setState(() => _error = 'تعذّر حذف نموذج Whisper: $error');
+      }
     }
   }
 
   Future<void> _deleteQwen() async {
-    if (_busy) return;
+    if (_busy) {
+      return;
+    }
     try {
       await _qwen.deleteInstalled();
-      if (mounted) setState(() => _qwenInstalled = false);
+      if (mounted) {
+        setState(() => _qwenInstalled = false);
+      }
     } catch (error) {
-      if (mounted) setState(() => _error = 'تعذّر حذف نموذج Qwen: $error');
+      if (mounted) {
+        setState(() => _error = 'تعذّر حذف نموذج Qwen: $error');
+      }
     }
   }
 
   Future<void> _saveRemoteSettings() async {
-    if (_remoteBusy) return;
+    if (_remoteBusy) {
+      return;
+    }
     final definition = AiProviderCatalog.byId(_provider);
     setState(() {
       _remoteBusy = true;
@@ -1922,9 +1969,13 @@ class _ModelsPageState extends State<ModelsPage> {
         });
       }
     } catch (error) {
-      if (mounted) setState(() => _error = 'تعذّر حفظ إعدادات المزوّد: $error');
+      if (mounted) {
+        setState(() => _error = 'تعذّر حفظ إعدادات المزوّد: $error');
+      }
     } finally {
-      if (mounted) setState(() => _remoteBusy = false);
+      if (mounted) {
+        setState(() => _remoteBusy = false);
+      }
     }
   }
 
@@ -1945,9 +1996,13 @@ class _ModelsPageState extends State<ModelsPage> {
         });
       }
     } catch (error) {
-      if (mounted) setState(() => _error = 'تعذّر حذف المفتاح: $error');
+      if (mounted) {
+        setState(() => _error = 'تعذّر حذف المفتاح: $error');
+      }
     } finally {
-      if (mounted) setState(() => _remoteBusy = false);
+      if (mounted) {
+        setState(() => _remoteBusy = false);
+      }
     }
   }
 
@@ -1970,7 +2025,9 @@ class _ModelsPageState extends State<ModelsPage> {
           : models.first.id;
       await _credentials.saveSelectedModel(_provider, selected!);
       await _credentials.saveActiveProvider(_provider);
-      if (!mounted) return;
+      if (!mounted) {
+      return;
+    }
       setState(() {
         _remoteModels = models;
         _selectedRemoteModel = selected;
@@ -1978,14 +2035,20 @@ class _ModelsPageState extends State<ModelsPage> {
             'جُلبت ${models.length} نتيجة نموذج من حساب المزوّد. ليست كل النتائج بالضرورة نماذج محادثة.';
       });
     } catch (error) {
-      if (mounted) setState(() => _error = 'تعذّر جلب النماذج: $error');
+      if (mounted) {
+        setState(() => _error = 'تعذّر جلب النماذج: $error');
+      }
     } finally {
-      if (mounted) setState(() => _remoteBusy = false);
+      if (mounted) {
+        setState(() => _remoteBusy = false);
+      }
     }
   }
 
   Future<void> _saveSelectedRemoteModel(String? value) async {
-    if (value == null) return;
+    if (value == null) {
+      return;
+    }
     try {
       await _credentials.saveSelectedModel(_provider, value);
       await _credentials.saveActiveProvider(_provider);
@@ -1996,13 +2059,17 @@ class _ModelsPageState extends State<ModelsPage> {
         });
       }
     } catch (error) {
-      if (mounted) setState(() => _error = 'تعذّر حفظ النموذج المحدد: $error');
+      if (mounted) {
+        setState(() => _error = 'تعذّر حفظ النموذج المحدد: $error');
+      }
     }
   }
 
   Future<void> _testRemoteModel() async {
     final model = _selectedRemoteModel;
-    if (model == null || _remoteBusy) return;
+    if (model == null || _remoteBusy) {
+      return;
+    }
     setState(() {
       _remoteBusy = true;
       _providerMessage = 'جارٍ إرسال طلب اختبار نصي قصير…';
@@ -2023,9 +2090,13 @@ class _ModelsPageState extends State<ModelsPage> {
         setState(() => _providerMessage = 'نجح الاتصال مع $model\n$excerpt');
       }
     } catch (error) {
-      if (mounted) setState(() => _error = 'فشل اختبار النموذج: $error');
+      if (mounted) {
+        setState(() => _error = 'فشل اختبار النموذج: $error');
+      }
     } finally {
-      if (mounted) setState(() => _remoteBusy = false);
+      if (mounted) {
+        setState(() => _remoteBusy = false);
+      }
     }
   }
 
@@ -2060,7 +2131,9 @@ class _ModelsPageState extends State<ModelsPage> {
         }
       });
     }
-    if (!enabled) await _credentials.saveExecutionMode('local');
+    if (!enabled) {
+      await _credentials.saveExecutionMode('local');
+    }
   }
 
   @override
@@ -2241,12 +2314,13 @@ class _ModelsPageState extends State<ModelsPage> {
                 icon: const Icon(Icons.lock_outline),
                 label: const Text('حفظ الإعدادات بأمان'),
               ),
-              if (_keySaved)
+              if (_keySaved) ...[
                 TextButton.icon(
                   onPressed: _remoteBusy ? null : _removeRemoteKey,
                   icon: const Icon(Icons.delete_outline),
                   label: const Text('حذف المفتاح'),
                 ),
+              ],
               OutlinedButton.icon(
                 onPressed: _remoteBusy ? null : _loadRemoteModels,
                 icon: const Icon(Icons.sync),
@@ -2358,12 +2432,13 @@ class _ModelsPageState extends State<ModelsPage> {
                 icon: const Icon(Icons.download_outlined),
                 label: Text(installed ? 'مثبت' : 'تنزيل والتحقق'),
               ),
-              if (installed)
+              if (installed) ...[
                 TextButton.icon(
                   onPressed: _busy ? null : onRemove,
                   icon: const Icon(Icons.delete_outline),
                   label: const Text('إزالة'),
                 ),
+              ],
             ]),
           ],
         ),

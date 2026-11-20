@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
@@ -34,13 +33,14 @@ class AiModelChoice {
     if (rawId is! String || rawId.trim().isEmpty) {
       throw const FormatException('Model entry has no valid id.');
     }
-    final providerEntries =
-        json['providers'] is List ? json['providers'] as List : const [];
+    final providerEntries = json['providers'] is List<Object?>
+        ? json['providers'] as List<Object?>
+        : const <Object?>[];
     final freeTrial = providerEntries.any(
-      (item) => item is Map && item['is_free'] == true,
+      (item) => item is Map<String, dynamic> && item['is_free'] == true,
     );
     final contextLength = providerEntries
-        .whereType<Map>()
+        .whereType<Map<String, dynamic>>()
         .map((item) => item['context_length'])
         .whereType<num>()
         .fold<int?>(null, (best, value) {
@@ -449,17 +449,17 @@ class AiModelGateway {
     final decoded = _decodeResponse(response);
     final candidates = decoded['candidates'];
     if (candidates is! List || candidates.isEmpty ||
-        candidates.first is! Map) {
+        candidates.first is! Map<String, dynamic>) {
       throw const FormatException(
         'Gemini GenerateContent response has no candidates.',
       );
     }
-    final content = (candidates.first as Map)['content'];
-    if (content is! Map || content['parts'] is! List) {
+    final content = (candidates.first as Map<String, dynamic>)['content'];
+    if (content is! Map<String, dynamic> || content['parts'] is! List<Object?>) {
       throw const FormatException('Gemini response did not contain text parts.');
     }
-    final parts = (content['parts'] as List)
-        .whereType<Map>()
+    final parts = (content['parts'] as List<Object?>)
+        .whereType<Map<String, dynamic>>()
         .map((part) => part['text'])
         .whereType<String>()
         .toList(growable: false);
@@ -475,7 +475,7 @@ class AiModelGateway {
           const {'NOT_FOUND', 'INVALID_ARGUMENT', 'UNSUPPORTED'}.
               contains(error.code));
 
-  Future<String> _resolveBase(
+  Future<Uri> _resolveBase(
     AiProviderId provider,
     String? override,
   ) async {
@@ -522,17 +522,14 @@ class AiModelGateway {
           'x-goog-api-key': key,
       };
 
-  bool _supportsModelFallback(http.Response response) =>
-      response.statusCode == 400 || response.statusCode == 404;
-
   Map<String, dynamic> _decodeResponse(http.Response response) {
     if (response.statusCode < 200 || response.statusCode >= 300) {
       String? code;
       try {
         final body = jsonDecode(response.body);
-        if (body is Map) {
+        if (body is Map<String, dynamic>) {
           final error = body['error'];
-          final rawCode = error is Map ? error['code'] : body['code'];
+          final rawCode = error is Map<String, dynamic> ? error['code'] : body['code'];
           if (rawCode is String) code = rawCode;
         }
       } on FormatException {
@@ -549,18 +546,18 @@ class AiModelGateway {
 
   String _extractOpenAiText(Map<String, dynamic> body) {
     final choices = body['choices'];
-    if (choices is! List || choices.isEmpty || choices.first is! Map) {
+    if (choices is! List || choices.isEmpty || choices.first is! Map<String, dynamic>) {
       throw const FormatException('Chat completion returned no choices.');
     }
-    final message = (choices.first as Map)['message'];
-    if (message is! Map) {
+    final message = (choices.first as Map<String, dynamic>)['message'];
+    if (message is! Map<String, dynamic>) {
       throw const FormatException('Chat completion returned no message.');
     }
     final content = message['content'];
     if (content is String) return content;
     if (content is List) {
       final parts = content
-          .whereType<Map>()
+          .whereType<Map<String, dynamic>>()
           .map((part) => part['text'])
           .whereType<String>()
           .toList(growable: false);
@@ -573,7 +570,7 @@ class AiModelGateway {
     final output = body['output'];
     if (output is List) {
       final parts = output
-          .whereType<Map>()
+          .whereType<Map<String, dynamic>>()
           .where((item) => item['type'] == 'text')
           .map((item) => item['text'])
           .whereType<String>()
