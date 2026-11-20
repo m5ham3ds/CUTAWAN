@@ -9,6 +9,9 @@ void configureCaptionStudioViewport(WidgetTester tester) {
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
+}
+
+void main() {
   testWidgets('Cutawan design system exposes consistent Material 3 light and dark themes', (tester) async {
     await tester.pumpWidget(MaterialApp(
       theme: CutawanTheme.light(),
@@ -36,9 +39,7 @@ void configureCaptionStudioViewport(WidgetTester tester) {
     expect(tester.takeException(), isNull);
   });
 
-}
 
-void main() {
   testWidgets('mobile shell shows the four primary destinations', (tester) async {
     await tester.pumpWidget(const CutawanApp());
 
