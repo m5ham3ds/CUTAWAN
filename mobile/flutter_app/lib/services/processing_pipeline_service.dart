@@ -312,7 +312,7 @@ class ProcessingPipelineService {
         final progress = total == 0 ? 0.9 : 0.62 + 0.28 * index / total;
         await _jobs.setStage(
           projectId,
-          stage: 'rendering_${candidate.id}',
+          stage: 'rendering_$candidate.id',
           progress: progress,
         );
         onProgress?.call('rendering', progress);

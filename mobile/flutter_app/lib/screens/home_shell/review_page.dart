@@ -367,7 +367,7 @@ class _ReviewPageState extends State<ReviewPage> {
       }
     } catch (error) {
       if (mounted) {
-        setState(() => _lastError = 'توقفت المعالجة عند ' +
+        setState(() => _lastError =
             'توقفت المعالجة عند ${_pipelineStage ?? 'مرحلة غير معروفة'}: $error');
       }
     } finally {
