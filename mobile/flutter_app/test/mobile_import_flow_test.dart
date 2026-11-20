@@ -1,10 +1,68 @@
-import 'dart:io';
-
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:cutawan_mobile/app.dart';
+import 'package:cutawan_mobile/domain/project_contract.dart';
 import 'package:cutawan_mobile/services/local_project_repository.dart';
 import 'package:flutter/services.dart';
+
+class _MemoryProjectRepository extends LocalProjectRepository {
+  final Map<String, CutawanProject> _items = {};
+
+  List<CutawanProject> get storedProjects => _items.values.toList();
+
+  @override
+  Future<void> save(CutawanProject project) async {
+    _items[project.id] = project;
+  }
+
+  @override
+  Future<List<CutawanProject>> listProjects() async {
+    final items = storedProjects
+      ..sort((a, b) => b.updatedAtUtc.compareTo(a.updatedAtUtc));
+    return items;
+  }
+
+  @override
+  Future<CutawanProject?> load(String projectId) async => _items[projectId];
+
+  @override
+  Future<CutawanProject> cancelJob(String projectId) async {
+    final project = _items[projectId];
+    if (project == null) throw StateError('Project not found.');
+    final now = DateTime.now().toUtc();
+    final updated = project.copyWith(
+      updatedAtUtc: now,
+      job: project.job.copyWith(
+        status: ProjectJobStatus.cancelled,
+        stage: 'cancelled_by_user',
+        cancelRequested: true,
+        updatedAtUtc: now,
+      ),
+    );
+    _items[projectId] = updated;
+    return updated;
+  }
+
+  @override
+  Future<CutawanProject> refreshSource(
+    String projectId,
+    VideoAssetMetadata source,
+  ) async {
+    final project = _items[projectId];
+    if (project == null) throw StateError('Project not found.');
+    final updated = project.copyWith(
+      source: source,
+      updatedAtUtc: DateTime.now().toUtc(),
+    );
+    _items[projectId] = updated;
+    return updated;
+  }
+
+  @override
+  Future<void> delete(String projectId) async {
+    _items.remove(projectId);
+  }
+}
 
 Future<void> pumpUi(WidgetTester tester) async {
   await tester.pump();
@@ -29,13 +87,11 @@ void main() {
     'importedAtUtc': '2026-11-20T01:00:00.000Z',
   };
 
-  late Directory directory;
-  late LocalProjectRepository repository;
+  late _MemoryProjectRepository repository;
   final methods = <String>[];
 
   setUp(() async {
-    directory = await Directory.systemTemp.createTemp('cutawan-mobile-flow-');
-    repository = LocalProjectRepository(rootDirectory: directory);
+    repository = _MemoryProjectRepository();
     methods.clear();
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(mediaChannel, (call) async {
@@ -50,13 +106,14 @@ void main() {
   tearDown(() async {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(mediaChannel, null);
-    if (await directory.exists()) await directory.delete(recursive: true);
   });
 
   testWidgets(
     'import saves project, reopen restores it, cancel persists and media can be re-inspected',
     (tester) async {
-      await tester.pumpWidget(CutawanApp(repository: repository));
+      await tester.pumpWidget(
+        CutawanApp(repository: repository, storageUsageBytes: () async => 0),
+      );
       await pumpUi(tester);
 
       await tester.tap(find.text('اختيار فيديو'));
