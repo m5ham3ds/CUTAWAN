@@ -152,8 +152,10 @@ class _CutawanTopBar extends StatelessWidget {
           FittedBox(fit: BoxFit.scaleDown, alignment: AlignmentDirectional.centerStart, child: Text('CUTAWAN', style: theme.textTheme.titleMedium?.copyWith(letterSpacing: 1.0, fontWeight: FontWeight.w900, fontSize: 16))),
           Text('AI CREATOR STUDIO', maxLines: 1, overflow: TextOverflow.clip, style: theme.textTheme.labelSmall?.copyWith(color: scheme.onSurfaceVariant, letterSpacing: 0.7, fontSize: 7.5)),
         ])),
-        _TopBarAction(icon: Icons.refresh_rounded, tooltip: 'تحديث المشاريع', onTap: onRefresh),
-        const SizedBox(width: 8),
+        if (MediaQuery.sizeOf(context).width > 370) ...[
+          _TopBarAction(icon: Icons.refresh_rounded, tooltip: 'تحديث المشاريع', onTap: onRefresh),
+          const SizedBox(width: 8),
+        ],
         _TopBarAction(icon: Icons.memory_rounded, tooltip: 'مركز النماذج', onTap: onModels, accent: true),
       ]),
     );

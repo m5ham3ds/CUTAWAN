@@ -156,8 +156,8 @@ class JobsPage extends StatelessWidget {
             if (items.isEmpty)
               _EmptyState(
                 icon: Icons.video_collection_outlined,
-                title: 'مساحة العمل فارغة حالياً',
-                description: 'ابدأ باستيراد فيديو من شاشة الإنشاء. سيظهر كل مشروع هنا مع حالة المعالجة ومساحة التخزين.',
+                title: 'لا توجد مهام بعد',
+                description: 'استورد فيديو من شاشة الإنشاء ليظهر المشروع وسجل المهمة هنا مع حالة المعالجة ومساحة التخزين.',
                 action: 'إنشاء مشروع',
                 onAction: onOpenReview,
               )

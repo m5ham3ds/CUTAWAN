@@ -62,7 +62,7 @@ void main() {
 
     expect(find.text('مختبر الهوية النصية'), findsOneWidget);
     expect(find.byType(AnimatedBuilder), findsWidgets);
-    expect(find.byType(ChoiceChip), findsNWidgets(12));
+    expect(find.descendant(of: find.byKey(const ValueKey('caption-style-presets')), matching: find.byType(ChoiceChip)), findsNWidgets(12));
     expect(find.text('Beast'), findsOneWidget);
     expect(find.text('Karaoke'), findsOneWidget);
     expect(find.text('معاينة اتجاه النص'), findsOneWidget);
@@ -84,7 +84,7 @@ void main() {
     await tester.tap(find.text('Karaoke'));
     await tester.pump(const Duration(milliseconds: 100));
     final selectedStyles = tester
-        .widgetList<ChoiceChip>(find.byType(ChoiceChip))
+        .widgetList<ChoiceChip>(find.descendant(of: find.byKey(const ValueKey('caption-style-presets')), matching: find.byType(ChoiceChip)))
         .where((chip) => chip.selected);
     expect(selectedStyles, hasLength(1));
 

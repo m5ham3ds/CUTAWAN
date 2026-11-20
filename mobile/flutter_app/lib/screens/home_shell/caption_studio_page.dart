@@ -229,7 +229,7 @@ class _CaptionStudioPageState extends State<CaptionStudioPage> with SingleTicker
         const SizedBox(height: 22),
         const _Eyebrow('التصميم البصري', icon: Icons.palette_outlined),
         const SizedBox(height: 10),
-        Wrap(spacing: 8, runSpacing: 8, children: captionStylePresets.map((item) => ChoiceChip(label: Text(item.name), selected: _styleId == item.id, onSelected: (_) => _selectStyle(item))).toList()),
+        Wrap(key: const ValueKey('caption-style-presets'), spacing: 8, runSpacing: 8, children: captionStylePresets.map((item) => ChoiceChip(label: Text(item.name), selected: _styleId == item.id, onSelected: (_) => _selectStyle(item))).toList()),
         const SizedBox(height: 22),
         const _Eyebrow('الحركة المستقلة', icon: Icons.motion_photos_on_outlined),
         const SizedBox(height: 10),
