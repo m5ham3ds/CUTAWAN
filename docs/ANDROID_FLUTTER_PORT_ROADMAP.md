@@ -516,7 +516,7 @@ The Phase 3–4 implementation is prepared directly against the inspected `main`
 
 - The candidate engine proposes and stores moments; it does **not** cut or render final video files.
 - Sampled visual evidence is a low-resolution frame-change signal; it is not face detection, active-speaker detection or semantic vision.
-- Whisper currently processes the decoded source waveform in one task. Overlapped chunk stitching and VAD rejection remain open.
+- Whisper processes decoded audio as 30-second tasks with two-second overlap and deterministic boundary de-duplication. Its Arabic/English stitching accuracy is not yet certified; VAD-backed silence rejection remains open.
 - Qwen is an optional local annotation model. Candidate times, score and evidence remain deterministic and are not accepted from model output.
 - Models are downloaded on user action and verified before installation; neither weight file is embedded in the APK.
 - The Flutter Android build uses minSdk 26 and pinned NDK r27 for the selected local inference bridge; ARM64-only packaging remains mandatory.

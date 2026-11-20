@@ -1,3 +1,4 @@
+import 'package:cutawan_mobile/domain/clip_candidate.dart';
 import 'package:cutawan_mobile/domain/clip_preferences.dart';
 import 'package:cutawan_mobile/domain/transcript_contract.dart';
 import 'package:cutawan_mobile/services/candidate_discovery_service.dart';

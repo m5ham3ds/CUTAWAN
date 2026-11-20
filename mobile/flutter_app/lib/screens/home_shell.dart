@@ -42,7 +42,7 @@ class _HomeShellState extends State<HomeShell> {
   Future<void> _reloadProjects() async {
     try {
       final projects = await _repository.listProjects();
-      if (mounted) _projects.value = projects;
+      if (mounted) { _projects.value = projects; }
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -161,7 +161,7 @@ class _CreatePageState extends State<CreatePage> {
   }
 
   void _showMessage(String message) {
-    if (!mounted) return;
+    if (!mounted) { return; }
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
 
@@ -188,12 +188,12 @@ class _CreatePageState extends State<CreatePage> {
       captionAnimationId: _captionAnimationId,
     );
     final validationError = preferences.validate();
-    if (validationError != null) throw FormatException(validationError);
+    if (validationError != null) { throw FormatException(validationError); }
     return preferences;
   }
 
   Future<void> _importVideo() async {
-    if (_isImporting) return;
+    if (_isImporting) { return; }
     setState(() => _isImporting = true);
     try {
       final preferences = _currentPreferences();
@@ -223,12 +223,12 @@ class _CreatePageState extends State<CreatePage> {
     } catch (error) {
       _showMessage('فشل حفظ المشروع: $error');
     } finally {
-      if (mounted) setState(() => _isImporting = false);
+      if (mounted) { setState(() => _isImporting = false); }
     }
   }
 
   Future<void> _downloadDirectVideo() async {
-    if (_isImporting) return;
+    if (_isImporting) { return; }
     final url = _urlController.text.trim();
     if (url.isEmpty) {
       _showMessage('أدخل رابط ملف فيديو مباشر أولًا.');
@@ -265,7 +265,7 @@ class _CreatePageState extends State<CreatePage> {
             return;
           }
           _lastProgressUpdate = now;
-          if (mounted) setState(() => _downloadProgress = progress);
+          if (mounted) { setState(() => _downloadProgress = progress); }
         },
       );
       if (!mounted) {
@@ -440,7 +440,7 @@ class _CreatePageState extends State<CreatePage> {
                   ))
               .toList(),
           onChanged: (value) {
-            if (value != null) setState(() => _duration = value);
+            if (value != null) { setState(() => _duration = value); }
           },
         ),
         if (_duration == ClipDurationMode.custom) ...[
@@ -511,7 +511,7 @@ class _CreatePageState extends State<CreatePage> {
             DropdownMenuItem(value: '1080p', child: Text('1080p')),
           ],
           onChanged: (value) {
-            if (value != null) setState(() => _resolution = value);
+            if (value != null) { setState(() => _resolution = value); }
           },
         ),
         const SizedBox(height: 14),
@@ -543,7 +543,7 @@ class _CreatePageState extends State<CreatePage> {
                     ))
                 .toList(),
             onChanged: (value) {
-              if (value != null) setState(() => _captionStyleId = value);
+              if (value != null) { setState(() => _captionStyleId = value); }
             },
           ),
           const SizedBox(height: 16),
@@ -559,7 +559,7 @@ class _CreatePageState extends State<CreatePage> {
                     ))
                 .toList(),
             onChanged: (value) {
-              if (value != null) setState(() => _captionAnimationId = value);
+              if (value != null) { setState(() => _captionAnimationId = value); }
             },
           ),
         ],
@@ -688,7 +688,7 @@ class JobsPage extends StatelessWidget {
         ],
       ),
     );
-    if (confirmed != true) return;
+    if (confirmed != true) { return; }
 
     try {
       if (isDownloadedFile) {
@@ -883,12 +883,12 @@ class _ReviewPageState extends State<ReviewPage> {
   }
 
   Future<void> _loadArtifacts(String projectId) async {
-    if (_loadingArtifacts.contains(projectId)) return;
+    if (_loadingArtifacts.contains(projectId)) { return; }
     _loadingArtifacts.add(projectId);
     try {
       final transcript = await widget.repository.loadTranscript(projectId);
       final candidates = await widget.repository.loadCandidates(projectId);
-      if (!mounted) return;
+      if (!mounted) { return; }
       setState(() {
         _transcripts[projectId] = transcript;
         _candidateSets[projectId] = candidates;
@@ -968,7 +968,7 @@ class _ReviewPageState extends State<ReviewPage> {
         );
       }
     } catch (error) {
-      if (mounted) setState(() => _lastError = 'فشل التفريغ المحلي: $error');
+      if (mounted) { setState(() => _lastError = 'فشل التفريغ المحلي: $error'); }
     } finally {
       if (mounted) {
         setState(() {
@@ -1028,7 +1028,7 @@ class _ReviewPageState extends State<ReviewPage> {
         );
       }
     } catch (error) {
-      if (mounted) setState(() => _lastError = 'فشل اكتشاف المقاطع: $error');
+      if (mounted) { setState(() => _lastError = 'فشل اكتشاف المقاطع: $error'); }
     } finally {
       if (mounted) {
         setState(() {
@@ -1235,8 +1235,8 @@ String _formatDuration(int milliseconds) {
 }
 
 String _formatBytes(int bytes) {
-  if (bytes <= 0) return 'الحجم غير متاح';
-  if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(0)} KB';
+  if (bytes <= 0) { return 'الحجم غير متاح'; }
+  if (bytes < 1024 * 1024) { return '${(bytes / 1024).toStringAsFixed(0)} KB'; }
   return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
 }
 
@@ -1364,7 +1364,7 @@ class _ModelsPageState extends State<ModelsPage> {
       final whisperFile =
           await _whisper.findCatalogModel(WhisperModelCatalog.base);
       final qwenFile = await _qwen.findInstalled();
-      if (!mounted) return;
+      if (!mounted) { return; }
       setState(() {
         _whisperInstalled = whisperFile != null;
         _qwenInstalled = qwenFile != null;
@@ -1382,7 +1382,7 @@ class _ModelsPageState extends State<ModelsPage> {
 
   Future<bool> _hasFreeSpace(int requiredBytes) async {
     final available = await AndroidVideoPicker.availableStorageBytes();
-    if (available >= requiredBytes) return true;
+    if (available >= requiredBytes) { return true; }
     if (mounted) {
       setState(() => _error =
           'المساحة الحرة غير كافية. المطلوب نحو ${_formatBytes(requiredBytes)}، والمتاح ${_formatBytes(available)}.');
@@ -1391,10 +1391,10 @@ class _ModelsPageState extends State<ModelsPage> {
   }
 
   Future<void> _downloadWhisper() async {
-    if (_busy) return;
+    if (_busy) { return; }
     final required = WhisperModelCatalog.base.approximateBytes +
         96 * 1024 * 1024;
-    if (!await _hasFreeSpace(required)) return;
+    if (!await _hasFreeSpace(required)) { return; }
     setState(() {
       _busy = true;
       _progress = 0;
@@ -1403,19 +1403,19 @@ class _ModelsPageState extends State<ModelsPage> {
     try {
       await for (final update
           in _whisper.downloadCatalogModel(WhisperModelCatalog.base)) {
-        if (mounted) setState(() => _progress = update.fraction);
+        if (mounted) { setState(() => _progress = update.fraction); }
       }
       await _refreshModels();
     } catch (error) {
-      if (mounted) setState(() => _error = 'فشل تنزيل/التحقق من Whisper: $error');
+      if (mounted) { setState(() => _error = 'فشل تنزيل/التحقق من Whisper: $error'); }
     } finally {
-      if (mounted) setState(() { _busy = false; _progress = null; });
+      if (mounted) { setState(() { _busy = false; _progress = null; }); }
     }
   }
 
   Future<void> _downloadQwen() async {
-    if (_busy) return;
-    if (!await _hasFreeSpace(QwenModelManager.minimumFreeBytes)) return;
+    if (_busy) { return; }
+    if (!await _hasFreeSpace(QwenModelManager.minimumFreeBytes)) { return; }
     setState(() {
       _busy = true;
       _progress = 0;
@@ -1423,40 +1423,40 @@ class _ModelsPageState extends State<ModelsPage> {
     });
     try {
       await _qwen.download(onProgress: (update) {
-        if (mounted) setState(() => _progress = update.fraction);
+        if (mounted) { setState(() => _progress = update.fraction); }
       });
       await _refreshModels();
     } catch (error) {
-      if (mounted) setState(() => _error = 'فشل تنزيل/التحقق من Qwen: $error');
+      if (mounted) { setState(() => _error = 'فشل تنزيل/التحقق من Qwen: $error'); }
     } finally {
-      if (mounted) setState(() { _busy = false; _progress = null; });
+      if (mounted) { setState(() { _busy = false; _progress = null; }); }
     }
   }
 
   Future<void> _deleteWhisper() async {
-    if (_busy) return;
+    if (_busy) { return; }
     try {
       final directory = await _whisper.directory;
       final model = await _whisper.find(WhisperModelCatalog.base.fileName);
-      if (model != null) await model.delete();
-      if (mounted) setState(() => _whisperInstalled = false);
+      if (model != null) { await model.delete(); }
+      if (mounted) { setState(() => _whisperInstalled = false); }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('تم حذف ملف Whisper من ${directory.path}.')),
         );
       }
     } catch (error) {
-      if (mounted) setState(() => _error = 'تعذّر حذف نموذج Whisper: $error');
+      if (mounted) { setState(() => _error = 'تعذّر حذف نموذج Whisper: $error'); }
     }
   }
 
   Future<void> _deleteQwen() async {
-    if (_busy) return;
+    if (_busy) { return; }
     try {
       await _qwen.deleteInstalled();
-      if (mounted) setState(() => _qwenInstalled = false);
+      if (mounted) { setState(() => _qwenInstalled = false); }
     } catch (error) {
-      if (mounted) setState(() => _error = 'تعذّر حذف نموذج Qwen: $error');
+      if (mounted) { setState(() => _error = 'تعذّر حذف نموذج Qwen: $error'); }
     }
   }
 

@@ -45,10 +45,11 @@ class WhisperTranscriptionService {
       }
 
       final audioEnergy = _measureEnergy(pcm, sourceDurationMs);
-      engine = await WhisperEngine.load(
+      final activeEngine = await WhisperEngine.load(
         verifiedModel.path,
         config: const WhisperConfig(backend: WhisperBackend.cpu),
       );
+      engine = activeEngine;
 
       final chunkSamples = _chunkSeconds * _sampleRate;
       final overlapSamples = _overlapSeconds * _sampleRate;
@@ -64,14 +65,10 @@ class WhisperTranscriptionService {
 
       var chunkIndex = 0;
       for (var offset = 0; offset < pcm.length; offset += stepSamples) {
-        final end = min(pcm.length, offset + chunkSamples);
+        final end = min(pcm.length, offset + chunkSamples).toInt();
         final samples = Float32List.fromList(pcm.sublist(offset, end));
         final offsetMs = (offset * 1000 / _sampleRate).round();
-        final chunkEndMs = min(
-          sourceDurationMs,
-          (end * 1000 / _sampleRate).round(),
-        );
-        final task = engine.transcribe(
+        final task = activeEngine.transcribe(
           samples,
           options: const TranscribeOptions(
             language: 'auto',
@@ -234,9 +231,9 @@ class WhisperTranscriptionService {
       final beginsNewWord =
           raw.startsWith(' ') || raw.startsWith('\n') || raw.startsWith('\t');
       if (beginsNewWord && text.isNotEmpty) flush();
-      if (text.isEmpty) startMs = max(0, token.start.inMilliseconds);
+      if (text.isEmpty) startMs = max(0, token.start.inMilliseconds).toInt();
       text.write(piece);
-      endMs = max(endMs, token.end.inMilliseconds);
+      endMs = max(endMs, token.end.inMilliseconds).toInt();
       if (token.probability >= 0 && token.probability <= 1) {
         probabilityTotal += token.probability;
         probabilityCount++;
@@ -253,7 +250,7 @@ class WhisperTranscriptionService {
     const windowSamples = _sampleRate;
     final windows = <AudioEnergyWindow>[];
     for (var start = 0; start < samples.length; start += windowSamples) {
-      final end = min(samples.length, start + windowSamples);
+      final end = min(samples.length, start + windowSamples).toInt();
       var sumSquares = 0.0;
       for (var index = start; index < end; index++) {
         final value = samples[index];
@@ -263,7 +260,7 @@ class WhisperTranscriptionService {
           .clamp(0.0, 1.0)
           .toDouble();
       final startMs = (start * 1000 / _sampleRate).round();
-      final endMs = min(durationMs, (end * 1000 / _sampleRate).round());
+      final endMs = min(durationMs, (end * 1000 / _sampleRate).round()).toInt();
       if (endMs > startMs) {
         windows.add(AudioEnergyWindow(
           startMs: startMs,

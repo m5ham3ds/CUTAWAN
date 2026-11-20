@@ -255,7 +255,7 @@ class CandidateDiscoveryService {
     final nearest = selected.map((item) {
       final other = (item.startMs + item.endMs) / 2;
       return (midpoint - other).abs();
-    }).reduce(min);
+    }).reduce((a, b) => a < b ? a : b);
     return (nearest / max(1, sourceDurationMs) * 18)
         .clamp(0.0, 18.0)
         .toDouble();
