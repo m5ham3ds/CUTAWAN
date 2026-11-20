@@ -486,34 +486,25 @@ class LocalProjectRepository {
     return directory;
   }
 
-  bool _isSafeToken(String value, {required int maxLength}) {
-    if (value.isEmpty || value.length > maxLength) {
-      return false;
-    }
-    for (final unit in value.codeUnits) {
-      final valid = (unit >= 48 && unit <= 57) ||
-          (unit >= 65 && unit <= 90) ||
-          (unit >= 97 && unit <= 122) ||
-          unit == 45 || unit == 95;
-      if (!valid) {
-        return false;
-      }
-    }
-    return true;
-  }
+  bool _isSafeToken(String value, {required int maxLength}) =>
+      value.isNotEmpty &&
+      value.length <= maxLength &&
+      value.codeUnits.every(
+        (unit) =>
+            (unit >= 48 && unit <= 57) ||
+            (unit >= 65 && unit <= 90) ||
+            (unit >= 97 && unit <= 122) ||
+            unit == 45 ||
+            unit == 95,
+      );
 
-  bool _isSha256(String value) {
-    if (value.length != 64) {
-      return false;
-    }
-    for (final unit in value.codeUnits) {
-      final valid = (unit >= 48 && unit <= 57) || (unit >= 97 && unit <= 102);
-      if (!valid) {
-        return false;
-      }
-    }
-    return true;
-  }
+  bool _isSha256(String value) =>
+      value.length == 64 &&
+      value.codeUnits.every(
+        (unit) =>
+            (unit >= 48 && unit <= 57) ||
+            (unit >= 97 && unit <= 102),
+      );
 
   void _validateId(String id) {
     if (!RegExp(r'^[a-zA-Z0-9_-]{3,160}$').hasMatch(id)) {
