@@ -24,4 +24,22 @@ if ! grep -q 'android.permission.INTERNET' "$MAIN_MANIFEST"; then
 fi
 grep -q 'android.permission.INTERNET' "$MAIN_MANIFEST"
 
+# The mobile artifact is intentionally ARM64-only.
+APP_GRADLE_KTS="android/app/build.gradle.kts"
+APP_GRADLE_GROOVY="android/app/build.gradle"
+if [[ -f "$APP_GRADLE_KTS" ]]; then
+  if ! grep -q 'abiFilters.*arm64-v8a' "$APP_GRADLE_KTS"; then
+    sed -i '/defaultConfig {/a\\        ndk {\\n            abiFilters += setOf("arm64-v8a")\\n        }' "$APP_GRADLE_KTS"
+  fi
+  grep -q 'abiFilters.*arm64-v8a' "$APP_GRADLE_KTS"
+elif [[ -f "$APP_GRADLE_GROOVY" ]]; then
+  if ! grep -q 'abiFilters.*arm64-v8a' "$APP_GRADLE_GROOVY"; then
+    sed -i "/defaultConfig {/a\\        ndk { abiFilters 'arm64-v8a' }" "$APP_GRADLE_GROOVY"
+  fi
+  grep -q 'abiFilters.*arm64-v8a' "$APP_GRADLE_GROOVY"
+else
+  echo "Flutter Android app Gradle file was not generated."
+  exit 1
+fi
+
 flutter pub get
