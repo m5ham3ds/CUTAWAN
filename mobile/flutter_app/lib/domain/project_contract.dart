@@ -38,6 +38,7 @@ class VideoAssetMetadata {
     final validContentUri = parsedUri?.scheme == 'content' &&
         (parsedUri?.authority.isNotEmpty ?? false);
     final validPrivateFileUri = parsedUri?.scheme == 'file' &&
+        (parsedUri?.authority.isEmpty ?? false) &&
         (parsedUri?.path.startsWith('/') ?? false);
     if (!validContentUri && !validPrivateFileUri) {
       throw const FormatException(
