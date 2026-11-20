@@ -94,6 +94,29 @@ void main() {
     );
   });
 
+  test('app-managed file URIs are accepted in the versioned source contract', () {
+    final fileSource = VideoAssetMetadata.fromJson({
+      'uri': 'file:///data/user/0/com.m5ham3ds.cutawan_mobile/files/app_flutter/sources/sample.mp4',
+      'displayName': 'sample.mp4',
+      'mimeType': 'video/mp4',
+      'sizeBytes': 1000,
+      'durationMs': 10000,
+      'width': 1280,
+      'height': 720,
+      'rotationDegrees': 0,
+      'importedAtUtc': '2026-11-20T01:00:00.000Z',
+    });
+
+    expect(fileSource.uri, startsWith('file://'));
+    expect(
+      () => VideoAssetMetadata.fromJson({
+        ...fileSource.toJson(),
+        'uri': 'file://relative/sample.mp4',
+      }),
+      throwsA(isA<FormatException>()),
+    );
+  });
+
   test('job progress is range checked', () {
     expect(
       () => ProjectJob.fromJson({
