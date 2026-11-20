@@ -442,8 +442,11 @@ class LocalProjectRepository {
     final directory = await _exportDirectory(projectId);
     final records = <Map<String, dynamic>>[];
     await for (final entity in directory.list(followLinks: false)) {
-      if (entity is! File || !entity.path.endsWith('.json') ||
-          entity.uri.pathSegments.last == 'manifest.json') continue;
+      if (entity is! File ||
+          !entity.path.endsWith('.json') ||
+          entity.uri.pathSegments.last == 'manifest.json') {
+        continue;
+      }
       final decoded = jsonDecode(await entity.readAsString());
       if (decoded is Map<String, dynamic>) {
         records.add(decoded);
