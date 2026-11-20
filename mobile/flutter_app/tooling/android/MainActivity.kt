@@ -34,6 +34,31 @@ class MainActivity : FlutterActivity() {
                     "getAvailableStorageBytes" -> {
                         result.success(StatFs(filesDir.absolutePath).availableBytes)
                     }
+                    "releasePersistedPermission" -> {
+                        val rawUri = call.argument<String>("uri")
+                        if (rawUri.isNullOrBlank()) {
+                            result.error("INVALID_URI", "A content URI is required.", null)
+                        } else {
+                            try {
+                                val uri = Uri.parse(rawUri)
+                                if (uri.scheme != "content") {
+                                    throw IllegalArgumentException("Only content URIs have SAF permissions.")
+                                }
+                                val hasGrant = contentResolver.persistedUriPermissions.any {
+                                    it.uri == uri && it.isReadPermission
+                                }
+                                if (hasGrant) {
+                                    contentResolver.releasePersistableUriPermission(
+                                        uri,
+                                        Intent.FLAG_GRANT_READ_URI_PERMISSION
+                                    )
+                                }
+                                result.success(null)
+                            } catch (error: Exception) {
+                                result.error("RELEASE_PERMISSION_FAILED", error.message, rawUri)
+                            }
+                        }
+                    }
                     "inspectVideo" -> {
                         val rawUri = call.argument<String>("uri")
                         if (rawUri.isNullOrBlank()) {
