@@ -1,47 +1,35 @@
 # Phase 8–9 implementation record — 2026-11-20
 
 Repository: m5ham3ds/CUTAWAN
-Target branch: main
-Status: implementation in progress; CI and Android build are being validated. Neither phase is marked accepted.
+
+## Product target clarification
+
+Current product development and the requested redesign target the **native Android Flutter app** in `mobile/flutter_app/`. The root Electron desktop application is legacy/reference scope and is not the target for the mobile redesign.
 
 ## Phase 8 — processing and export
 
-### Delivered in this change set
-- Durable project-job state updates, stage progress and cancellation.
-- Source and configuration fingerprint checkpoints with safe artifact path checks.
-- Android source fingerprint via SHA-256.
-- Orchestration of existing transcription, candidate discovery and framing-plan services.
-- SRT/ASS caption sidecar generation based on transcript word timestamps.
-- AndroidX Media3 Transformer MP4 output (H.264/AAC), clip time-range trimming and aspect-fit.
-- Native output validation: SHA-256, file size, duration, width, height and video-track presence.
-- Per-clip export metadata, project manifest and validation before checkpoint reuse.
-- Interrupted job recovery and storage preflight.
-- Automated tests for repository state/checkpoints, job recovery, caption sidecars and export channel behavior.
-
-### Not yet delivered / not accepted
+The mobile app has processing architecture and partial orchestration, but the following must not be reported as complete without device evidence:
 - Dynamic face/reframe keyframes applied during rendering.
-- Burning subtitle sidecars into final MP4; matching caption preview/render pixel output.
-- Full decoder pass and full fixture corpus (orientation, corrupt, no speech, audio-only, portrait/landscape, long media).
+- Burned-in subtitle output matching the Flutter caption preview.
+- Full decoder pass and fixture corpus (orientation, corrupt, no speech, audio-only, portrait/landscape, long media).
 - Persistent background rendering/notification and process-death resume of native renderer session.
 - Per-clip retry/re-render, robust cleanup and full output playback test.
 - Physical ARM64 memory/thermal/lifecycle/SAF URI testing.
 
 ## Phase 9 — mobile interface
 
-### Delivered in this change set
-- Split HomeShell presentation into Create, Jobs, Review, Caption Studio, Models and shared-widget part files.
-- Material 3 semantic light/dark themes and system theme selection.
-- Job stage/progress visibility, Jobs-to-Review navigation and one full-pipeline/resume action.
-- Export result list and disabled manual actions during full-pipeline execution.
-- Startup recovery for interrupted jobs.
-- Theme and narrow-width widget tests added.
+### Delivered foundations
+- Flutter Material 3 shell, light/dark themes and system theme selection.
+- Arabic-first navigation for Create, Jobs, Review and Caption Studio.
+- Project persistence, media import and direct file download surfaces.
+- Caption preset/animation catalogue and AI Model Center entry.
+- Some screen transitions and progress feedback.
 
-### Not yet delivered / not accepted
-- Fully independent feature packages/state ownership; current feature files remain Dart parts of one library.
-- Full Dashboard/Create/Jobs/Review/Clip Editor/Caption Studio/AI Center/Settings redesign.
-- Real clip editor with preview, trim handles, crop/focus and transitions.
-- Comprehensive golden, RTL and bilingual, large text, keyboard, landscape, safe-area, accessibility, navigation and state-retention test matrix.
-- Physical-device visual validation.
+### Not delivered / not accepted
+- Complete Dashboard/Projects/Create/Jobs/Review/Clip Editor/Caption Studio/AI Center/Settings redesign.
+- A fully interactive editor with preview, trim handles, crop/focus and transitions.
+- Independent feature packages and clear feature-level state ownership; current UI still uses a shared StatefulWidget library with Dart `part` files.
+- Comprehensive golden/widget matrix for RTL/LTR, large text, keyboard, landscape, accessibility, navigation and state retention.
+- Physical-device screenshots and acceptance evidence.
 
-## CI evidence
-The Android generator shell syntax check passed on the latest submitted run. The latest Android Flutter job and root CI jobs are still running at the time this record was written. No new APK is marked as built or uploaded until the workflow reports successful build and ABI verification.
+**Phase 9 remains in progress.** CI success is not visual or physical-device acceptance.
