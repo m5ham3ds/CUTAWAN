@@ -93,3 +93,12 @@ Do not bundle or redistribute model files with pending license provenance in a r
 | Qwen2.5-0.5B-Instruct Q4_K_M | `6dd44a1fb35d11b5d1b28902876ce3cc9e882d0e` | `74a4da8c9fdbcd15bd1f6d01d621410d31c6fc00986f5eb687824e7b93d7a9db` | 491,400,032 bytes | Apache-2.0 | User download; never packaged in APK |
 
 See `docs/mobile/PHASES_3_4_INTEGRATION.md` for implementation boundaries and remaining physical-device acceptance gates.
+
+
+## Mobile Flutter font assets
+
+| Asset | Upstream source | License | Local license copy |
+|---|---|---|---|
+| Anton Regular | `resources/fonts/Anton-Regular.ttf` | SIL OFL 1.1 | `mobile/flutter_app/assets/fonts/OFL-Anton.txt` |
+| Poppins Medium | `resources/fonts/Poppins-Medium.ttf` | SIL OFL 1.1 | `mobile/flutter_app/assets/fonts/OFL-Poppins.txt` |
+| Poppins Bold | `resources/fonts/Poppins-Bold.ttf` | SIL OFL 1.1 | `mobile/flutter_app/assets/fonts/OFL-Poppins.txt` |

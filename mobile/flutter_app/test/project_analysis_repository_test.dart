@@ -4,6 +4,7 @@ import 'package:cutawan_mobile/domain/clip_candidate.dart';
 import 'package:cutawan_mobile/domain/clip_preferences.dart';
 import 'package:cutawan_mobile/domain/project_contract.dart';
 import 'package:cutawan_mobile/domain/transcript_contract.dart';
+import 'package:cutawan_mobile/domain/reframe_contract.dart';
 import 'package:cutawan_mobile/services/local_project_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -92,6 +93,70 @@ void main() {
         visualEvidence: false,
         rankingEngine: 'deterministic-evidence-v1',
       );
+
+  ReframePlan makeReframePlan() => const ReframePlan(
+        schemaVersion: ReframePlan.currentSchemaVersion,
+        sourceDurationMs: 30000,
+        aspectRatio: 9 / 16,
+        shots: [
+          ReframeShot(
+            startMs: 0,
+            endMs: 30000,
+            mode: 'fit',
+            confidence: 0,
+            reviewReason: 'No confident frontal face track.',
+          ),
+        ],
+        focusTrack: null,
+        fallbackReason: 'No confident frontal face track.',
+        engine: 'android-frontal-face-tracker-v1',
+      );
+
+  test('reframe plans persist as validated per-project artifacts', () async {
+    final project = makeProject();
+    await repository.save(project);
+    final plan = makeReframePlan();
+    await repository.saveReframePlan(project.id, plan);
+
+    final restored = await repository.loadReframePlan(project.id);
+
+    expect(restored, isNotNull);
+    expect(restored!.shots.single.mode, 'fit');
+    expect(restored.fallbackReason, contains('frontal face'));
+    expect(restored.sourceDurationMs, project.source.durationMs);
+  });
+
+  test('reframe plans reject invalid source duration and uncovered timelines', () async {
+    final project = makeProject();
+    await repository.save(project);
+    final valid = makeReframePlan();
+    final mismatched = ReframePlan(
+      schemaVersion: valid.schemaVersion,
+      sourceDurationMs: 40000,
+      aspectRatio: valid.aspectRatio,
+      shots: valid.shots,
+      focusTrack: valid.focusTrack,
+      fallbackReason: valid.fallbackReason,
+      engine: valid.engine,
+    );
+
+    await expectLater(
+      repository.saveReframePlan(project.id, mismatched),
+      throwsA(isA<FormatException>()),
+    );
+    final invalid = ReframePlan(
+      schemaVersion: valid.schemaVersion,
+      sourceDurationMs: valid.sourceDurationMs,
+      aspectRatio: valid.aspectRatio,
+      shots: const [
+        ReframeShot(startMs: 0, endMs: 10000, mode: 'fit'),
+      ],
+      focusTrack: null,
+      fallbackReason: 'test',
+      engine: 'test',
+    );
+    expect(invalid.validate, throwsA(isA<FormatException>()));
+  });
 
   test('transcript and candidates persist outside the project index', () async {
     final project = makeProject();

@@ -36,6 +36,11 @@ jobs:
           flutter-version: "3.47.6"
           cache: true
 
+      - name: Install pinned Android NDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: "ndk;28.2.13676358"
+
       - name: Generate Android platform files
         run: |
           bash tooling/generate_android_platform.sh
@@ -50,14 +55,23 @@ jobs:
         run: flutter analyze --fatal-infos
 
       - name: Test
-        run: flutter test --reporter expanded
+        run: flutter test --coverage --reporter expanded
+
+      - name: Upload Flutter coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cutawan-mobile-flutter-coverage
+          path: mobile/flutter_app/coverage/lcov.info
+          if-no-files-found: ignore
+          retention-days: 14
 
       - name: Build ARM64 debug APK
         env:
           CMAKE_BUILD_PARALLEL_LEVEL: "2"
         run: flutter build apk --debug --target-platform android-arm64
 
-      - name: Verify APK contains ARM64 libraries only
+      - name: Verify APK contains ARM64 libraries only and no duplicated native libraries
         run: |
           python3 - <<'PY'
           import zipfile
@@ -65,15 +79,46 @@ jobs:
 
           apk = "build/app/outputs/flutter-apk/app-debug.apk"
           with zipfile.ZipFile(apk) as archive:
+              entries = archive.namelist()
               abis = {
                   PurePosixPath(name).parts[1]
-                  for name in archive.namelist()
+                  for name in entries
                   if name.startswith("lib/") and len(PurePosixPath(name).parts) > 2
               }
-          expected = {"arm64-v8a"}
-          if abis != expected:
-              raise SystemExit(f"Expected ARM64-only APK, found native ABIs: {sorted(abis)}")
-          print(f"Verified native ABI set: {sorted(abis)}")
+              expected = {"arm64-v8a"}
+              if abis != expected:
+                  raise SystemExit(f"Expected ARM64-only APK, found native ABIs: {sorted(abis)}")
+
+              native_files = [
+                  name for name in entries
+                  if name.startswith("lib/arm64-v8a/") and name.endswith(".so")
+              ]
+              basenames = [PurePosixPath(name).name for name in native_files]
+              duplicates = sorted({
+                  name for name in basenames
+                  if basenames.count(name) > 1
+              })
+              if duplicates:
+                  raise SystemExit(f"Duplicate native libraries in APK: {duplicates}")
+
+              required = {
+                  "libwhisper_flutter.so",
+                  "libllama_jni.so",
+                  "libllama.so",
+                  "libggml-base.so",
+              }
+              missing = sorted(required - set(basenames))
+              if missing:
+                  raise SystemExit(f"Missing required native inference libraries: {missing}")
+
+              whisper_ggml = sorted(
+                  name for name in basenames
+                  if name.startswith("libggml") and name != "libggml-base.so"
+              )
+              print(
+                  f"Verified ARM64-only APK: {len(native_files)} unique native libraries; "
+                  f"GGML libraries={whisper_ggml + ['libggml-base.so']}"
+              )
           PY
 
       - name: Upload APK

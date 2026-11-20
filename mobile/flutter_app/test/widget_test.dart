@@ -1,4 +1,10 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
+import 'package:cutawan_mobile/domain/clip_preferences.dart';
+import 'package:cutawan_mobile/domain/project_contract.dart';
+import 'package:cutawan_mobile/services/local_project_repository.dart';
+import 'package:flutter/material.dart';
 import 'package:cutawan_mobile/app.dart';
 
 void main() {
@@ -17,16 +23,78 @@ void main() {
     await tester.pumpWidget(const CutawanApp());
 
     await tester.tap(find.text('الاستوديو'));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
 
     expect(find.text('اصنع أسلوبك الخاص'), findsOneWidget);
     expect(find.text('Beast'), findsOneWidget);
     await tester.scrollUntilVisible(find.text('Word Pop'), 220);
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 100));
     expect(find.text('Word Pop'), findsOneWidget);
     await tester.tap(find.text('Word Pop'));
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 100));
     expect(find.text('Karaoke Fill'), findsOneWidget);
+  });
+
+  testWidgets('caption studio preview is animated and persists edits in the latest project', (tester) async {
+    final directory = await Directory.systemTemp.createTemp('cutawan-caption-widget-');
+    addTearDown(() async {
+      if (await directory.exists()) await directory.delete(recursive: true);
+    });
+    final repository = LocalProjectRepository(rootDirectory: directory);
+    final now = DateTime.utc(2026, 11, 20);
+    final project = CutawanProject.create(
+      source: VideoAssetMetadata(
+        uri: 'content://media/external/video/media/99',
+        displayName: 'caption.mp4',
+        mimeType: 'video/mp4',
+        sizeBytes: 2000,
+        durationMs: 30000,
+        width: 1920,
+        height: 1080,
+        rotationDegrees: 0,
+        importedAtUtc: now,
+      ),
+      preferences: const ClipPreferences(),
+      now: now,
+    );
+    await repository.save(project);
+    await tester.pumpWidget(CutawanApp(repository: repository));
+    await tester.tap(find.text('الاستوديو'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.text('معاينة عربية / RTL'), findsOneWidget);
+    final arabicPreview = tester
+        .widgetList<RichText>(find.byType(RichText))
+        .firstWhere((widget) => widget.text.toPlainText().contains('هذه لحظة'));
+    expect(arabicPreview.textDirection, TextDirection.rtl);
+    await tester.tap(find.byType(Switch).first);
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.text('English'), findsOneWidget);
+    final englishPreview = tester
+        .widgetList<RichText>(find.byType(RichText))
+        .firstWhere((widget) => widget.text.toPlainText().contains('This is the moment'));
+    expect(englishPreview.textDirection, TextDirection.ltr);
+    await tester.scrollUntilVisible(find.text('Karaoke'), 220);
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.scrollUntilVisible(find.text('Karaoke'), 220);
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.tap(find.text('Karaoke'));
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.scrollUntilVisible(
+      find.text('حفظ إعدادات الاستوديو في المشروع'),
+      240,
+    );
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.tap(find.text('حفظ إعدادات الاستوديو في المشروع'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    final saved = await repository.load(project.id);
+    expect(saved, isNotNull);
+    expect(saved!.preferences.captionStyleId, 'karaoke');
+    expect(saved.preferences.captionFontFamily, isNotEmpty);
+    expect(saved.preferences.captionFontScale, greaterThan(0));
+    expect(saved.preferences.captionPositionY, inInclusiveRange(0.1, 0.9));
   });
 
   testWidgets('jobs and review pages explain that processing is not connected yet', (tester) async {

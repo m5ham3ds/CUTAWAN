@@ -71,3 +71,11 @@ Update this notice whenever a dependency or model is added, upgraded, removed, o
 | Qwen2.5-0.5B-Instruct Q4_K_M | `Qwen/Qwen2.5-0.5B-Instruct-GGUF`, revision `6dd44a1fb35d11b5d1b28902876ce3cc9e882d0e`; SHA-256 `74a4da8c9fdbcd15bd1f6d01d621410d31c6fc00986f5eb687824e7b93d7a9db` | Apache-2.0 | Downloaded only after user action; not bundled in APK |
 
 Model URLs, exact file size, digest, and user-controlled installation behavior are documented in `docs/mobile/PHASES_3_4_INTEGRATION.md`. The app verifies the digest before installing either model.
+
+## Mobile caption fonts
+
+The Android Flutter companion bundles the existing CUTAWAN caption font files:
+- Anton Regular — SIL Open Font License 1.1; license text: `mobile/flutter_app/assets/fonts/OFL-Anton.txt`.
+- Poppins Medium and Bold — SIL Open Font License 1.1; license text: `mobile/flutter_app/assets/fonts/OFL-Poppins.txt`.
+
+These files are copied from `resources/fonts/` without modification and are used by the native caption preview. See the included license texts for the complete terms.

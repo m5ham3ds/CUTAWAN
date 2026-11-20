@@ -522,3 +522,12 @@ The Phase 3–4 implementation is prepared directly against the inspected `main`
 - The Flutter Android build uses minSdk 26 and pinned NDK r27 for the selected local inference bridge; ARM64-only packaging remains mandatory.
 
 **Validation status:** implementation and tests are added, but these gates are not considered passed until the resulting GitHub Actions runs are inspected. Physical Android tests using the documented Arabic/English corpus remain open regardless of CI outcome. The app must not be described as having full clip rendering, speaker tracking, or export until the later roadmap phases and their gates are complete.
+
+
+## 21. Android Phase 5 implementation record (2026-11-20)
+
+See [PHASES_5_6_INTEGRATION.md](mobile/PHASES_5_6_INTEGRATION.md). The Flutter Android companion now includes a bounded native frontal-face sampler, confidence/coverage-validated crop planning, safe full-frame fallback, and durable per-project reframe artifacts. This is a reframing foundation, not an audiovisual active-speaker model. Physical-device golden-footage review and a rendered crop pipeline remain open.
+
+## 22. Android Phase 6 implementation record (2026-11-20)
+
+See [PHASES_5_6_INTEGRATION.md](mobile/PHASES_5_6_INTEGRATION.md). The Flutter Caption Studio now uses the 12 existing CUTAWAN caption presets, bundled Anton/Poppins fonts with OFL notices, ten separate preview animations, Arabic RTL controls, editable/persisted style settings, and a tested caption layout engine. Real transcript-synchronized preview, shared preview/export rendering, golden visual regression, and MP4 parity remain open until Phase 7.

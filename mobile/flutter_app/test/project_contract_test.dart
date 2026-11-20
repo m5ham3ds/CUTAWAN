@@ -30,6 +30,11 @@ void main() {
         captionAnimationId: 'bounce',
         captionsEnabled: false,
         speakerTrackingEnabled: true,
+        captionFontFamily: 'Poppins',
+        captionFontScale: 0.051,
+        captionPositionY: 0.77,
+        captionUppercase: false,
+        captionBold: true,
       ),
       now: importedAt,
     );
@@ -52,6 +57,11 @@ void main() {
     expect(restored.preferences.captionAnimationId, 'bounce');
     expect(restored.preferences.captionsEnabled, isFalse);
     expect(restored.preferences.speakerTrackingEnabled, isTrue);
+    expect(restored.preferences.captionFontFamily, 'Poppins');
+    expect(restored.preferences.captionFontScale, 0.051);
+    expect(restored.preferences.captionPositionY, 0.77);
+    expect(restored.preferences.captionUppercase, isFalse);
+    expect(restored.preferences.captionBold, isTrue);
     expect(restored.job.status, ProjectJobStatus.prepared);
   });
 
@@ -71,6 +81,9 @@ void main() {
     expect(migrated.job.id, 'job_${project.id}');
     expect(migrated.job.stage, 'migrated');
     expect(migrated.job.status, ProjectJobStatus.prepared);
+    expect(migrated.preferences.captionFontFamily, isNull);
+    expect(migrated.preferences.captionFontScale, 0);
+    expect(migrated.preferences.captionPositionY, -1);
   });
 
   test('future schema versions are rejected instead of being misread', () {

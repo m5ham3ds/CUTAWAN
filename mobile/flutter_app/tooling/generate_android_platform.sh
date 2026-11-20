@@ -54,8 +54,8 @@ if not re.search(r'(?s)abiFilters.{0,200}arm64-v8a', path.read_text()):
 print(f"Verified ARM64 ABI filter in {path}")
 PY
 
-# The selected local llama.cpp plugin requires Android API 26+ and a
-# recent ARM64 NDK. Keep the app and native dependency minimums aligned.
+# The selected local llama.cpp plugin requires Android API 26+ and NDK 28.2.
+# Keep the app and native dependency minimums aligned.
 python3 - <<'PY'
 from pathlib import Path
 import re
@@ -75,14 +75,14 @@ if kts.is_file():
         raise SystemExit(f"Could not locate minSdk in {path}")
     source, ndk_count = re.subn(
         r'(?m)^([ \t]*)ndkVersion[ \t]*=.*',
-        r'\1ndkVersion = "27.0.12077973"',
+        r'\1ndkVersion = "28.2.13676358"',
         source,
         count=1,
     )
     if not ndk_count:
         source = re.sub(
             r'(?m)^([ \t]*)compileSdk[ \t]*=.*',
-            r'\g<0>\n\g<1>ndkVersion = "27.0.12077973"',
+            r'\g<0>\n\g<1>ndkVersion = "28.2.13676358"',
             source,
             count=1,
         )
@@ -100,14 +100,14 @@ elif groovy.is_file():
         raise SystemExit(f"Could not locate minSdkVersion in {path}")
     source, ndk_count = re.subn(
         r'(?m)^([ \t]*)ndkVersion[ \t]*.*',
-        r'\1ndkVersion "27.0.12077973"',
+        r'\1ndkVersion "28.2.13676358"',
         source,
         count=1,
     )
     if not ndk_count:
         source = re.sub(
             r'(?m)^([ \t]*)compileSdkVersion.*',
-            r'\g<0>\n\g<1>ndkVersion "27.0.12077973"',
+            r'\g<0>\n\g<1>ndkVersion "28.2.13676358"',
             source,
             count=1,
         )
@@ -122,9 +122,61 @@ else:
     match = re.search(r'(?m)^[ \t]*minSdkVersion[ \t]+(\d+)', verify)
 if not match or int(match.group(1)) < 26:
     raise SystemExit(f"Android minSdk must be 26 or newer in {path}")
-if "27.0.12077973" not in verify:
-    raise SystemExit(f"Android NDK r27 was not selected in {path}")
-print(f"Verified minSdk 26+ and NDK r27 in {path}")
+if "28.2.13676358" not in verify:
+    raise SystemExit(f"Android NDK 28.2.13676358 was not selected in {path}")
+print(f"Verified minSdk 26+ and NDK 28.2.13676358 in {path}")
 PY
 
 flutter pub get
+
+# whisper.cpp defaults BUILD_SHARED_LIBS=ON on Android. llama.cpp exports
+# the same libggml-*.so names, so compile Whisper's private GGML as static
+# archives. Apply only to the pinned package and fail closed if source drifts.
+python3 - <<'PY'
+from pathlib import Path
+
+candidates = sorted(
+    Path.home().glob(
+        '.pub-cache/hosted/pub.dev/whisper_cpp_flutter_plus-0.5.1/'
+        'ios/whisper_cpp_flutter_plus/Sources/WhisperCppCore/CMakeLists.txt'
+    )
+)
+if len(candidates) != 1:
+    raise SystemExit(
+        'Expected exactly one pinned whisper_cpp_flutter_plus 0.5.1 '
+        f'WhisperCppCore CMakeLists.txt, found {len(candidates)}'
+    )
+path = candidates[0]
+source = path.read_text()
+anchor = 'option(BUILD_SHARED_LIBS "build shared libraries" ${BUILD_SHARED_LIBS_DEFAULT})'
+patch = '''if (ANDROID)
+    set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build Whisper GGML statically to avoid llama.cpp .so collisions" FORCE)
+else()
+    option(BUILD_SHARED_LIBS "build shared libraries" ${BUILD_SHARED_LIBS_DEFAULT})
+endif()'''
+if patch not in source:
+    if source.count(anchor) != 1:
+        raise SystemExit('Whisper CMake source changed; refusing an unverified GGML patch.')
+    source = source.replace(anchor, patch)
+    path.write_text(source)
+if patch not in path.read_text():
+    raise SystemExit('Whisper Android static-GGML patch did not persist.')
+print('Verified Android static GGML patch in', path)
+PY
+
+# Ensure both JNI plugins were resolved before Gradle starts.
+python3 - <<'PY'
+import json
+from pathlib import Path
+
+metadata = Path('.flutter-plugins-dependencies')
+if not metadata.is_file():
+    raise SystemExit('Flutter did not create .flutter-plugins-dependencies')
+data = json.loads(metadata.read_text())
+plugins = {item.get('name') for item in data.get('plugins', {}).get('android', [])}
+required = {'whisper_cpp_flutter_plus', 'llama_flutter_android'}
+missing = sorted(required - plugins)
+if missing:
+    raise SystemExit(f'Missing required Android plugins: {missing}')
+print('Verified native plugins:', ', '.join(sorted(required)))
+PY

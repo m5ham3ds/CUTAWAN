@@ -6,6 +6,7 @@ import 'package:path_provider/path_provider.dart';
 import '../domain/project_contract.dart';
 import '../domain/transcript_contract.dart';
 import '../domain/clip_candidate.dart';
+import '../domain/reframe_contract.dart';
 
 class LocalProjectRepository {
   LocalProjectRepository({Directory? rootDirectory})
@@ -180,6 +181,36 @@ class LocalProjectRepository {
       throw const FormatException('Candidate artifact root must be a JSON object.');
     }
     return CandidateSet.fromJson(decoded);
+  }
+
+  Future<void> saveReframePlan(String projectId, ReframePlan plan) async {
+    final project = await load(projectId);
+    if (project == null) throw StateError('Project not found: $projectId');
+    plan.validate();
+    if ((plan.sourceDurationMs - project.source.durationMs).abs() > 1000) {
+      throw const FormatException('Reframe-plan duration does not match its source project.');
+    }
+    final directory = await _artifactDirectory(projectId);
+    final target = File(
+      '${directory.path}${Platform.pathSeparator}reframe.json',
+    );
+    final temporary = File('${target.path}.tmp');
+    await temporary.writeAsString(jsonEncode(plan.toJson()), flush: true);
+    if (await target.exists()) await target.delete();
+    await temporary.rename(target.path);
+  }
+
+  Future<ReframePlan?> loadReframePlan(String projectId) async {
+    final directory = await _artifactDirectory(projectId);
+    final file = File(
+      '${directory.path}${Platform.pathSeparator}reframe.json',
+    );
+    if (!await file.exists()) return null;
+    final decoded = jsonDecode(await file.readAsString());
+    if (decoded is! Map<String, dynamic>) {
+      throw const FormatException('Reframe artifact root must be a JSON object.');
+    }
+    return ReframePlan.fromJson(decoded);
   }
 
   Future<void> delete(String projectId) async {

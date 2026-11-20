@@ -4,9 +4,11 @@ import android.app.Activity
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.graphics.Bitmap
+import android.graphics.PointF
 import android.media.AudioFormat
 import android.media.MediaCodec
 import android.media.MediaExtractor
+import android.media.FaceDetector
 import android.media.MediaFormat
 import android.media.MediaMetadataRetriever
 import android.net.Uri
@@ -85,6 +87,14 @@ class MainActivity : FlutterActivity() {
                             result.error("INVALID_URI", "A video URI is required.", null)
                         } else {
                             extractAudio(rawUri, result)
+                        }
+                    }
+                    "analyzeFaces" -> {
+                        val rawUri = call.argument<String>("uri")
+                        if (rawUri.isNullOrBlank()) {
+                            result.error("INVALID_URI", "A video URI is required.", null)
+                        } else {
+                            analyzeFaces(rawUri, result)
                         }
                     }
                     else -> result.notImplemented()
@@ -576,6 +586,180 @@ class MainActivity : FlutterActivity() {
      * Compare low-resolution frames at a bounded sampling rate. This is scene
      * change evidence only, not semantic vision, face detection, or diarization.
      */
+    /**
+     * Bounded frontal-face sampling for conservative mobile reframing.
+     * This is a focus-track signal, not an audiovisual active-speaker model.
+     */
+    private fun analyzeFaces(rawUri: String, reply: MethodChannel.Result) {
+        ioExecutor.execute {
+            val retriever = MediaMetadataRetriever()
+            try {
+                val uri = Uri.parse(rawUri)
+                when (uri.scheme) {
+                    "content" -> {
+                        val hasGrant = contentResolver.persistedUriPermissions.any {
+                            it.uri == uri && it.isReadPermission
+                        }
+                        if (!hasGrant) {
+                            throw SecurityException("The video read permission is no longer available.")
+                        }
+                        retriever.setDataSource(this, uri)
+                    }
+                    "file" -> {
+                        if (!uri.authority.isNullOrEmpty() || uri.path.isNullOrBlank() || !uri.path!!.startsWith("/")) {
+                            throw IllegalArgumentException("Only app-private absolute file URIs are supported.")
+                        }
+                        retriever.setDataSource(File(uri.path!!).absolutePath)
+                    }
+                    else -> throw IllegalArgumentException("Only persisted content:// and app-private file:// URIs are supported.")
+                }
+
+                val durationMs = retriever.extractMetadata(
+                    MediaMetadataRetriever.METADATA_KEY_DURATION
+                )?.toLongOrNull() ?: 0L
+                if (durationMs <= 0L) {
+                    throw IllegalArgumentException("The video duration could not be read.")
+                }
+
+                val sampleCountLimit = 160
+                val stepMs = max(500L, (durationMs / sampleCountLimit).coerceAtLeast(1L))
+                val samples = mutableListOf<Map<String, Any?>>()
+                var previousCenterX: Float? = null
+                var timestampMs = 0L
+
+                while (timestampMs < durationMs && samples.size < sampleCountLimit) {
+                    var sample: Map<String, Any?> = mapOf(
+                        "timestampMs" to timestampMs,
+                        "box" to null,
+                        "confidence" to 0.0
+                    )
+                    val frame = try {
+                        retriever.getFrameAtTime(
+                            timestampMs * 1000L,
+                            MediaMetadataRetriever.OPTION_CLOSEST
+                        )
+                    } catch (_: Exception) {
+                        null
+                    }
+
+                    if (frame != null) {
+                        try {
+                            val scale = minOf(
+                                320.0 / frame.width.toDouble(),
+                                320.0 / frame.height.toDouble()
+                            )
+                            val sampleWidth = max(64, (frame.width * scale).toInt())
+                            val sampleHeight = max(64, (frame.height * scale).toInt())
+                            val scaled = Bitmap.createScaledBitmap(
+                                frame,
+                                sampleWidth,
+                                sampleHeight,
+                                true
+                            )
+                            val rgb565 = if (scaled.config == Bitmap.Config.RGB_565) {
+                                scaled
+                            } else {
+                                scaled.copy(Bitmap.Config.RGB_565, false)
+                                    ?: throw IllegalStateException("Could not prepare RGB_565 face-analysis frame.")
+                            }
+                            if (rgb565 !== scaled) scaled.recycle()
+
+                            try {
+                                val detector = FaceDetector(rgb565.width, rgb565.height, 6)
+                                val detected = arrayOfNulls<FaceDetector.Face>(6)
+                                val count = detector.findFaces(rgb565, detected)
+                                val candidates = mutableListOf<Map<String, Any>>()
+                                for (faceIndex in 0 until count) {
+                                    val face = detected[faceIndex] ?: continue
+                                    val confidence = face.confidence().toDouble()
+                                    val eyesDistance = face.eyesDistance().toDouble()
+                                    if (!confidence.isFinite() || confidence < 0.35 ||
+                                        !eyesDistance.isFinite() || eyesDistance < 8.0
+                                    ) continue
+
+                                    val midpoint = PointF()
+                                    face.getMidPoint(midpoint)
+                                    val faceWidth = eyesDistance * 3.0
+                                    val faceHeight = eyesDistance * 3.6
+                                    val left = (midpoint.x - faceWidth / 2.0)
+                                        .coerceIn(0.0, rgb565.width - 1.0)
+                                    val top = (midpoint.y - eyesDistance * 1.25)
+                                        .coerceIn(0.0, rgb565.height - 1.0)
+                                    val right = (midpoint.x + faceWidth / 2.0)
+                                        .coerceIn(left + 1.0, rgb565.width.toDouble())
+                                    val bottom = (top + faceHeight)
+                                        .coerceIn(top + 1.0, rgb565.height.toDouble())
+                                    val centerX = ((left + right) / 2.0 / rgb565.width)
+                                        .coerceIn(0.0, 1.0)
+                                    val continuity = previousCenterX?.let {
+                                        1.0 - kotlin.math.abs(centerX - it).coerceIn(0.0, 1.0)
+                                    } ?: 0.5
+                                    val sizeSignal = (eyesDistance / minOf(
+                                        rgb565.width.toDouble(),
+                                        rgb565.height.toDouble()
+                                    ) * 4.0).coerceIn(0.0, 1.0)
+                                    val focusScore = (
+                                        confidence * 0.80 +
+                                            continuity * 0.15 +
+                                            sizeSignal * 0.05
+                                        ).coerceIn(0.0, 1.0)
+
+                                    candidates.add(
+                                        mapOf(
+                                            "x" to left / rgb565.width,
+                                            "y" to top / rgb565.height,
+                                            "width" to (right - left) / rgb565.width,
+                                            "height" to (bottom - top) / rgb565.height,
+                                            "centerX" to centerX,
+                                            "confidence" to focusScore
+                                        )
+                                    )
+                                }
+
+                                val selected = candidates.maxByOrNull {
+                                    (it["confidence"] as Number).toDouble()
+                                }
+                                if (selected != null) {
+                                    previousCenterX = (selected["centerX"] as Number).toFloat()
+                                    sample = mapOf(
+                                        "timestampMs" to timestampMs,
+                                        "box" to selected.filterKeys { it != "centerX" },
+                                        "confidence" to selected["confidence"]!!
+                                    )
+                                }
+                            } finally {
+                                rgb565.recycle()
+                                if (scaled !== rgb565 && !scaled.isRecycled) scaled.recycle()
+                            }
+                        } finally {
+                            if (!frame.isRecycled) frame.recycle()
+                        }
+                    }
+                    samples.add(sample)
+                    timestampMs += stepMs
+                }
+
+                val response = mapOf(
+                    "sourceDurationMs" to durationMs,
+                    "sampleIntervalMs" to stepMs,
+                    "sampleCount" to samples.size,
+                    "samples" to samples
+                )
+                mainHandler.post { reply.success(response) }
+            } catch (error: Exception) {
+                mainHandler.post {
+                    reply.error(
+                        "FACE_ANALYSIS_FAILED",
+                        error.message ?: "Android face analysis failed.",
+                        null
+                    )
+                }
+            } finally {
+                try { retriever.release() } catch (_: Exception) { }
+            }
+        }
+    }
+
     private fun sampleVisualChanges(uri: Uri): List<Map<String, Any>> {
         val retriever = MediaMetadataRetriever()
         val samples = mutableListOf<Map<String, Any>>()

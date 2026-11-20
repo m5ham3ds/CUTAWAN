@@ -29,6 +29,11 @@ class ClipPreferences {
     this.mainTextColor = '#FFFFFF',
     this.highlightColor = '#FFD400',
     this.captionBackgroundColor = '#000000',
+    this.captionFontFamily,
+    this.captionFontScale = 0,
+    this.captionPositionY = -1,
+    this.captionUppercase,
+    this.captionBold,
   });
 
   final int requestedClipCount;
@@ -44,6 +49,11 @@ class ClipPreferences {
   final String mainTextColor;
   final String highlightColor;
   final String captionBackgroundColor;
+  final String? captionFontFamily;
+  final double captionFontScale;
+  final double captionPositionY;
+  final bool? captionUppercase;
+  final bool? captionBold;
 
   String? validate() {
     if (requestedClipCount < 1 || requestedClipCount > 50) {
@@ -61,6 +71,15 @@ class ClipPreferences {
     }
     if (!const {'720p', '1080p'}.contains(resolution)) {
       return 'Export resolution must be 720p or 1080p.';
+    }
+    if (captionFontFamily != null && captionFontFamily!.trim().isEmpty) {
+      return 'Caption font family must not be empty.';
+    }
+    if (!captionFontScale.isFinite || captionFontScale < 0 || captionFontScale > 0.12) {
+      return 'Caption font scale must be between 0 and 0.12.';
+    }
+    if (!captionPositionY.isFinite || captionPositionY < -1 || captionPositionY > 1) {
+      return 'Caption vertical position must be -1 (preset) or between 0 and 1.';
     }
     if (captionStyleId.isEmpty || captionAnimationId.isEmpty) {
       return 'Caption style and animation IDs must not be empty.';
@@ -82,6 +101,11 @@ class ClipPreferences {
         'mainTextColor': mainTextColor,
         'highlightColor': highlightColor,
         'captionBackgroundColor': captionBackgroundColor,
+        'captionFontFamily': captionFontFamily,
+        'captionFontScale': captionFontScale,
+        'captionPositionY': captionPositionY,
+        'captionUppercase': captionUppercase,
+        'captionBold': captionBold,
       };
 
   factory ClipPreferences.fromJson(Map<String, dynamic> json) {
@@ -119,6 +143,11 @@ class ClipPreferences {
       highlightColor: json['highlightColor'] as String? ?? '#FFD400',
       captionBackgroundColor:
           json['captionBackgroundColor'] as String? ?? '#000000',
+      captionFontFamily: json['captionFontFamily'] as String?,
+      captionFontScale: (json['captionFontScale'] as num?)?.toDouble() ?? 0,
+      captionPositionY: (json['captionPositionY'] as num?)?.toDouble() ?? -1,
+      captionUppercase: json['captionUppercase'] as bool?,
+      captionBold: json['captionBold'] as bool?,
     );
     final error = preferences.validate();
     if (error != null) throw FormatException(error);
