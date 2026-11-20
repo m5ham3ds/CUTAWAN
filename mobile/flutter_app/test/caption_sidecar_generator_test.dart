@@ -53,6 +53,8 @@ void main() {
     );
     expect(generated.srt, contains('00:00:00,000 -->'));
     expect(generated.srt, contains('لحظة مهمة'));
+    expect(generated.srt, isNot(contains(r'\N')));
+    expect(generated.srt, contains('هذه لحظة مهمة\nللاختبار.'));
     expect(generated.ass, contains('[V4+ Styles]'));
     expect(generated.ass, contains('[Events]'));
     expect(generated.ass, contains(r'{\kf'));

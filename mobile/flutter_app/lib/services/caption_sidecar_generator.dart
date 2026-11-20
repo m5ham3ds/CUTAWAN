@@ -75,14 +75,14 @@ class CaptionSidecarGenerator {
       if (end <= start) continue;
       final relativeStart = start - candidate.startMs;
       final relativeEnd = end - candidate.startMs;
-      final lines = group.lines
+      final srtLines = group.lines
           .map((line) => line.map((word) => _plainText(word.text, style)).join(' '))
-          .join(r'\N');
+          .join('\n');
       index++;
       srt
         ..writeln(index)
         ..writeln('${_srtTime(relativeStart)} --> ${_srtTime(relativeEnd)}')
-        ..writeln(lines)
+        ..writeln(srtLines)
         ..writeln();
 
       final karaokeLines = group.lines.map((line) {
