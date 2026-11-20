@@ -38,7 +38,7 @@ Implemented:
 - The preview demonstrates the selected style and animation using sample text. It is not yet connected to a real video playback clock or the source transcript's word timings.
 - The caption layout engine is not yet the shared renderer used by both preview and MP4 output.
 - Arabic uses Flutter's text direction and shaping in the on-device preview, but no golden screenshots across Arabic fonts/devices or rendered subtitle fixtures have been reviewed.
-- Writing ASS subtitles and rendering them into video belong to Phase 7. Until then, exact preview/export parity and rendered-video tests remain open.
+- Writing ASS subtitles and rendering them into video belong to Phase 8. Until then, exact preview/export parity and rendered-video tests remain open.
 
 ## Automated test coverage added
 
@@ -56,7 +56,7 @@ The Mobile Android workflow runs Dart formatting, `flutter analyze --fatal-infos
 1. Run Arabic single-speaker, Arabic multi-speaker, English interview, gaming/webcam, screen demonstration and speech-light clips on physical ARM64 devices.
 2. Compare face retention and crop stability with human-annotated frames. Validate the frontal-face detector across rotations and difficult footage.
 3. Add an actual audiovisual active-speaker model and establish model-weight licensing before describing the system as active-speaker detection.
-4. Connect reframing plans to the Phase 7 renderer, then test portrait/square/landscape output, transitions, crop continuity and source-time alignment.
+4. Connect reframing plans to the Phase 8 renderer, then test portrait/square/landscape output, transitions, crop continuity and source-time alignment.
 5. Connect caption groups to playback timestamps and a shared preview/export renderer. Capture visual goldens for all 12 presets and 10 animations, including Arabic RTL.
 6. Run the Android build on GitHub Actions and install the resulting APK on a physical device. A passing unit suite alone does not satisfy these gates.
 

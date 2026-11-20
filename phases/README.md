@@ -6,10 +6,13 @@
 
 ## Baseline and verified state
 
-- Existing mainline: `06fee1ca9e042f2505b9314d1495eb127b1d7220`.
-- Last verified Mobile Android workflow: [44751288974](https://github.com/m5ham3ds/CUTAWAN/actions/runs/44751288974) — success. It passed Flutter format, static analysis, Flutter test suite, ARM64 debug APK build and native-library/ABI assertions.
-- Last verified root CI workflow: [44751289006](https://github.com/m5ham3ds/CUTAWAN/actions/runs/44751289006) — success.
-- These CI results validate the state of that commit only. They do not prove real-device inference accuracy, secure-storage lifecycle, full rendering/export, or third-party model access.
+- Current verified mainline: `4a9c8b3a22c62390ab43d1c5e84e90a7fa16fc95`.
+- Latest Mobile Android workflow: [44767326112](https://github.com/m5ham3ds/CUTAWAN/actions/runs/44767326112) — success. It passed script syntax validation, Android generation, dependency resolution, Dart format, `flutter analyze --fatal-infos`, the complete **79-test** Flutter suite, ARM64 APK build, ABI/native-library validation, and artifact upload.
+- Latest root CI workflow: [44767326104](https://github.com/m5ham3ds/CUTAWAN/actions/runs/44767326104) — success across checks, offline pipeline, UI smoke and packaged inference/export.
+- APK artifact: `cutawan-mobile-arm64-debug`, artifact ID `14643739562`, ZIP size `54,394,021` bytes. Extracted APK size `95,279,731` bytes; SHA-256 `47b205348a5731aced8bfd50c56ebb46cbd08e2c6b8b2f8e6e14f9a5e86d31da`.
+- Native packaging check: exactly `arm64-v8a`, 10 native libraries, no duplicate .so basenames, and all required Whisper/llama libraries present.
+- Flutter coverage artifact: ID `14646152189`.
+- These CI results validate the recorded commit. They do not prove real-device inference accuracy, actual Android Keystore lifecycle, full video rendering/export, account billing/access, or third-party model quality.
 
 ## Phase matrix
 
@@ -21,7 +24,7 @@
 | 4 | Candidate discovery, evidence, ranking and local Qwen annotations | Implemented foundation; editor review open | Proposes candidates but does not cut/render video; visual signal is frame-change only |
 | 5 | Face sampling and validated reframing plans | Implemented foundation; renderer acceptance open | Not active-speaker recognition; no completed clip render |
 | 6 | Caption Studio visual presets, motion preview, RTL and preference persistence | Implemented preview/domain foundation | Preview is not transcript-timed and is not the MP4 exporter |
-| 7 | Multi-provider model selection, secure user credentials, consented cloud editorial annotations | Provider adapters/UI/test foundation in this changeset | Physical Keystore validation, API account/model compatibility and provider policy acceptance remain open |
+| 7 | Multi-provider model selection, secure user credentials, consented cloud editorial annotations | Implemented; automated gates passed on main | Physical Keystore validation, real provider account/model compatibility, billing and policy acceptance remain open |
 | 8 | End-to-end pipeline, real-time job orchestration, editor timeline and FFmpeg export | Planned; not complete | Requires rendering design, checkpoints, cancellation/resume and output verification |
 | 9 | Professional UI redesign and navigation/component architecture | Planned in depth; existing monolithic screen still needs refactor | Do not claim a full redesign has been delivered |
 | 10 | Physical-device quality, security, performance and Arabic/English acceptance | Planned; incomplete | Needs representative real-video corpus and Android devices |
@@ -41,9 +44,8 @@
 
 ## Current next actions
 
-1. Complete Phase 7 provider integration, secure storage and contract tests.
-2. Run Mobile Android and root CI, repair failures before extending the UI.
-3. Physical-device check: key save/replace/delete, backup disabled, reinstall/restore behavior, remote-consent gating and provider request success/failure without logging secrets.
-4. Start Phase 8 by wiring the processing state machine to persisted jobs and artifacts, then add real clip rendering and output validation.
-5. Start Phase 9 by extracting the large `home_shell.dart` into separate feature screens/components using a consistent Material 3 design system.
-6. Do not mark Phase 3–10 complete until their listed acceptance evidence is attached.
+1. Perform physical-device checks for Phase 7: key save/replace/delete, backup disabled, restore/reinstall behavior, cloud-consent gating and provider success/failure without exposing secrets.
+2. Start Phase 8 by wiring the resumable processing state machine to persisted jobs/artifacts, then add real clip rendering and output validation.
+3. Start Phase 9 by extracting the large `home_shell.dart` into separate feature screens/components with a consistent Material 3 design system.
+4. Complete Phase 10 with Arabic/English media fixtures and physical ARM64 quality, privacy, thermal and performance evidence.
+5. Do not mark Phases 3–10 fully accepted until their specific device and output evidence is attached.

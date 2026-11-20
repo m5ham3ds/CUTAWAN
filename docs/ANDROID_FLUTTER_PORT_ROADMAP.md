@@ -519,7 +519,7 @@ The Phase 3–4 implementation is prepared directly against the inspected `main`
 - Whisper processes decoded audio as 30-second tasks with two-second overlap and deterministic boundary de-duplication. Its Arabic/English stitching accuracy is not yet certified; VAD-backed silence rejection remains open.
 - Qwen is an optional local annotation model. Candidate times, score and evidence remain deterministic and are not accepted from model output.
 - Models are downloaded on user action and verified before installation; neither weight file is embedded in the APK.
-- The Flutter Android build uses minSdk 26 and pinned NDK r27 for the selected local inference bridge; ARM64-only packaging remains mandatory.
+- The Flutter Android build uses minSdk 26 and pinned NDK 28.2.13676358 for the selected local inference bridge; ARM64-only packaging remains mandatory.
 
 **Validation status:** implementation and tests are added, but these gates are not considered passed until the resulting GitHub Actions runs are inspected. Physical Android tests using the documented Arabic/English corpus remain open regardless of CI outcome. The app must not be described as having full clip rendering, speaker tracking, or export until the later roadmap phases and their gates are complete.
 
@@ -557,3 +557,16 @@ API keys and provider settings are persisted through `flutter_secure_storage`, n
 - Cloud execution is only attached to short editorial annotation of already-discovered candidates in this phase. Whisper transcription, face analysis, rendering and video transfer remain local/not wired to the cloud.
 
 See `phases/README.md` for the current phase matrix and `phases/07-ai-providers-and-secure-credentials.md` for detailed design, tests and next steps.
+
+
+## 24. Phase 7 provider integration — automated validation (2026-11-20)
+
+The provider UI and service are now wired into the Flutter review path. OpenAI, Google Gemini, Hugging Face Inference Providers and compatible endpoints have provider-specific model discovery and text-completion adapters. API keys and provider selections use secure storage; cloud execution requires a saved model and explicit consent. The review pipeline sends bounded text excerpts only and retains deterministic IDs, timing, evidence and scores.
+
+- Final tested main SHA: `4a9c8b3a22c62390ab43d1c5e84e90a7fa16fc95`.
+- Mobile Android run [44767326112](https://github.com/m5ham3ds/CUTAWAN/actions/runs/44767326112): success; all 79 Flutter tests, analysis, ARM64 build, and native packaging assertions passed.
+- Root CI run [44767326104](https://github.com/m5ham3ds/CUTAWAN/actions/runs/44767326104): success.
+- APK ZIP artifact ID: `14643739562`; extracted APK SHA-256: `47b205348a5731aced8bfd50c56ebb46cbd08e2c6b8b2f8e6e14f9a5e86d31da`.
+- Physical Android Keystore behavior, real provider keys/accounts, quota/cost, device model compatibility, and real transcript annotation quality have not been tested here.
+
+This does not complete Phases 8–10. The Android app still does not produce final edited MP4 clips; the candidate and crop artifacts are not a renderer. The visual UI still needs the planned feature-screen refactor, professional design review, transcript-timed playback, and real-world acceptance evidence.

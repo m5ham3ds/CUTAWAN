@@ -85,3 +85,15 @@ Allow the user to keep local inference or explicitly choose an external provider
 - Add separate endpoint adapters for any desired proprietary API that is not OpenAI-compatible.
 - Add secure-storage instrumented tests on Android device/emulator.
 - Integrate selected providers into transcript summarization/clip review only with per-task consent and explicit data preview.
+
+
+## Verified implementation and build result
+
+- Implementation was committed directly to `main` in `dc81449eda1aedaf8202d0860e593696016ea658`; follow-up fixes repaired Android script generation, Dart types/imports and emulator-local endpoint validation. The final tested source is `4a9c8b3a22c62390ab43d1c5e84e90a7fa16fc95`.
+- Mobile Android Actions run: [44767326112](https://github.com/m5ham3ds/CUTAWAN/actions/runs/44767326112) — success.
+- Root CI run: [44767326104](https://github.com/m5ham3ds/CUTAWAN/actions/runs/44767326104) — success.
+- All **79 Flutter unit/widget tests** passed. Format and static analysis passed with `--fatal-infos`.
+- Android platform generation, package resolution and `bash -n` preflight passed.
+- ARM64 debug APK built, then the workflow verified `arm64-v8a` as the only packaged ABI, all 10 native library basenames unique, and the Whisper + llama required shared libraries present.
+- Extracted APK: 95,279,731 bytes. SHA-256: `47b205348a5731aced8bfd50c56ebb46cbd08e2c6b8b2f8e6e14f9a5e86d31da`.
+- Model Center uses `flutter_secure_storage` for credentials and provider preferences. Android backup is disabled by the generation script. Unit tests use a mock secret-store interface; a physical Android Keystore verification is still required.
