@@ -268,7 +268,7 @@ class ProcessingPipelineService {
             animationId: project.preferences.captionAnimationId,
           );
           if (generated.cues.isEmpty) {
-            throw StateError('Caption overlay cues are missing for ' + candidate.id);
+            throw StateError('Caption overlay cues are missing for ${candidate.id}.');
           }
           captionCuesByClip[candidate.id] = generated.cues;
         }
