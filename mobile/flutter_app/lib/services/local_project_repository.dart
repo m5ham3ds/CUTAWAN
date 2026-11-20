@@ -20,7 +20,9 @@ class LocalProjectRepository {
           '${(await getApplicationSupportDirectory()).path}'
           '${Platform.pathSeparator}cutawan_projects',
         );
-    if (!await root.exists()) await root.create(recursive: true);
+    if (!await root.exists()) {
+      await root.create(recursive: true);
+    }
     return root;
   }
 
@@ -30,7 +32,9 @@ class LocalProjectRepository {
       throw StateError('Cannot persist an unsupported project schema.');
     }
     final validationError = project.preferences.validate();
-    if (validationError != null) throw FormatException(validationError);
+    if (validationError != null) {
+      throw FormatException(validationError);
+    }
     final directory = await _projectsDirectory();
     final target = File(
       '${directory.path}${Platform.pathSeparator}${project.id}.json',
@@ -49,7 +53,9 @@ class LocalProjectRepository {
     final file = File(
       '${directory.path}${Platform.pathSeparator}$projectId.json',
     );
-    if (!await file.exists()) return null;
+    if (!await file.exists()) {
+      return null;
+    }
     final decoded = jsonDecode(await file.readAsString());
     if (decoded is! Map<String, dynamic>) {
       throw const FormatException('Project file root must be a JSON object.');
@@ -61,7 +67,9 @@ class LocalProjectRepository {
     final directory = await _projectsDirectory();
     final projects = <CutawanProject>[];
     await for (final entity in directory.list(followLinks: false)) {
-      if (entity is! File || !entity.path.endsWith('.json')) continue;
+      if (entity is! File || !entity.path.endsWith('.json')) {
+        continue;
+      }
       final decoded = jsonDecode(await entity.readAsString());
       if (decoded is! Map<String, dynamic>) {
         throw FormatException('Invalid project file: ${entity.path}');
@@ -74,7 +82,9 @@ class LocalProjectRepository {
 
   Future<CutawanProject> cancelJob(String projectId) async {
     final project = await load(projectId);
-    if (project == null) throw StateError('Project not found: $projectId');
+    if (project == null) {
+      throw StateError('Project not found: $projectId');
+    }
     if (!project.job.canCancel) {
       throw StateError('This job can no longer be cancelled.');
     }
@@ -97,7 +107,9 @@ class LocalProjectRepository {
     VideoAssetMetadata source,
   ) async {
     final project = await load(projectId);
-    if (project == null) throw StateError('Project not found: $projectId');
+    if (project == null) {
+      throw StateError('Project not found: $projectId');
+    }
     final updated = project.copyWith(
       source: source,
       updatedAtUtc: DateTime.now().toUtc(),
@@ -124,7 +136,9 @@ class LocalProjectRepository {
     CutawanTranscript transcript,
   ) async {
     final project = await load(projectId);
-    if (project == null) throw StateError('Project not found: $projectId');
+    if (project == null) {
+      throw StateError('Project not found: $projectId');
+    }
     transcript.validate();
     if ((transcript.sourceDurationMs - project.source.durationMs).abs() > 1000) {
       throw const FormatException('Transcript duration does not match its source project.');
@@ -135,7 +149,9 @@ class LocalProjectRepository {
     );
     final temporary = File('${target.path}.tmp');
     await temporary.writeAsString(jsonEncode(transcript.toJson()), flush: true);
-    if (await target.exists()) await target.delete();
+    if (await target.exists()) {
+      await target.delete();
+    }
     await temporary.rename(target.path);
   }
 
@@ -144,7 +160,9 @@ class LocalProjectRepository {
     final file = File(
       '${directory.path}${Platform.pathSeparator}transcript.json',
     );
-    if (!await file.exists()) return null;
+    if (!await file.exists()) {
+      return null;
+    }
     final decoded = jsonDecode(await file.readAsString());
     if (decoded is! Map<String, dynamic>) {
       throw const FormatException('Transcript artifact root must be a JSON object.');
@@ -157,7 +175,9 @@ class LocalProjectRepository {
     CandidateSet candidateSet,
   ) async {
     final project = await load(projectId);
-    if (project == null) throw StateError('Project not found: $projectId');
+    if (project == null) {
+      throw StateError('Project not found: $projectId');
+    }
     candidateSet.validate();
     if ((candidateSet.sourceDurationMs - project.source.durationMs).abs() > 1000) {
       throw const FormatException('Candidate duration does not match its source project.');
@@ -168,7 +188,9 @@ class LocalProjectRepository {
     );
     final temporary = File('${target.path}.tmp');
     await temporary.writeAsString(jsonEncode(candidateSet.toJson()), flush: true);
-    if (await target.exists()) await target.delete();
+    if (await target.exists()) {
+      await target.delete();
+    }
     await temporary.rename(target.path);
   }
 
@@ -177,7 +199,9 @@ class LocalProjectRepository {
     final file = File(
       '${directory.path}${Platform.pathSeparator}candidates.json',
     );
-    if (!await file.exists()) return null;
+    if (!await file.exists()) {
+      return null;
+    }
     final decoded = jsonDecode(await file.readAsString());
     if (decoded is! Map<String, dynamic>) {
       throw const FormatException('Candidate artifact root must be a JSON object.');
@@ -187,7 +211,9 @@ class LocalProjectRepository {
 
   Future<void> saveReframePlan(String projectId, ReframePlan plan) async {
     final project = await load(projectId);
-    if (project == null) throw StateError('Project not found: $projectId');
+    if (project == null) {
+      throw StateError('Project not found: $projectId');
+    }
     plan.validate();
     if ((plan.sourceDurationMs - project.source.durationMs).abs() > 1000) {
       throw const FormatException('Reframe-plan duration does not match its source project.');
@@ -198,7 +224,9 @@ class LocalProjectRepository {
     );
     final temporary = File('${target.path}.tmp');
     await temporary.writeAsString(jsonEncode(plan.toJson()), flush: true);
-    if (await target.exists()) await target.delete();
+    if (await target.exists()) {
+      await target.delete();
+    }
     await temporary.rename(target.path);
   }
 
@@ -207,7 +235,9 @@ class LocalProjectRepository {
     final file = File(
       '${directory.path}${Platform.pathSeparator}reframe.json',
     );
-    if (!await file.exists()) return null;
+    if (!await file.exists()) {
+      return null;
+    }
     final decoded = jsonDecode(await file.readAsString());
     if (decoded is! Map<String, dynamic>) {
       throw const FormatException('Reframe artifact root must be a JSON object.');
@@ -221,12 +251,16 @@ class LocalProjectRepository {
     final file = File(
       '${directory.path}${Platform.pathSeparator}$projectId.json',
     );
-    if (await file.exists()) await file.delete();
+    if (await file.exists()) {
+      await file.delete();
+    }
     final artifacts = Directory(
       '${directory.path}${Platform.pathSeparator}artifacts'
       '${Platform.pathSeparator}$projectId',
     );
-    if (await artifacts.exists()) await artifacts.delete(recursive: true);
+    if (await artifacts.exists()) {
+      await artifacts.delete(recursive: true);
+    }
   }
 
 
@@ -238,7 +272,9 @@ class LocalProjectRepository {
     bool? cancelRequested,
   }) async {
     final project = await load(projectId);
-    if (project == null) throw StateError('Project not found: $projectId');
+    if (project == null) {
+      throw StateError('Project not found: $projectId');
+    }
     final value = progress ?? project.job.progress;
     if (!value.isFinite || value < 0 || value > 1) {
       throw const FormatException('Job progress must be between 0 and 1.');
@@ -294,7 +330,9 @@ class LocalProjectRepository {
       'artifactPaths': paths,
       'completedAtUtc': DateTime.now().toUtc().toIso8601String(),
     }), flush: true);
-    if (await target.exists()) await target.delete();
+    if (await target.exists()) {
+      await target.delete();
+    }
     await temp.rename(target.path);
   }
 
@@ -308,7 +346,9 @@ class LocalProjectRepository {
     }
     final directory = await _artifactDirectory(projectId);
     final target = File('${directory.path}${Platform.pathSeparator}checkpoint_$stage.json');
-    if (!await target.exists()) return false;
+    if (!await target.exists()) {
+      return false;
+    }
     try {
       final decoded = jsonDecode(await target.readAsString());
       if (decoded is! Map<String, dynamic> ||
@@ -320,7 +360,9 @@ class LocalProjectRepository {
       }
       final rootPath = await directory.resolveSymbolicLinks();
       for (final raw in decoded['artifactPaths'] as List<dynamic>) {
-        if (raw is! String) return false;
+        if (raw is! String) {
+          return false;
+        }
         final normalized = raw.replaceAll('\\', '/');
         if (normalized.isEmpty || normalized.startsWith('/') ||
             normalized.split('/').any((part) => part == '..' || part == '.' || part.isEmpty)) {
@@ -390,7 +432,9 @@ class LocalProjectRepository {
     final target = File('${directory.path}${Platform.pathSeparator}$clipId.json');
     final temp = File('${target.path}.tmp');
     await temp.writeAsString(jsonEncode(record), flush: true);
-    if (await target.exists()) await target.delete();
+    if (await target.exists()) {
+      await target.delete();
+    }
     await temp.rename(target.path);
   }
 
@@ -418,7 +462,9 @@ class LocalProjectRepository {
     final target = File('${directory.path}${Platform.pathSeparator}manifest.json');
     final temp = File('${target.path}.tmp');
     await temp.writeAsString(jsonEncode(manifest), flush: true);
-    if (await target.exists()) await target.delete();
+    if (await target.exists()) {
+      await target.delete();
+    }
     await temp.rename(target.path);
   }
 
