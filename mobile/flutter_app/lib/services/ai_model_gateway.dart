@@ -235,14 +235,17 @@ class AiCredentialStore {
 
   static Uri _validateBaseUrl(String value) {
     final uri = Uri.tryParse(value);
+    final secureRemote = uri?.scheme == 'https';
+    final localEmulator = uri?.scheme == 'http' &&
+        const {'10.0.2.2', '127.0.0.1', 'localhost'}.contains(uri?.host);
     if (uri == null ||
         !uri.hasAuthority ||
-        uri.scheme != 'https' ||
+        !(secureRemote || localEmulator) ||
         uri.userInfo.isNotEmpty ||
         uri.hasQuery ||
         uri.hasFragment) {
       throw const FormatException(
-        'استخدم رابط HTTPS صالحاً دون اسم مستخدم أو كلمة مرور أو query أو fragment.',
+        'استخدم HTTPS للمضيف الخارجي، أو عنوان loopback محلياً لاختبار الخادم.',
       );
     }
     return uri;
