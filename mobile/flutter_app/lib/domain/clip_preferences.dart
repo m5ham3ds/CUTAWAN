@@ -59,6 +59,9 @@ class ClipPreferences {
         !RegExp(r'^#[0-9A-Fa-f]{6}$').hasMatch(captionBackgroundColor)) {
       return 'Caption colors must use #RRGGBB hex values.';
     }
+    if (!const {'720p', '1080p'}.contains(resolution)) {
+      return 'Export resolution must be 720p or 1080p.';
+    }
     if (captionStyleId.isEmpty || captionAnimationId.isEmpty) {
       return 'Caption style and animation IDs must not be empty.';
     }
