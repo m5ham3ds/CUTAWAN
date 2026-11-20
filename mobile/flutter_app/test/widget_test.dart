@@ -74,7 +74,8 @@ void main() {
     expect(arabicPreview.textDirection, TextDirection.rtl);
 
     await tester.tap(find.byType(Switch).first);
-    await tester.pump(const Duration(milliseconds: 100));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 350));
     expect(find.text('English'), findsOneWidget);
     final englishPreview = tester
         .widgetList<RichText>(find.byType(RichText))

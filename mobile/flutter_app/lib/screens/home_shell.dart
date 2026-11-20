@@ -143,16 +143,19 @@ class _CutawanTopBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
+    final width = MediaQuery.sizeOf(context).width;
+    final compact = width < 390;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 13, 20, 12),
+      padding: EdgeInsets.fromLTRB(compact ? 12 : 20, 13, compact ? 12 : 20, 12),
       child: Row(children: [
-        Container(width: 43, height: 43, decoration: BoxDecoration(color: scheme.primary, borderRadius: BorderRadius.circular(15), boxShadow: [BoxShadow(color: scheme.primary.withValues(alpha: 0.18), blurRadius: 18, offset: const Offset(0, 6))]), child: Icon(Icons.auto_awesome_rounded, color: scheme.onPrimary, size: 23)),
-        const SizedBox(width: 12),
+        Container(width: 40, height: 40, decoration: BoxDecoration(color: scheme.primary, borderRadius: BorderRadius.circular(14), boxShadow: [BoxShadow(color: scheme.primary.withValues(alpha: 0.18), blurRadius: 18, offset: const Offset(0, 6))]), child: Icon(Icons.auto_awesome_rounded, color: scheme.onPrimary, size: 21)),
+        SizedBox(width: compact ? 8 : 12),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          FittedBox(fit: BoxFit.scaleDown, alignment: AlignmentDirectional.centerStart, child: Text('CUTAWAN', style: theme.textTheme.titleMedium?.copyWith(letterSpacing: 1.0, fontWeight: FontWeight.w900, fontSize: 16))),
-          Text('AI CREATOR STUDIO', maxLines: 1, overflow: TextOverflow.clip, style: theme.textTheme.labelSmall?.copyWith(color: scheme.onSurfaceVariant, letterSpacing: 0.7, fontSize: 7.5)),
+          Text('CUTAWAN', maxLines: 1, style: theme.textTheme.titleMedium?.copyWith(letterSpacing: 0.4, fontWeight: FontWeight.w900, fontSize: compact ? 14 : 17)),
+          if (!compact)
+            Text('AI CREATOR STUDIO', maxLines: 1, style: theme.textTheme.labelSmall?.copyWith(color: scheme.onSurfaceVariant, letterSpacing: 0.7, fontSize: 8)),
         ])),
-        if (MediaQuery.sizeOf(context).width > 370) ...[
+        if (!compact) ...[
           _TopBarAction(icon: Icons.refresh_rounded, tooltip: 'تحديث المشاريع', onTap: onRefresh),
           const SizedBox(width: 8),
         ],
@@ -193,9 +196,10 @@ class _CutawanNavigationBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final bottom = MediaQuery.paddingOf(context).bottom;
+    final compact = MediaQuery.sizeOf(context).width < 390;
     return Container(
-      margin: EdgeInsets.fromLTRB(14, 0, 14, bottom > 0 ? 8 : 13),
-      padding: const EdgeInsets.fromLTRB(7, 8, 7, 8),
+      margin: EdgeInsets.fromLTRB(compact ? 6 : 14, 0, compact ? 6 : 14, bottom > 0 ? 8 : 13),
+      padding: EdgeInsets.fromLTRB(compact ? 3 : 7, 8, compact ? 3 : 7, 8),
       decoration: BoxDecoration(color: scheme.surfaceContainer.withValues(alpha: 0.96), borderRadius: BorderRadius.circular(24), border: Border.all(color: scheme.outlineVariant), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.24), blurRadius: 28, offset: const Offset(0, 10))]),
       child: Row(children: List.generate(destinations.length, (index) {
         final item = destinations[index];
@@ -210,7 +214,7 @@ class _CutawanNavigationBar extends StatelessWidget {
             child: Column(mainAxisSize: MainAxisSize.min, children: [
               AnimatedScale(scale: selected ? 1.08 : 1, duration: const Duration(milliseconds: 220), curve: Curves.easeOutBack, child: Icon(selected ? item.selected : item.icon, size: 22, color: selected ? scheme.primary : scheme.onSurfaceVariant)),
               const SizedBox(height: 5),
-              AnimatedDefaultTextStyle(duration: const Duration(milliseconds: 180), style: TextStyle(fontSize: 10, fontWeight: selected ? FontWeight.w900 : FontWeight.w600, color: selected ? scheme.primary : scheme.onSurfaceVariant), child: Text(item.label)),
+              AnimatedDefaultTextStyle(duration: const Duration(milliseconds: 180), style: TextStyle(fontSize: compact ? 9 : 10, fontWeight: selected ? FontWeight.w900 : FontWeight.w600, color: selected ? scheme.primary : scheme.onSurfaceVariant), child: Text(item.label)),
             ]),
           ),
         )));

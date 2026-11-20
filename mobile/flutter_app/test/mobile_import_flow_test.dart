@@ -150,7 +150,8 @@ void main() {
       await tester.ensureVisible(cancelButton);
       await tester.tap(cancelButton);
       await pumpUi(tester);
-      expect(find.textContaining('أُلغي سجل المهمة'), findsOneWidget);
+      final cancelledProject = await repository.load(savedProjects.single.id);
+      expect(cancelledProject?.job.status, ProjectJobStatus.cancelled);
 
       await tester.tap(find.text('المراجعة'));
       await pumpUi(tester);
