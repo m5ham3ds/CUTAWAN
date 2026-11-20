@@ -5,6 +5,7 @@ class JobsPage extends StatelessWidget {
     required this.projects,
     required this.repository,
     required this.onProjectsChanged,
+    required this.onOpenReview,
     this.storageUsageBytes,
     super.key,
   });
@@ -12,6 +13,7 @@ class JobsPage extends StatelessWidget {
   final ValueListenable<List<CutawanProject>> projects;
   final LocalProjectRepository repository;
   final Future<void> Function() onProjectsChanged;
+  final VoidCallback onOpenReview;
   final Future<int> Function()? storageUsageBytes;
 
   DirectVideoDownloader _downloader() => DirectVideoDownloader(
@@ -195,6 +197,14 @@ class JobsPage extends StatelessWidget {
                         Text(
                           '${(project.job.progress * 100).round()}% مكتمل · ${project.job.stage}',
                           style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                        Align(
+                          alignment: AlignmentDirectional.centerStart,
+                          child: TextButton.icon(
+                            onPressed: onOpenReview,
+                            icon: const Icon(Icons.video_library_outlined),
+                            label: const Text('فتح المراجعة والتشغيل أو الاستئناف'),
+                          ),
                         ),
                         Text(
                           'المهمة: ${project.job.id}',

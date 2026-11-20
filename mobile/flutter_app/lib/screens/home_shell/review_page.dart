@@ -427,7 +427,7 @@ class _ReviewPageState extends State<ReviewPage> {
     final transcript = _transcripts[project.id];
     final candidateSet = _candidateSets[project.id];
     final reframePlan = _reframePlans[project.id];
-    final isBusy = _busyProjectId == project.id;
+    final isBusy = _busyProjectId == project.id || _pipelineRunning;
     final isLoading = _loadingArtifacts.contains(project.id);
     return Card(
       margin: const EdgeInsets.only(bottom: 16),

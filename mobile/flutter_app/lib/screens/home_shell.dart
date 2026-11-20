@@ -93,6 +93,7 @@ class _HomeShellState extends State<HomeShell> {
         projects: _projects,
         repository: _repository,
         onProjectsChanged: _reloadProjects,
+        onOpenReview: () => setState(() => _selectedIndex = 2),
         storageUsageBytes: widget.storageUsageBytes,
       ),
       ReviewPage(
