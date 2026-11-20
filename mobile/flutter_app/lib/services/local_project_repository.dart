@@ -22,6 +22,7 @@ class LocalProjectRepository {
   }
 
   Future<void> save(CutawanProject project) async {
+    _validateId(project.id);
     if (project.schemaVersion != CutawanProject.currentSchemaVersion) {
       throw StateError('Cannot persist an unsupported project schema.');
     }
