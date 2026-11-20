@@ -12,8 +12,12 @@ Direct Flutter dependencies from `mobile/flutter_app/pubspec.yaml`:
 |---|---|---|---|
 | Flutter SDK | CI uses 3.47.6 | BSD-3-Clause | UI/runtime/Android embedding |
 | `path_provider` | ^2.1.6 | BSD-3-Clause | app support directory for persisted projects and downloads |
+| `crypto` | ^3.0.6 | BSD-3-Clause | SHA-256 model integrity checks |
+| `http` | ^1.5.0 | BSD-3-Clause | pinned model downloads |
+| `whisper_cpp_flutter_plus` | ^0.5.1 | MIT | Whisper.cpp Android transcription |
+| `llama_flutter_android` | ^0.2.6 | MIT | llama.cpp Android GGUF inference |
 
-No FFmpeg package, ONNX Runtime package, Python runtime, or third-party downloader is currently declared by the Flutter app. Direct URL downloads use Dart `dart:io`; local media selection and metadata extraction use Android platform APIs through the MethodChannel bridge.
+No FFmpeg package, ONNX Runtime package, or Python runtime is declared by the Flutter app. Direct source-video URL downloads use Dart `dart:io`; local media selection, audio extraction, and frame sampling use Android platform APIs through the MethodChannel bridge. The app now also declares the two native inference bridges listed above.
 
 ## Desktop dependency scope (from package-lock.json)
 
@@ -79,3 +83,13 @@ Do not bundle or redistribute model files with pending license provenance in a r
 - No ONNX models were copied into the Flutter assets.
 - Keep mobile ingestion based on Android SAF for user-selected files and Dart HTTP streaming for user-provided direct video-file URLs.
 - Re-audit when the AI/media engines are selected in later phases; do not assume that an MIT wrapper makes an underlying binary or model MIT.
+
+
+## Phase 3–4 model manifest
+
+| Model | Pinned revision | SHA-256 | Size | License | Packaging |
+|---|---|---|---:|---|---|
+| Whisper Base multilingual (`ggml-base.bin`) | `5359861c739e955e79d9a303bcbc70fb988958b1` | `60ed5bc3dd14eea856493d334349b405782ddcaf0028d4b5df4088345fba2efe` | 147,951,465 bytes | MIT (OpenAI Whisper model weights) | User download; never packaged in APK |
+| Qwen2.5-0.5B-Instruct Q4_K_M | `6dd44a1fb35d11b5d1b28902876ce3cc9e882d0e` | `74a4da8c9fdbcd15bd1f6d01d621410d31c6fc00986f5eb687824e7b93d7a9db` | 491,400,032 bytes | Apache-2.0 | User download; never packaged in APK |
+
+See `docs/mobile/PHASES_3_4_INTEGRATION.md` for implementation boundaries and remaining physical-device acceptance gates.

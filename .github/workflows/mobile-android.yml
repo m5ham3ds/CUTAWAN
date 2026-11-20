@@ -20,7 +20,7 @@ jobs:
   flutter-android:
     name: Analyze, test, and build ARM64 debug APK
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     defaults:
       run:
         working-directory: mobile/flutter_app
@@ -53,6 +53,8 @@ jobs:
         run: flutter test --reporter expanded
 
       - name: Build ARM64 debug APK
+        env:
+          CMAKE_BUILD_PARALLEL_LEVEL: "2"
         run: flutter build apk --debug --target-platform android-arm64
 
       - name: Verify APK contains ARM64 libraries only

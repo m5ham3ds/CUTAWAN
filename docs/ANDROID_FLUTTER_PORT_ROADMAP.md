@@ -499,3 +499,26 @@ The current widget tests cover the four primary destinations, caption preset/ani
 - Licensing audit records: `THIRD_PARTY_NOTICES.md` and `docs/DEPENDENCY_LICENSE_INVENTORY.md`. Unverified ONNX asset licenses remain excluded from the mobile bundle.
 - No feature branch was created for these phases; all implementation and fixes were pushed directly to `main`.
 - Physical-device install and real SAF provider / direct URL process-restart verification remain open. This is the only Phase 1–2 acceptance item not completed within this environment.
+
+
+## 22. Phase 3–4 implementation on mainline (2026-11-20)
+
+The Phase 3–4 implementation is prepared directly against the inspected `main` baseline. It adds a native Android audio-decode bridge, a versioned transcript and candidate artifact contract, local Whisper transcription, deterministic candidate discovery, optional local Qwen annotation, model integrity management, and focused automated tests. The full component/source decision and remaining acceptance evidence are recorded in `docs/mobile/PHASES_3_4_INTEGRATION.md`.
+
+### Planned gates 1–4 mapping
+
+1. **Phase 1 — baseline/mobile shell:** retain the existing root CI and mobile shell/ARM64 packaging gates. The prior mainline run (Mobile run `44659732349`, root CI run `44659732275`) passed before these new native dependencies were introduced.
+2. **Phase 2 — source/project lifecycle:** retain the existing project-contract, local repository, source downloader, import-flow, persisted SAF permission, and widget coverage. Additive analysis artifacts are stored outside the project index and deleted with their parent project.
+3. **Phase 3 — transcription/model gate:** add transcript contract/timestamp tests, multilingual Whisper catalog checks, Android audio-decode integration at build time, user-controlled model download and SHA-256 verification. Overlapped 30-second chunking with two-second overlap is implemented, but its boundary accuracy and real Arabic/English acoustic accuracy remain unaccepted until fixture/device evidence is recorded.
+4. **Phase 4 — candidate gate:** add duration/source-bound checks, no-fabricated-candidate checks, sentence/word timing tests, deduplication and JSON contract tests, and a guarded Qwen annotation boundary test that preserves IDs, timing, evidence and deterministic scores.
+
+### Current implementation boundary
+
+- The candidate engine proposes and stores moments; it does **not** cut or render final video files.
+- Sampled visual evidence is a low-resolution frame-change signal; it is not face detection, active-speaker detection or semantic vision.
+- Whisper currently processes the decoded source waveform in one task. Overlapped chunk stitching and VAD rejection remain open.
+- Qwen is an optional local annotation model. Candidate times, score and evidence remain deterministic and are not accepted from model output.
+- Models are downloaded on user action and verified before installation; neither weight file is embedded in the APK.
+- The Flutter Android build uses minSdk 26 and pinned NDK r27 for the selected local inference bridge; ARM64-only packaging remains mandatory.
+
+**Validation status:** implementation and tests are added, but these gates are not considered passed until the resulting GitHub Actions runs are inspected. Physical Android tests using the documented Arabic/English corpus remain open regardless of CI outcome. The app must not be described as having full clip rendering, speaker tracking, or export until the later roadmap phases and their gates are complete.

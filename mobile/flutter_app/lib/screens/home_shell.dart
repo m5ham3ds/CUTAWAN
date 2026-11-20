@@ -1,13 +1,20 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:whisper_cpp_flutter_plus/whisper_cpp_flutter_plus.dart';
 
 import '../domain/caption_catalog.dart';
 import '../domain/clip_preferences.dart';
 import '../domain/project_contract.dart';
+import '../domain/transcript_contract.dart';
+import '../domain/clip_candidate.dart';
 import '../services/android_video_picker.dart';
 import '../services/direct_video_downloader.dart';
 import '../services/local_project_repository.dart';
+import '../services/whisper_transcription_service.dart';
+import '../services/qwen_model_manager.dart';
+import '../services/candidate_discovery_service.dart';
+import '../services/local_editorial_annotation_service.dart';
 
 class HomeShell extends StatefulWidget {
   const HomeShell({super.key, this.repository, this.storageUsageBytes});
@@ -821,7 +828,7 @@ class JobsPage extends StatelessWidget {
   }
 }
 
-class ReviewPage extends StatelessWidget {
+class ReviewPage extends StatefulWidget {
   const ReviewPage({
     required this.projects,
     required this.repository,
@@ -833,6 +840,68 @@ class ReviewPage extends StatelessWidget {
   final LocalProjectRepository repository;
   final Future<void> Function() onProjectsChanged;
 
+  @override
+  State<ReviewPage> createState() => _ReviewPageState();
+}
+
+class _ReviewPageState extends State<ReviewPage> {
+  final Map<String, CutawanTranscript?> _transcripts = {};
+  final Map<String, CandidateSet?> _candidateSets = {};
+  final Set<String> _loadingArtifacts = {};
+  String? _busyProjectId;
+  String? _busyStage;
+  String? _lastError;
+  double? _progress;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.projects.addListener(_handleProjectsChanged);
+    _handleProjectsChanged();
+  }
+
+  @override
+  void didUpdateWidget(covariant ReviewPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.projects != widget.projects) {
+      oldWidget.projects.removeListener(_handleProjectsChanged);
+      widget.projects.addListener(_handleProjectsChanged);
+      _handleProjectsChanged();
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.projects.removeListener(_handleProjectsChanged);
+    super.dispose();
+  }
+
+  void _handleProjectsChanged() {
+    for (final project in widget.projects.value) {
+      _loadArtifacts(project.id);
+    }
+  }
+
+  Future<void> _loadArtifacts(String projectId) async {
+    if (_loadingArtifacts.contains(projectId)) return;
+    _loadingArtifacts.add(projectId);
+    try {
+      final transcript = await widget.repository.loadTranscript(projectId);
+      final candidates = await widget.repository.loadCandidates(projectId);
+      if (!mounted) return;
+      setState(() {
+        _transcripts[projectId] = transcript;
+        _candidateSets[projectId] = candidates;
+      });
+    } catch (error) {
+      if (mounted) {
+        setState(() => _lastError = 'تعذّر تحميل نتائج التحليل: $error');
+      }
+    } finally {
+      _loadingArtifacts.remove(projectId);
+    }
+  }
+
   Future<void> _verifySource(
     BuildContext context,
     CutawanProject project,
@@ -840,8 +909,8 @@ class ReviewPage extends StatelessWidget {
     try {
       final refreshed = await AndroidVideoPicker.inspectVideo(project.source.uri);
       final unchanged = project.source.hasSameMediaInfo(refreshed);
-      await repository.refreshSource(project.id, refreshed);
-      await onProjectsChanged();
+      await widget.repository.refreshSource(project.id, refreshed);
+      await widget.onProjectsChanged();
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -868,14 +937,117 @@ class ReviewPage extends StatelessWidget {
     }
   }
 
+  Future<void> _transcribe(CutawanProject project) async {
+    if (_busyProjectId != null) return;
+    setState(() {
+      _busyProjectId = project.id;
+      _busyStage = 'whisper';
+      _lastError = null;
+      _progress = 0;
+    });
+    try {
+      final transcript = await WhisperTranscriptionService().transcribeVideo(
+        sourceUri: project.source.uri,
+        sourceDurationMs: project.source.durationMs,
+        onProgress: (percent) {
+          if (!mounted || _busyProjectId != project.id) return;
+          setState(() => _progress = percent / 100);
+        },
+      );
+      await widget.repository.saveTranscript(project.id, transcript);
+      await _loadArtifacts(project.id);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              transcript.wordTimingReliable
+                  ? 'اكتمل التفريغ المحلي وحُفظ توقيت الكلمات.'
+                  : 'حُفظ النص، لكن توقيت الكلمات غير كافٍ لاكتشاف المقاطع.',
+            ),
+          ),
+        );
+      }
+    } catch (error) {
+      if (mounted) setState(() => _lastError = 'فشل التفريغ المحلي: $error');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _busyProjectId = null;
+          _busyStage = null;
+          _progress = null;
+        });
+      }
+    }
+  }
+
+  Future<void> _discover(CutawanProject project) async {
+    if (_busyProjectId != null) return;
+    setState(() {
+      _busyProjectId = project.id;
+      _busyStage = 'candidates';
+      _lastError = null;
+      _progress = null;
+    });
+    var localModelUsed = false;
+    try {
+      final transcript = _transcripts[project.id] ??
+          await widget.repository.loadTranscript(project.id);
+      if (transcript == null) {
+        throw StateError('نفّذ التفريغ المحلي أولاً.');
+      }
+      final discovery = const CandidateDiscoveryService();
+      var candidateSet = discovery.discover(transcript, project.preferences);
+      try {
+        final modelFile = await QwenModelManager().findInstalled();
+        if (modelFile != null) {
+          candidateSet = await const LocalEditorialAnnotationService().annotate(
+            candidateSet,
+            modelPath: modelFile.path,
+          );
+          localModelUsed = candidateSet.candidates.any((item) => item.modelAnnotated);
+        }
+      } catch (error) {
+        if (mounted) {
+          setState(() => _lastError =
+              'تم إنشاء المقاطع بالترتيب الحتمي، لكن تعذّر تشغيل نموذج Qwen المحلي: $error');
+        }
+      }
+      await widget.repository.saveCandidates(project.id, candidateSet);
+      await _loadArtifacts(project.id);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              candidateSet.candidates.isEmpty
+                  ? 'لم يعثر التحليل على مقاطع مكتملة ضمن المدة المحددة؛ لم تتم إضافة مقاطع وهمية.'
+                  : localModelUsed
+                      ? 'تم حفظ ${candidateSet.candidates.length} اقتراحًا مع تعليقات النموذج المحلي.'
+                      : 'تم حفظ ${candidateSet.candidates.length} اقتراحًا من أدلة التفريغ والصوت والصورة.',
+            ),
+          ),
+        );
+      }
+    } catch (error) {
+      if (mounted) setState(() => _lastError = 'فشل اكتشاف المقاطع: $error');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _busyProjectId = null;
+          _busyStage = null;
+          _progress = null;
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder<List<CutawanProject>>(
-      valueListenable: projects,
+      valueListenable: widget.projects,
       builder: (context, items, _) => ListView(
         padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
         children: [
-          const _Eyebrow('مساحة العمل  /  اختيار النتائج'),
+          const _Eyebrow('مساحة العمل  /  التحليل والمراجعة'),
           const SizedBox(height: 14),
           Text(
             'مراجعة المشاريع',
@@ -885,62 +1057,163 @@ class ReviewPage extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'راجع ملف المصدر وبياناته المحفوظة، ثم أعد فحص صلاحية الوصول إلى الملف.',
+            'التفريغ واكتشاف المقاطع يعملان محليًا بعد تثبيت النماذج. درجات الاقتراحات مؤشرات تحريرية وليست ضمانًا للانتشار.',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                   height: 1.5,
                 ),
           ),
+          if (_lastError != null) ...[
+            const SizedBox(height: 12),
+            _StatusNote(text: _lastError!),
+          ],
           const SizedBox(height: 24),
           if (items.isEmpty)
             const _EmptyState(
               icon: Icons.video_collection_outlined,
               title: 'لا توجد مقاطع للمراجعة',
-              description:
-                  'بعد استيراد الفيديو سيظهر هنا مشروعه وبيانات المصدر. لا توجد مقاطع مولدة لأن محرك التحليل لم يُربط بعد.',
+              description: 'استورد فيديو من شاشة الإدخال ليظهر هنا.',
             )
           else
-            for (final project in items)
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(14),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        project.title,
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w800,
-                            ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(project.source.displayName),
-                      const SizedBox(height: 10),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          Chip(label: Text('${project.source.width} × ${project.source.height}')),
-                          Chip(label: Text(_formatDuration(project.source.durationMs))),
-                          Chip(label: Text(_formatBytes(project.source.sizeBytes))),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        'المصدر: ${project.source.mimeType}',
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                      const SizedBox(height: 12),
-                      OutlinedButton.icon(
-                        onPressed: () => _verifySource(context, project),
-                        icon: const Icon(Icons.verified_outlined),
-                        label: const Text('إعادة فحص الوصول والبيانات'),
-                      ),
-                    ],
-                  ),
+            for (final project in items) _projectCard(context, project),
+        ],
+      ),
+    );
+  }
+
+  Widget _projectCard(BuildContext context, CutawanProject project) {
+    final theme = Theme.of(context);
+    final transcript = _transcripts[project.id];
+    final candidateSet = _candidateSets[project.id];
+    final isBusy = _busyProjectId == project.id;
+    final isLoading = _loadingArtifacts.contains(project.id);
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              project.title,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(project.source.displayName),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                Chip(label: Text('${project.source.width} × ${project.source.height}')),
+                Chip(label: Text(_formatDuration(project.source.durationMs))),
+                Chip(label: Text(_formatBytes(project.source.sizeBytes))),
+              ],
+            ),
+            Text(
+              'المصدر: ${project.source.mimeType}',
+              style: theme.textTheme.bodySmall,
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                OutlinedButton.icon(
+                  onPressed: isBusy ? null : () => _verifySource(context, project),
+                  icon: const Icon(Icons.verified_outlined),
+                  label: const Text('إعادة فحص الوصول والبيانات'),
+                ),
+                FilledButton.tonalIcon(
+                  onPressed: isBusy ? null : () => _transcribe(project),
+                  icon: const Icon(Icons.graphic_eq),
+                  label: const Text('تفريغ الكلام'),
+                ),
+                FilledButton.icon(
+                  onPressed: isBusy || transcript == null ||
+                          !transcript.wordTimingReliable
+                      ? null
+                      : () => _discover(project),
+                  icon: const Icon(Icons.auto_awesome),
+                  label: const Text('اقتراح المقاطع'),
+                ),
+              ],
+            ),
+            if (isBusy) ...[
+              const SizedBox(height: 10),
+              LinearProgressIndicator(value: _progress),
+              const SizedBox(height: 6),
+              Text(
+                _busyStage == 'whisper'
+                    ? 'Whisper يعمل على الجهاز…'
+                    : 'تحليل الحدود وترتيب المقاطع محليًا…',
+                style: theme.textTheme.bodySmall,
+              ),
+            ],
+            if (isLoading) ...[
+              const SizedBox(height: 10),
+              const LinearProgressIndicator(),
+            ],
+            if (transcript != null) ...[
+              const Divider(height: 24),
+              Text(
+                'التفريغ • ${transcript.language} • ${transcript.words.length} كلمة',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w800,
                 ),
               ),
-        ],
+              const SizedBox(height: 6),
+              Text(
+                transcript.wordTimingReliable
+                    ? 'توقيت الكلمات متاح ويمكن استخدامه لضبط حدود المقاطع.'
+                    : 'النص محفوظ، لكن توقيت الكلمات غير موثوق؛ اكتشاف المقاطع معطّل لتجنب قصّ عشوائي.',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              if (transcript.text.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Text(
+                  transcript.text.length > 420
+                      ? '${transcript.text.substring(0, 420)}…'
+                      : transcript.text,
+                  maxLines: 5,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ],
+            if (candidateSet != null) ...[
+              const Divider(height: 24),
+              Text(
+                'الاقتراحات • ${candidateSet.candidates.length}',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              Text(
+                'المحرك: ${candidateSet.rankingEngine} · لا توجد مقاطع مضافة لتلبية العدد المطلوب إذا لم توجد أدلة كافية.',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 8),
+              for (final candidate in candidateSet.candidates)
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(candidate.title.isEmpty ? 'مقطع مقترح' : candidate.title),
+                  subtitle: Text(
+                    '${_formatDuration(candidate.startMs)}–${_formatDuration(candidate.endMs)} · ${candidate.durationMs ~/ 1000}s · ${candidate.score.toStringAsFixed(0)}/100'
+                    '${candidate.modelAnnotated ? ' · وصف محلي' : ''}'
+                    '\n${candidate.explanations.take(2).join(' · ')}',
+                  ),
+                  isThreeLine: true,
+                  leading: const Icon(Icons.movie_creation_outlined),
+                ),
+            ],
+          ],
+        ),
       ),
     );
   }
@@ -1057,40 +1330,274 @@ class _CaptionStudioPageState extends State<CaptionStudioPage> {
   }
 }
 
-class ModelsPage extends StatelessWidget {
+class ModelsPage extends StatefulWidget {
   const ModelsPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final models = [
-      ('Whisper.cpp', 'تحويل الكلام إلى نص وتوقيت الكلمات', Icons.graphic_eq),
-      ('llama.cpp + GGUF', 'تحليل النص وترتيب اللحظات', Icons.psychology_alt_outlined),
-      ('ONNX Runtime', 'كشف الوجوه والمتحدث النشط وVAD', Icons.face_retouching_natural),
-    ];
+  State<ModelsPage> createState() => _ModelsPageState();
+}
 
+class _ModelsPageState extends State<ModelsPage> {
+  final WhisperModelManager _whisper = WhisperModelManager();
+  final QwenModelManager _qwen = QwenModelManager();
+  bool _loading = true;
+  bool _busy = false;
+  bool _whisperInstalled = false;
+  bool _qwenInstalled = false;
+  double? _progress;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _refreshModels();
+  }
+
+  @override
+  void dispose() {
+    _whisper.close();
+    super.dispose();
+  }
+
+  Future<void> _refreshModels() async {
+    try {
+      final whisperFile =
+          await _whisper.findCatalogModel(WhisperModelCatalog.base);
+      final qwenFile = await _qwen.findInstalled();
+      if (!mounted) return;
+      setState(() {
+        _whisperInstalled = whisperFile != null;
+        _qwenInstalled = qwenFile != null;
+        _loading = false;
+      });
+    } catch (error) {
+      if (mounted) {
+        setState(() {
+          _error = 'تعذّر التحقق من سلامة أحد النماذج: $error';
+          _loading = false;
+        });
+      }
+    }
+  }
+
+  Future<bool> _hasFreeSpace(int requiredBytes) async {
+    final available = await AndroidVideoPicker.availableStorageBytes();
+    if (available >= requiredBytes) return true;
+    if (mounted) {
+      setState(() => _error =
+          'المساحة الحرة غير كافية. المطلوب نحو ${_formatBytes(requiredBytes)}، والمتاح ${_formatBytes(available)}.');
+    }
+    return false;
+  }
+
+  Future<void> _downloadWhisper() async {
+    if (_busy) return;
+    final required = WhisperModelCatalog.base.approximateBytes +
+        96 * 1024 * 1024;
+    if (!await _hasFreeSpace(required)) return;
+    setState(() {
+      _busy = true;
+      _progress = 0;
+      _error = null;
+    });
+    try {
+      await for (final update
+          in _whisper.downloadCatalogModel(WhisperModelCatalog.base)) {
+        if (mounted) setState(() => _progress = update.fraction);
+      }
+      await _refreshModels();
+    } catch (error) {
+      if (mounted) setState(() => _error = 'فشل تنزيل/التحقق من Whisper: $error');
+    } finally {
+      if (mounted) setState(() { _busy = false; _progress = null; });
+    }
+  }
+
+  Future<void> _downloadQwen() async {
+    if (_busy) return;
+    if (!await _hasFreeSpace(QwenModelManager.minimumFreeBytes)) return;
+    setState(() {
+      _busy = true;
+      _progress = 0;
+      _error = null;
+    });
+    try {
+      await _qwen.download(onProgress: (update) {
+        if (mounted) setState(() => _progress = update.fraction);
+      });
+      await _refreshModels();
+    } catch (error) {
+      if (mounted) setState(() => _error = 'فشل تنزيل/التحقق من Qwen: $error');
+    } finally {
+      if (mounted) setState(() { _busy = false; _progress = null; });
+    }
+  }
+
+  Future<void> _deleteWhisper() async {
+    if (_busy) return;
+    try {
+      final directory = await _whisper.directory;
+      final model = await _whisper.find(WhisperModelCatalog.base.fileName);
+      if (model != null) await model.delete();
+      if (mounted) setState(() => _whisperInstalled = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('تم حذف ملف Whisper من ${directory.path}.')),
+        );
+      }
+    } catch (error) {
+      if (mounted) setState(() => _error = 'تعذّر حذف نموذج Whisper: $error');
+    }
+  }
+
+  Future<void> _deleteQwen() async {
+    if (_busy) return;
+    try {
+      await _qwen.deleteInstalled();
+      if (mounted) setState(() => _qwenInstalled = false);
+    } catch (error) {
+      if (mounted) setState(() => _error = 'تعذّر حذف نموذج Qwen: $error');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(title: const Text('مركز النماذج المحلية')),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          Text('نماذج الذكاء الاصطناعي', style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w800)),
+          Text(
+            'نماذج الذكاء الاصطناعي',
+            style: theme.textTheme.headlineMedium?.copyWith(
+              fontWeight: FontWeight.w800,
+            ),
+          ),
           const SizedBox(height: 10),
-          Text('لن تُحمّل النماذج تلقائيًا. ستعرض هذه الشاشة التوافق والحجم والترخيص والمساحة قبل التنزيل.',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant, height: 1.5)),
+          Text(
+            'تُنزل النماذج عند اختيارك فقط، وتُحفظ في مساحة التطبيق. تُتحقق بصمة SHA-256 قبل إتاحتها للمحركات.',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+              height: 1.5,
+            ),
+          ),
+          if (_error != null) ...[
+            const SizedBox(height: 12),
+            _StatusNote(text: _error!),
+          ],
+          if (_busy) ...[
+            const SizedBox(height: 16),
+            LinearProgressIndicator(value: _progress),
+            const SizedBox(height: 6),
+            Text(
+              _progress == null
+                  ? 'جارٍ تجهيز النموذج…'
+                  : 'اكتمل ${(_progress! * 100).round()}%',
+              style: theme.textTheme.bodySmall,
+            ),
+          ],
           const SizedBox(height: 20),
-          for (final model in models)
-            Card(
-              child: ListTile(
-                contentPadding: const EdgeInsets.all(12),
-                leading: CircleAvatar(child: Icon(model.$3)),
-                title: Text(model.$1),
-                subtitle: Padding(padding: const EdgeInsets.only(top: 5), child: Text(model.$2)),
-                trailing: const Chip(label: Text('قيد الربط')),
+          _modelCard(
+            context,
+            title: 'Whisper Base متعدد اللغات',
+            description:
+                'تفريغ محلي للعربية والإنجليزية مع توقيتات الكلمات. الحجم التقريبي 148 MB؛ المحرك يعمل بوضع CPU على ARM64.',
+            metadata: 'whisper.cpp · مرجع نموذج مثبت · ملف الأوزان لا يُضمّن في APK',
+            installed: _whisperInstalled,
+            onInstall: _downloadWhisper,
+            onRemove: _deleteWhisper,
+          ),
+          const SizedBox(height: 12),
+          _modelCard(
+            context,
+            title: 'Qwen2.5-0.5B-Instruct Q4_K_M',
+            description:
+                'نموذج GGUF محلي لتعليقات تحريرية على المقاطع الموجودة. الحجم 491.4 MB تقريبًا؛ CPU ونافذة سياق صغيرة لتقليل الذاكرة.',
+            metadata: 'llama.cpp · Qwen · Apache-2.0 · لا يغيّر توقيت المقاطع أو درجاتها',
+            installed: _qwenInstalled,
+            onInstall: _downloadQwen,
+            onRemove: _deleteQwen,
+          ),
+          const SizedBox(height: 16),
+          const _StatusNote(
+            text: 'كشف المشاهد هنا يعتمد على تغيّر الإطارات، وليس كشف الوجوه أو فهم المشهد. لا يوجد إرسال سحابي للتفريغ أو الفيديو. يلزم اختبار الأداء والحرارة على جهاز فعلي قبل اعتماد جودة الإنتاج.',
+          ),
+          if (_loading) ...[
+            const SizedBox(height: 16),
+            const LinearProgressIndicator(),
+          ],
+          TextButton.icon(
+            onPressed: _busy ? null : _refreshModels,
+            icon: const Icon(Icons.refresh),
+            label: const Text('إعادة فحص النماذج'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _modelCard(
+    BuildContext context, {
+    required String title,
+    required String description,
+    required String metadata,
+    required bool installed,
+    required Future<void> Function() onInstall,
+    required Future<void> Function() onRemove,
+  }) {
+    final theme = Theme.of(context);
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const CircleAvatar(child: Icon(Icons.memory_outlined)),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                Chip(
+                  label: Text(installed ? 'متحقق' : 'غير مثبت'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(description),
+            const SizedBox(height: 6),
+            Text(
+              metadata,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
-          const SizedBox(height: 12),
-          const _StatusNote(text: 'لم يتم تثبيت أو تنزيل محركات الذكاء الاصطناعي في هذا الإصدار.'),
-        ],
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              children: [
+                FilledButton.tonalIcon(
+                  onPressed: _busy ? null : installed ? null : onInstall,
+                  icon: const Icon(Icons.download_outlined),
+                  label: Text(installed ? 'مثبت' : 'تنزيل والتحقق'),
+                ),
+                if (installed)
+                  TextButton.icon(
+                    onPressed: _busy ? null : onRemove,
+                    icon: const Icon(Icons.delete_outline),
+                    label: const Text('إزالة'),
+                  ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

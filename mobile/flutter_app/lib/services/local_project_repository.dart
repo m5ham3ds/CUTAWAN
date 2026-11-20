@@ -4,6 +4,8 @@ import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 
 import '../domain/project_contract.dart';
+import '../domain/transcript_contract.dart';
+import '../domain/clip_candidate.dart';
 
 class LocalProjectRepository {
   LocalProjectRepository({Directory? rootDirectory})
@@ -103,6 +105,83 @@ class LocalProjectRepository {
     return updated;
   }
 
+  Future<Directory> _artifactDirectory(String projectId) async {
+    _validateId(projectId);
+    final root = await _projectsDirectory();
+    final directory = Directory(
+      '${root.path}${Platform.pathSeparator}artifacts'
+      '${Platform.pathSeparator}$projectId',
+    );
+    if (!await directory.exists()) await directory.create(recursive: true);
+    return directory;
+  }
+
+  Future<void> saveTranscript(
+    String projectId,
+    CutawanTranscript transcript,
+  ) async {
+    final project = await load(projectId);
+    if (project == null) throw StateError('Project not found: $projectId');
+    transcript.validate();
+    if ((transcript.sourceDurationMs - project.source.durationMs).abs() > 1000) {
+      throw const FormatException('Transcript duration does not match its source project.');
+    }
+    final directory = await _artifactDirectory(projectId);
+    final target = File(
+      '${directory.path}${Platform.pathSeparator}transcript.json',
+    );
+    final temporary = File('${target.path}.tmp');
+    await temporary.writeAsString(jsonEncode(transcript.toJson()), flush: true);
+    if (await target.exists()) await target.delete();
+    await temporary.rename(target.path);
+  }
+
+  Future<CutawanTranscript?> loadTranscript(String projectId) async {
+    final directory = await _artifactDirectory(projectId);
+    final file = File(
+      '${directory.path}${Platform.pathSeparator}transcript.json',
+    );
+    if (!await file.exists()) return null;
+    final decoded = jsonDecode(await file.readAsString());
+    if (decoded is! Map<String, dynamic>) {
+      throw const FormatException('Transcript artifact root must be a JSON object.');
+    }
+    return CutawanTranscript.fromJson(decoded);
+  }
+
+  Future<void> saveCandidates(
+    String projectId,
+    CandidateSet candidateSet,
+  ) async {
+    final project = await load(projectId);
+    if (project == null) throw StateError('Project not found: $projectId');
+    candidateSet.validate();
+    if ((candidateSet.sourceDurationMs - project.source.durationMs).abs() > 1000) {
+      throw const FormatException('Candidate duration does not match its source project.');
+    }
+    final directory = await _artifactDirectory(projectId);
+    final target = File(
+      '${directory.path}${Platform.pathSeparator}candidates.json',
+    );
+    final temporary = File('${target.path}.tmp');
+    await temporary.writeAsString(jsonEncode(candidateSet.toJson()), flush: true);
+    if (await target.exists()) await target.delete();
+    await temporary.rename(target.path);
+  }
+
+  Future<CandidateSet?> loadCandidates(String projectId) async {
+    final directory = await _artifactDirectory(projectId);
+    final file = File(
+      '${directory.path}${Platform.pathSeparator}candidates.json',
+    );
+    if (!await file.exists()) return null;
+    final decoded = jsonDecode(await file.readAsString());
+    if (decoded is! Map<String, dynamic>) {
+      throw const FormatException('Candidate artifact root must be a JSON object.');
+    }
+    return CandidateSet.fromJson(decoded);
+  }
+
   Future<void> delete(String projectId) async {
     _validateId(projectId);
     final directory = await _projectsDirectory();
@@ -110,6 +189,11 @@ class LocalProjectRepository {
       '${directory.path}${Platform.pathSeparator}$projectId.json',
     );
     if (await file.exists()) await file.delete();
+    final artifacts = Directory(
+      '${directory.path}${Platform.pathSeparator}artifacts'
+      '${Platform.pathSeparator}$projectId',
+    );
+    if (await artifacts.exists()) await artifacts.delete(recursive: true);
   }
 
   void _validateId(String id) {
