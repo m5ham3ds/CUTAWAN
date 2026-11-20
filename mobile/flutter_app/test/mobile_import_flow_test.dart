@@ -5,7 +5,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:cutawan_mobile/app.dart';
 import 'package:cutawan_mobile/services/local_project_repository.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_test/flutter_test.dart';
 
 Future<void> pumpUi(WidgetTester tester) async {
   await tester.pump();
