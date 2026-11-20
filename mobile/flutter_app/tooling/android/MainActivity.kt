@@ -1144,7 +1144,7 @@ class MainActivity : FlutterActivity() {
         val result = mutableListOf<ReframeSegment>()
         var cursor = 0L
         for (item in raw) {
-            val map = item as? Map<*>
+            val map = item as? Map<*, *>
                 ?: throw IllegalArgumentException("Reframe segment must be an object.")
             val start = (map["startMs"] as? Number)?.toLong()
                 ?: throw IllegalArgumentException("Reframe segment start is missing.")
@@ -1163,7 +1163,7 @@ class MainActivity : FlutterActivity() {
                 }
                 result.add(ReframeSegment(start, end, mode))
             } else {
-                val region = map["region"] as? Map<*>
+                val region = map["region"] as? Map<*, *>
                     ?: throw IllegalArgumentException("Crop segments require a frame region.")
                 val x = (region["x"] as? Number)?.toFloat()
                     ?: throw IllegalArgumentException("Crop region x is missing.")
