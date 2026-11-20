@@ -1524,7 +1524,7 @@ class MainActivity : FlutterActivity() {
             val maxWidth = (canvasWidth * 0.90f).toInt().coerceAtLeast(120)
             val fillPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
                 color = captionStyle.textColor
-                textSize = textSize
+                this.textSize = textSize
                 this.typeface = typeface
                 style = Paint.Style.FILL
                 if (captionStyle.shadow > 0f) {
@@ -1538,7 +1538,7 @@ class MainActivity : FlutterActivity() {
             }
             val outlinePaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
                 color = captionStyle.outlineColor
-                textSize = textSize
+                this.textSize = textSize
                 this.typeface = typeface
                 style = Paint.Style.STROKE
                 strokeJoin = Paint.Join.ROUND
