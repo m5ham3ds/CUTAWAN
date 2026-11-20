@@ -32,6 +32,21 @@ void main() {
         await request.response.close();
         return;
       }
+      if (request.uri.path == '/slow') {
+        request.response.headers.contentType = ContentType('video', 'mp4');
+        request.response.contentLength = fixture.length * 12;
+        try {
+          for (var index = 0; index < 12; index++) {
+            request.response.add(fixture);
+            await request.response.flush();
+            await Future<void>.delayed(const Duration(milliseconds: 25));
+          }
+          await request.response.close();
+        } catch (_) {
+          // The client intentionally closes the connection when cancellation fires.
+        }
+        return;
+      }
       if (request.uri.path == '/html') {
         request.response.headers.contentType = ContentType.html;
         request.response.write('<html>not a video</html>');
@@ -162,6 +177,31 @@ void main() {
 
     expect(directory.listSync(), isEmpty);
     expect(servedPaths, isEmpty);
+  });
+
+  test('cancelling an active transfer closes the request and removes partial bytes',
+      () async {
+    final cancellation = DownloadCancellation();
+
+    await expectLater(
+      downloader.download(
+        url('/slow'),
+        cancellation: cancellation,
+        onProgress: (progress) {
+          if (progress.receivedBytes > 0) cancellation.cancel();
+        },
+      ),
+      throwsA(isA<VideoDownloadCancelled>()),
+    );
+
+    expect(
+      directory.listSync().where((entity) => entity.path.endsWith('.part')),
+      isEmpty,
+    );
+    expect(
+      directory.listSync().whereType<File>(),
+      isEmpty,
+    );
   });
 
   test('unsafe redirect destinations are rejected before a second request', () async {
