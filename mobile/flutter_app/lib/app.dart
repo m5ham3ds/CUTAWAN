@@ -4,9 +4,10 @@ import 'screens/home_shell.dart';
 import 'services/local_project_repository.dart';
 
 class CutawanApp extends StatelessWidget {
-  const CutawanApp({super.key, this.repository});
+  const CutawanApp({super.key, this.repository, this.storageUsageBytes});
 
   final LocalProjectRepository? repository;
+  final Future<int> Function()? storageUsageBytes;
 
   @override
   Widget build(BuildContext context) {
@@ -101,7 +102,10 @@ class CutawanApp extends StatelessWidget {
           ),
         ),
       ),
-      home: HomeShell(repository: repository),
+      home: HomeShell(
+        repository: repository,
+        storageUsageBytes: storageUsageBytes,
+      ),
     );
   }
 }
