@@ -63,7 +63,13 @@ void main() {
       await pumpUi(tester);
 
       expect(methods, contains('pickVideo'));
-      expect(find.text('تم استيراد الفيديو وحفظ المشروع محليًا.'), findsOneWidget);
+      final savedProjects = await repository.listProjects();
+      expect(
+        savedProjects,
+        hasLength(1),
+        reason: 'The selected media must be persisted as a project before the UI switches to Jobs.',
+      );
+      expect(savedProjects.single.source.uri, metadata['uri']);
 
       await tester.tap(find.text('المهام'));
       await pumpUi(tester);
