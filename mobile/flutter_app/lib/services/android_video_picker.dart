@@ -16,6 +16,15 @@ class AndroidVideoPicker {
     );
   }
 
+  static Future<void> releasePersistedPermission(String uri) async {
+    final parsed = Uri.tryParse(uri);
+    if (parsed == null || parsed.scheme != 'content') return;
+    await _channel.invokeMethod<void>(
+      'releasePersistedPermission',
+      <String, Object?>{'uri': uri},
+    );
+  }
+
   static Future<int> availableStorageBytes() async {
     final result = await _channel.invokeMethod<num>('getAvailableStorageBytes');
     if (result == null || result < 0) {
