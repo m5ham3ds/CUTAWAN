@@ -55,11 +55,25 @@ void main() {
     expect(generated.srt, contains('لحظة مهمة'));
     expect(generated.srt, isNot(contains(r'\N')));
     expect(generated.srt, contains('هذه لحظة مهمة\nللاختبار.'));
+    expect(generated.cues, hasLength(1));
+    expect(generated.cues.single['text'], 'هذه لحظة مهمة\nللاختبار.');
+    expect(generated.cues.single['startMs'], 0);
+    final words = generated.cues.single['words'] as List<Map<String, Object?>>;
+    expect(words.map((word) => word['text']), ['هذه', 'لحظة', 'مهمة', 'للاختبار.']);
+    expect(words.first['startMs'], 0);
+    expect(words.first['endMs'], 100);
+    final cueText = generated.cues.single['text'] as String;
+    for (final word in words) {
+      final start = word['startOffset'] as int;
+      final end = word['endOffset'] as int;
+      expect(cueText.substring(start, end), word['text']);
+    }
     expect(generated.ass, contains('[V4+ Styles]'));
     expect(generated.ass, contains('[Events]'));
     expect(generated.ass, contains(r'{\kf'));
     expect(generated.ass, contains(r'\pos(540,'));
     expect(generated.ass, contains('لحظة'));
+    expect(generated.cues, isEmpty);
   });
 
   test('returns empty sidecars when no timed word overlaps the clip', () {

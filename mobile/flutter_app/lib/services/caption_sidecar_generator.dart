@@ -6,9 +6,15 @@ import '../domain/clip_candidate.dart';
 import '../domain/transcript_contract.dart';
 
 class CaptionSidecars {
-  const CaptionSidecars({required this.srt, required this.ass});
+  const CaptionSidecars({
+    required this.srt,
+    required this.ass,
+    this.cues = const [],
+  });
+
   final String srt;
   final String ass;
+  final List<Map<String, Object?>> cues;
 }
 
 class CaptionSidecarGenerator {
@@ -40,12 +46,15 @@ class CaptionSidecarGenerator {
             ))
         .where((word) => word.endMs > word.startMs)
         .toList(growable: false);
-    if (timings.isEmpty) return const CaptionSidecars(srt: '', ass: '');
+    if (timings.isEmpty) {
+      return const CaptionSidecars(srt: '', ass: '', cues: []);
+    }
 
     final engine = const CaptionLayoutEngine();
     final groups = engine.group(timings, engine.budget(style, aspectRatio));
     final height = (canvasWidth / aspectRatio).round();
     final srt = StringBuffer();
+    final cues = <Map<String, Object?>>[];
     final ass = StringBuffer()
       ..writeln('[Script Info]')
       ..writeln('ScriptType: v4.00+')
@@ -78,6 +87,33 @@ class CaptionSidecarGenerator {
       final srtLines = group.lines
           .map((line) => line.map((word) => _plainText(word.text, style)).join(' '))
           .join('\n');
+      final cueWords = <Map<String, Object?>>[];
+      var textOffset = 0;
+      for (var lineIndex = 0; lineIndex < group.lines.length; lineIndex++) {
+        final line = group.lines[lineIndex];
+        for (var wordIndex = 0; wordIndex < line.length; wordIndex++) {
+          final word = line[wordIndex];
+          final value = _plainText(word.text, style);
+          final startOffset = textOffset;
+          final endOffset = startOffset + value.length;
+          cueWords.add({
+            'text': value,
+            'startMs': math.max(candidate.startMs, word.startMs) - candidate.startMs,
+            'endMs': math.min(candidate.endMs, word.endMs) - candidate.startMs,
+            'startOffset': startOffset,
+            'endOffset': endOffset,
+          });
+          textOffset = endOffset;
+          if (wordIndex < line.length - 1) textOffset++;
+        }
+        if (lineIndex < group.lines.length - 1) textOffset++;
+      }
+      cues.add({
+        'startMs': relativeStart,
+        'endMs': relativeEnd,
+        'text': srtLines,
+        'words': cueWords,
+      });
       index++;
       srt
         ..writeln(index)
@@ -97,7 +133,11 @@ class CaptionSidecarGenerator {
         'Dialogue: 0,${_assTime(relativeStart)},${_assTime(relativeEnd)},Default,,0,0,0,,${_positionTag(style, height, canvasWidth)}$karaokeLines',
       );
     }
-    return CaptionSidecars(srt: srt.toString(), ass: ass.toString());
+    return CaptionSidecars(
+      srt: srt.toString(),
+      ass: ass.toString(),
+      cues: cues,
+    );
   }
 
   static String _plainText(String value, CaptionStylePreset style) =>
