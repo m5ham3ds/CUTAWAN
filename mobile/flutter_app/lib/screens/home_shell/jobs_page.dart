@@ -114,7 +114,7 @@ class JobsPage extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'هذه سجلات مشاريع محفوظة على الجهاز. لم يبدأ محرك التحليل الفعلي بعد.',
+              'تُحفظ حالة كل مهمة ومراحلها محليًا؛ ويمكن متابعة المعالجة من شاشة المراجعة.',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
@@ -172,6 +172,7 @@ class JobsPage extends StatelessWidget {
                           crossAxisAlignment: WrapCrossAlignment.center,
                           children: [
                             Text(_jobStatusLabel(project.job.status)),
+                            Chip(label: Text(project.job.stage)),
                             if (project.job.canCancel)
                               TextButton.icon(
                                 onPressed: () => _cancel(context, project),
@@ -184,6 +185,16 @@ class JobsPage extends StatelessWidget {
                               label: const Text('حذف المشروع'),
                             ),
                           ],
+                        ),
+                        const SizedBox(height: 8),
+                        LinearProgressIndicator(
+                          value: project.job.status == ProjectJobStatus.prepared ? 0 : project.job.progress,
+                          minHeight: 5,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${(project.job.progress * 100).round()}% مكتمل · ${project.job.stage}',
+                          style: Theme.of(context).textTheme.bodySmall,
                         ),
                         Text(
                           'المهمة: ${project.job.id}',

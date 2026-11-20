@@ -21,6 +21,10 @@ class _ReviewPageState extends State<ReviewPage> {
   final Map<String, CandidateSet?> _candidateSets = {};
   final Map<String, ReframePlan?> _reframePlans = {};
   final Set<String> _loadingArtifacts = {};
+  final Map<String, List<Map<String, dynamic>>> _exportRecords = {};
+  bool _pipelineRunning = false;
+  String? _pipelineStage;
+  double _pipelineProgress = 0;
   String? _busyProjectId;
   String? _busyStage;
   String? _lastError;
@@ -62,11 +66,13 @@ class _ReviewPageState extends State<ReviewPage> {
       final transcript = await widget.repository.loadTranscript(projectId);
       final candidates = await widget.repository.loadCandidates(projectId);
       final reframePlan = await widget.repository.loadReframePlan(projectId);
+      final exports = await widget.repository.loadExportRecords(projectId);
       if (!mounted) { return; }
       setState(() {
         _transcripts[projectId] = transcript;
         _candidateSets[projectId] = candidates;
         _reframePlans[projectId] = reframePlan;
+        _exportRecords[projectId] = exports;
       });
     } catch (error) {
       if (mounted) {
@@ -128,6 +134,20 @@ class _ReviewPageState extends State<ReviewPage> {
           if (!mounted || _busyProjectId != project.id) { return; }
           setState(() => _progress = percent / 100);
         },
+        onStage: (stage, percent) {
+          if (!_pipelineRunning) return;
+          if (mounted) setState(() => _pipelineStage = stage);
+          unawaited(
+            widget.repository.saveJobState(
+              project.id,
+              status: ProjectJobStatus.running,
+              stage: stage,
+              progress: percent == null
+                  ? 0.12
+                  : (0.12 + 0.20 * percent / 100).clamp(0.12, 0.32).toDouble(),
+            ).then<void>((_) {}, onError: (Object _) {}),
+          );
+        },
       );
       await widget.repository.saveTranscript(project.id, transcript);
       await _loadArtifacts(project.id);
@@ -143,6 +163,7 @@ class _ReviewPageState extends State<ReviewPage> {
         );
       }
     } catch (error) {
+      if (_pipelineRunning) rethrow;
       if (mounted) { setState(() => _lastError = 'فشل التفريغ المحلي: $error'); }
     } finally {
       if (mounted) {
@@ -243,6 +264,7 @@ class _ReviewPageState extends State<ReviewPage> {
         );
       }
     } catch (error) {
+      if (_pipelineRunning) rethrow;
       if (mounted) { setState(() => _lastError = 'فشل اكتشاف المقاطع: $error'); }
     } finally {
       if (mounted) {
@@ -291,6 +313,7 @@ class _ReviewPageState extends State<ReviewPage> {
         SnackBar(content: Text(message)),
       );
     } catch (error) {
+      if (_pipelineRunning) rethrow;
       if (mounted) {
         setState(() => _lastError = 'فشل تحليل التأطير: $error');
       }
@@ -305,6 +328,60 @@ class _ReviewPageState extends State<ReviewPage> {
     }
   }
 
+  Future<void> _runFullPipeline(CutawanProject project) async {
+    if (_pipelineRunning || _busyProjectId != null) return;
+    setState(() {
+      _pipelineRunning = true;
+      _pipelineStage = 'queued';
+      _pipelineProgress = 0;
+      _lastError = null;
+    });
+    try {
+      final result = await ProcessingPipelineService(
+        repository: widget.repository,
+      ).run(
+        projectId: project.id,
+        transcribe: _transcribe,
+        discover: _discover,
+        analyzeFraming: _analyzeFraming,
+        onProgress: (stage, progress) {
+          if (!mounted) return;
+          setState(() {
+            _pipelineStage = stage;
+            _pipelineProgress = progress;
+          });
+        },
+      );
+      await _loadArtifacts(project.id);
+      await widget.onProjectsChanged();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'اكتمل خط المعالجة: ' + result.exportedCount.toString() +
+              ' ملف MP4 جديد، ' + result.skippedCount.toString() +
+              ' نتيجة مستعادة، ' + result.candidatesCount.toString() +
+              ' مقطع مقترح.',
+            ),
+          ),
+        );
+      }
+    } catch (error) {
+      if (mounted) {
+        setState(() => _lastError = 'توقفت المعالجة عند ' +
+            (_pipelineStage ?? 'مرحلة غير معروفة') + ': ' + error.toString());
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _pipelineRunning = false;
+          _pipelineStage = null;
+          _pipelineProgress = 0;
+        });
+        await widget.onProjectsChanged();
+      }
+    }
+  }
   @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder<List<CutawanProject>>(
@@ -322,7 +399,7 @@ class _ReviewPageState extends State<ReviewPage> {
           ),
           const SizedBox(height: 8),
           Text(
-            'التفريغ واكتشاف المقاطع يعملان محليًا بعد تثبيت النماذج. درجات الاقتراحات مؤشرات تحريرية وليست ضمانًا للانتشار.',
+            'شغّل مسارًا واحدًا من فحص المصدر إلى المقاطع المصدّرة، مع حفظ المراحل والنتائج للتحقق والاستئناف.',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                   height: 1.5,
@@ -412,6 +489,21 @@ class _ReviewPageState extends State<ReviewPage> {
                 ),
               ],
             ),
+            FilledButton.icon(
+              onPressed: isBusy || _pipelineRunning ? null : () => _runFullPipeline(project),
+              icon: Icon(_pipelineRunning ? Icons.hourglass_top : Icons.play_arrow_rounded),
+              label: Text(_pipelineRunning ? 'المعالجة تعمل…' : 'تشغيل خط المعالجة الكامل / استئناف'),
+            ),
+            if (_pipelineRunning && _busyProjectId == null) ...[
+              const SizedBox(height: 10),
+              LinearProgressIndicator(value: _pipelineProgress),
+              const SizedBox(height: 6),
+              Text(
+                'المرحلة: ' + (_pipelineStage ?? 'بدء') + ' · ' +
+                    (100 * _pipelineProgress).round().toString() + '%',
+                style: theme.textTheme.bodySmall,
+              ),
+            ],
             if (isBusy) ...[
               const SizedBox(height: 10),
               LinearProgressIndicator(value: _progress),
@@ -475,6 +567,22 @@ class _ReviewPageState extends State<ReviewPage> {
                 'النسخة الحالية تتبع الوجه الأمامي فقط؛ لا تعتبر ذلك حكماً مؤكداً على المتحدث من الصوت والصورة.',
                 style: TextStyle(fontSize: 11),
               ),
+            ],
+            if ((_exportRecords[project.id] ?? const []).isNotEmpty) ...[
+              const Divider(height: 24),
+              Text('الملفات المصدّرة · ' + _exportRecords[project.id]!.length.toString(),
+                  style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800)),
+              for (final export in _exportRecords[project.id]!)
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.video_file_outlined),
+                  title: Text(export['displayName'] as String? ?? 'CUTAWAN export.mp4'),
+                  subtitle: Text(
+                    '${export['width']} × ${export['height']} · '
+                    '${_formatDuration((export['durationMs'] as num? ?? 0).toInt())} · '
+                    '${_formatBytes((export['sizeBytes'] as num? ?? 0).toInt())} · SHA-256 verified',
+                  ),
+                ),
             ],
             if (candidateSet != null) ...[
               const Divider(height: 24),

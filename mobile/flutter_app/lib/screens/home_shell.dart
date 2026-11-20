@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -19,6 +21,7 @@ import '../services/candidate_discovery_service.dart';
 import '../services/local_editorial_annotation_service.dart';
 import '../services/ai_model_gateway.dart';
 import '../services/android_reframe_analysis_service.dart';
+import '../services/processing_job_service.dart';
 
 
 part 'home_shell/create_page.dart';
@@ -43,6 +46,7 @@ class _HomeShellState extends State<HomeShell> {
   final ValueNotifier<List<CutawanProject>> _projects =
       ValueNotifier<List<CutawanProject>>([]);
   int _selectedIndex = 0;
+  bool _didRecoverJobs = false;
 
   @override
   void initState() {
@@ -53,6 +57,10 @@ class _HomeShellState extends State<HomeShell> {
 
   Future<void> _reloadProjects() async {
     try {
+      if (!_didRecoverJobs) {
+        _didRecoverJobs = true;
+        await ProcessingJobService(repository: _repository).recoverInterruptedJobs();
+      }
       final projects = await _repository.listProjects();
       if (mounted) { _projects.value = projects; }
     } catch (error) {

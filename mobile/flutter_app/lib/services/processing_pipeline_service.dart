@@ -308,7 +308,7 @@ class ProcessingPipelineService {
           aspectRatio: _aspectRatio(project),
           outputPath: outputPath,
           shouldCancel: () => _jobs.isCancellationRequested(projectId),
-          onRenderStarted: onRenderStarted,
+          onStarted: onRenderStarted,
           onProgress: (fraction) {
             final value = 0.62 + 0.28 * (index + fraction) / total;
             onProgress?.call('rendering', value);
@@ -437,7 +437,7 @@ class ProcessingPipelineService {
         status: ProjectJobStatus.running,
         stage: stage,
         progress: progress.clamp(0.0, 0.99).toDouble(),
-      ).catchError((Object _) {}),
+      ).then<void>((_) {}, onError: (Object _) {}),
     );
   }
 
