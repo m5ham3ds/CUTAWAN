@@ -202,7 +202,9 @@ class VideoExportService {
       }
       previousStart = start;
       for (final rawWord in rawWords) {
-        if (rawWord is! Map) return false;
+        if (rawWord is! Map) {
+          return false;
+        }
         final wordText = rawWord['text'];
         final wordStart = rawWord['startMs'];
         final wordEnd = rawWord['endMs'];
@@ -222,14 +224,18 @@ class VideoExportService {
             textEnd > text.length) {
           return false;
         }
-        if (text.substring(textStart, textEnd) != wordText) return false;
+        if (text.substring(textStart, textEnd) != wordText) {
+          return false;
+        }
       }
     }
     return true;
   }
 
   static bool _validCaptionStyle(Map<String, Object?>? style) {
-    if (style == null) return false;
+    if (style == null) {
+      return false;
+    }
     final fontFamily = style['fontFamily'];
     final fontScale = style['fontScale'];
     final positionY = style['positionY'];
@@ -482,7 +488,6 @@ class VideoExportService {
 }
 ).hasMatch(box));
   }
-
   static bool _validReframeShots(
     List<Map<String, Object?>> shots,
     int clipDurationMs,
