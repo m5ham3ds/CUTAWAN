@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 
 import 'screens/home_shell.dart';
+import 'services/local_project_repository.dart';
 
 class CutawanApp extends StatelessWidget {
-  const CutawanApp({super.key});
+  const CutawanApp({super.key, this.repository});
+
+  final LocalProjectRepository? repository;
 
   @override
   Widget build(BuildContext context) {
@@ -98,7 +101,7 @@ class CutawanApp extends StatelessWidget {
           ),
         ),
       ),
-      home: const HomeShell(),
+      home: HomeShell(repository: repository),
     );
   }
 }
