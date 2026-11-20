@@ -236,6 +236,43 @@ class ProcessingPipelineService {
         }
       }
 
+      final captionCuesByClip = <String, List<Map<String, Object?>>>{};
+      final captionStyle = project.preferences.captionsEnabled
+          ? captionStylePresets.firstWhere(
+              (preset) => preset.id == project.preferences.captionStyleId,
+              orElse: () => captionStylePresets.first,
+            )
+          : null;
+      final captionStylePayload = captionStyle == null
+          ? null
+          : <String, Object?>{
+              'fontFamily': captionStyle.fontFamily,
+              'fontScale': captionStyle.fontScale,
+              'uppercase': captionStyle.uppercase,
+              'textColor': captionStyle.textColor,
+              'highlightColor': captionStyle.highlightColor,
+              'highlightBoxColor': captionStyle.highlightBoxColor,
+              'outlineColor': captionStyle.outlineColor,
+              'outlineWidth': captionStyle.outlineWidth,
+              'shadow': captionStyle.shadow,
+              'bold': captionStyle.bold,
+              'positionY': captionStyle.positionY,
+            };
+      if (captionStyle != null) {
+        for (final candidate in candidates.candidates) {
+          final generated = _captions.generate(
+            transcript: transcript,
+            candidate: candidate,
+            style: captionStyle,
+            aspectRatio: _aspectRatio(project),
+            animationId: project.preferences.captionAnimationId,
+          );
+          if (generated.cues.isEmpty) {
+            throw StateError('Caption overlay cues are missing for ' + candidate.id);
+          }
+          captionCuesByClip[candidate.id] = generated.cues;
+        }
+      }
       currentStage = 'rendering';
       var exported = 0;
       var skipped = 0;
@@ -273,6 +310,8 @@ class ProcessingPipelineService {
             'renderer': 'androidx-media3-transformer-1.11.1-reframe-v1',
             'subtitleStyle': project.preferences.captionStyleId,
             'subtitleAnimation': project.preferences.captionAnimationId,
+            'captionCues': captionCuesByClip[candidate.id] ?? const [],
+            'captionRenderer': 'media3-canvas-overlay-rtl-v1',
           },
         );
         final validCheckpoint = await _jobs.hasCheckpoint(
@@ -357,6 +396,9 @@ class ProcessingPipelineService {
           aspectRatio: _aspectRatio(project),
           sourceAspectRatio: sourceAspectRatio,
           reframeShots: clipReframeShots,
+          captionCues: captionCuesByClip[candidate.id] ?? const [],
+          captionStyle: captionStylePayload,
+          captionAnimationId: project.preferences.captionAnimationId,
           outputPath: outputPath,
           shouldCancel: () => _jobs.isCancellationRequested(projectId),
           onStarted: onRenderStarted,

@@ -85,6 +85,43 @@ void main() {
       aspectRatio: 9 / 16,
       sourceAspectRatio: 16 / 9,
       reframeShots: cropPlan,
+      captionCues: [
+        <String, Object?>{
+          'startMs': 0,
+          'endMs': 15000,
+          'text': 'مرحبا بالعالم',
+          'words': [
+            <String, Object?>{
+              'text': 'مرحبا',
+              'startMs': 0,
+              'endMs': 800,
+              'startOffset': 0,
+              'endOffset': 5,
+            },
+            <String, Object?>{
+              'text': 'بالعالم',
+              'startMs': 850,
+              'endMs': 1500,
+              'startOffset': 6,
+              'endOffset': 13,
+            },
+          ],
+        },
+      ],
+      captionStyle: <String, Object?>{
+        'fontFamily': 'Poppins',
+        'fontScale': 0.046,
+        'uppercase': false,
+        'textColor': '#FFFFFF',
+        'highlightColor': '#4ADE80',
+        'highlightBoxColor': null,
+        'outlineColor': '#000000',
+        'outlineWidth': 2.6,
+        'shadow': 1.0,
+        'bold': true,
+        'positionY': 0.74,
+      },
+      captionAnimationId: 'karaoke_fill',
       outputPath: '/data/user/0/com.cutawan/files/exports/clip_1.mp4',
       onStarted: (id) => startedId = id,
       onProgress: (value) => progress = value,
@@ -106,6 +143,9 @@ void main() {
     expect(arguments, containsPair('endMs', 16000));
     expect(arguments, containsPair('sourceAspectRatio', 16 / 9));
     expect(arguments['reframeShots'], cropPlan);
+    expect(arguments['captionAnimationId'], 'karaoke_fill');
+    expect(arguments['captionCues'], isA<List<Map<String, Object?>>>());
+    expect(arguments['captionStyle'], isA<Map<String, Object?>>());
   });
 
   test('rejects reframe segments that do not cover the complete clip', () async {
@@ -157,6 +197,52 @@ void main() {
             },
           },
         ],
+      ),
+      throwsA(isA<FormatException>()),
+    );
+    expect(calls, isEmpty);
+  });
+
+  test('rejects caption word offsets that do not match the cue text', () async {
+    final service = VideoExportService(channel: channel);
+    await expectLater(
+      service.renderClip(
+        clipId: 'clip_bad_caption',
+        sourceUri: 'content://media/external/video/media/42',
+        startMs: 0,
+        endMs: 5000,
+        aspectRatio: 9 / 16,
+        sourceAspectRatio: 16 / 9,
+        outputPath: '/data/user/0/com.cutawan/files/exports/clip_bad_caption.mp4',
+        captionCues: [
+          <String, Object?>{
+            'startMs': 0,
+            'endMs': 3000,
+            'text': 'مرحبا بالعالم',
+            'words': [
+              <String, Object?>{
+                'text': 'خطأ',
+                'startMs': 0,
+                'endMs': 800,
+                'startOffset': 0,
+                'endOffset': 3,
+              },
+            ],
+          },
+        ],
+        captionStyle: <String, Object?>{
+          'fontFamily': 'Poppins',
+          'fontScale': 0.046,
+          'uppercase': false,
+          'textColor': '#FFFFFF',
+          'highlightColor': '#4ADE80',
+          'highlightBoxColor': null,
+          'outlineColor': '#000000',
+          'outlineWidth': 2.6,
+          'shadow': 1.0,
+          'bold': true,
+          'positionY': 0.74,
+        },
       ),
       throwsA(isA<FormatException>()),
     );
