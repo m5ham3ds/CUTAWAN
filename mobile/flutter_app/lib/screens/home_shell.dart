@@ -7,7 +7,6 @@ import '../domain/clip_preferences.dart';
 import '../domain/project_contract.dart';
 import '../services/android_video_picker.dart';
 import '../services/direct_video_downloader.dart';
-import '../services/direct_video_downloader.dart';
 import '../services/local_project_repository.dart';
 
 class HomeShell extends StatefulWidget {
