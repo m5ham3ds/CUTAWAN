@@ -580,14 +580,18 @@ class _ReviewPageState extends State<ReviewPage> {
               Text('الملفات المصدّرة · ${_exportRecords[project.id]!.length}',
                   style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800)),
               for (final export in _exportRecords[project.id]!)
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.video_file_outlined),
-                  title: Text(export['displayName'] as String? ?? 'CUTAWAN export.mp4'),
-                  subtitle: Text(
-                    '${export['width']} × ${export['height']} · '
-                    '${_formatDuration((export['durationMs'] as num? ?? 0).toInt())} · '
-                    '${_formatBytes((export['sizeBytes'] as num? ?? 0).toInt())} · SHA-256 verified',
+                Material(
+                  color: Colors.transparent,
+                  borderRadius: BorderRadius.circular(14),
+                  child: ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.video_file_outlined),
+                    title: Text(export['displayName'] as String? ?? 'CUTAWAN export.mp4'),
+                    subtitle: Text(
+                      '${export['width']} × ${export['height']} · '
+                      '${_formatDuration((export['durationMs'] as num? ?? 0).toInt())} · '
+                      '${_formatBytes((export['sizeBytes'] as num? ?? 0).toInt())} · SHA-256 verified',
+                    ),
                   ),
                 ),
             ],
@@ -609,16 +613,20 @@ class _ReviewPageState extends State<ReviewPage> {
               ),
               const SizedBox(height: 8),
               for (final candidate in candidateSet.candidates)
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(candidate.title.isEmpty ? 'مقطع مقترح' : candidate.title),
-                  subtitle: Text(
-                    '${_formatDuration(candidate.startMs)}–${_formatDuration(candidate.endMs)} · ${candidate.durationMs ~/ 1000}s · ${candidate.score.toStringAsFixed(0)}/100'
-                    '${candidate.modelAnnotated ? ' · وصف محلي' : ''}'
-                    '\n${candidate.explanations.take(2).join(' · ')}',
+                Material(
+                  color: Colors.transparent,
+                  borderRadius: BorderRadius.circular(14),
+                  child: ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(candidate.title.isEmpty ? 'مقطع مقترح' : candidate.title),
+                    subtitle: Text(
+                      '${_formatDuration(candidate.startMs)}–${_formatDuration(candidate.endMs)} · ${candidate.durationMs ~/ 1000}s · ${candidate.score.toStringAsFixed(0)}/100'
+                      '${candidate.modelAnnotated ? ' · وصف محلي' : ''}'
+                      '\n${candidate.explanations.take(2).join(' · ')}',
+                    ),
+                    isThreeLine: true,
+                    leading: const Icon(Icons.movie_creation_outlined),
                   ),
-                  isThreeLine: true,
-                  leading: const Icon(Icons.movie_creation_outlined),
                 ),
             ],
           ],
