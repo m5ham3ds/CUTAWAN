@@ -1,5 +1,22 @@
 package com.m5ham3ds.cutawan_mobile
 
+import android.content.ContentValues
+import android.os.Build
+import android.os.Environment
+import android.provider.MediaStore
+import androidx.media3.common.MediaItem
+import androidx.media3.common.MimeTypes
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.effect.Presentation
+import androidx.media3.transformer.Effects
+import androidx.media3.transformer.EditedMediaItem
+import androidx.media3.transformer.ExportException
+import androidx.media3.transformer.ExportResult
+import androidx.media3.transformer.ProgressHolder
+import androidx.media3.transformer.Transformer
+import java.io.FileInputStream
+import java.io.InputStream
+import java.security.MessageDigest
 import android.app.Activity
 import android.content.ActivityNotFoundException
 import android.content.Intent
@@ -32,12 +49,25 @@ import java.util.Locale
 import java.util.TimeZone
 import java.util.concurrent.Executors
 
+@OptIn(UnstableApi::class)
 class MainActivity : FlutterActivity() {
     private val channelName = "com.cutawan.mobile/media"
     private val openVideoRequestCode = 4102
     private val ioExecutor = Executors.newSingleThreadExecutor()
     private val mainHandler = Handler(Looper.getMainLooper())
     private var pendingPickerResult: MethodChannel.Result? = null
+    private data class RenderSession(
+        val id: String,
+        val transformer: Transformer,
+        val progressHolder: ProgressHolder,
+        val outputFile: File,
+        var status: String = "running",
+        var progress: Int = 0,
+        var error: String? = null,
+        var result: Map<String, Any>? = null,
+        var cancelRequested: Boolean = false
+    )
+    private val renderSessions = mutableMapOf<String, RenderSession>()
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -96,6 +126,62 @@ class MainActivity : FlutterActivity() {
                         } else {
                             analyzeFaces(rawUri, result)
                         }
+                    }
+                    "fingerprintVideo" -> {
+                        val rawUri = call.argument<String>("uri")
+                        if (rawUri.isNullOrBlank()) {
+                            result.error("INVALID_URI", "A video URI is required.", null)
+                        } else {
+                            fingerprintVideo(rawUri, result)
+                        }
+                    }
+                    "startRender" -> startRender(call, result)
+                    "getRenderProgress" -> {
+                        val id = call.argument<String>("renderId")
+                        val session = if (id.isNullOrBlank()) null else renderSessions[id]
+                        if (session == null) {
+                            result.error("RENDER_NOT_FOUND", "The render job was not found.", id)
+                        } else {
+                            if (session.status == "running") {
+                                try {
+                                    if (session.transformer.getProgress(session.progressHolder) ==
+                                        Transformer.PROGRESS_STATE_AVAILABLE
+                                    ) {
+                                        session.progress = session.progressHolder.progress.coerceIn(0, 99)
+                                    }
+                                } catch (_: IllegalStateException) { }
+                            }
+                            result.success(
+                                mapOf(
+                                    "renderId" to session.id,
+                                    "status" to session.status,
+                                    "progress" to session.progress,
+                                    "error" to (session.error ?: ""),
+                                    "result" to (session.result ?: emptyMap<String, Any>())
+                                )
+                            )
+                        }
+                    }
+                    "cancelRender" -> {
+                        val id = call.argument<String>("renderId")
+                        val session = if (id.isNullOrBlank()) null else renderSessions[id]
+                        if (session == null) {
+                            result.success(false)
+                        } else {
+                            session.cancelRequested = true
+                            if (session.status == "running") {
+                                session.status = "cancelled"
+                                session.error = "Cancelled by user."
+                                try { session.transformer.cancel() } catch (_: Exception) { }
+                                if (session.outputFile.exists()) session.outputFile.delete()
+                            }
+                            result.success(true)
+                        }
+                    }
+                    "releaseRender" -> {
+                        val id = call.argument<String>("renderId")
+                        if (id != null) renderSessions.remove(id)
+                        result.success(null)
                     }
                     else -> result.notImplemented()
                 }
@@ -827,6 +913,310 @@ class MainActivity : FlutterActivity() {
         return samples
     }
 
+
+    private fun hasPersistedReadGrant(uri: Uri): Boolean =
+        contentResolver.persistedUriPermissions.any {
+            it.uri == uri && it.isReadPermission
+        }
+
+    private fun validateReadableSource(uri: Uri) {
+        when (uri.scheme) {
+            "content" -> if (!hasPersistedReadGrant(uri)) {
+                throw SecurityException("No persistent read permission exists for this video.")
+            }
+            "file" -> {
+                val file = File(uri.path ?: throw IllegalArgumentException("File URI has no path."))
+                val canonical = file.canonicalPath
+                val filesBase = filesDir.canonicalPath
+                val cacheBase = cacheDir.canonicalPath
+                val allowed = canonical.startsWith(filesBase + File.separator) ||
+                    canonical.startsWith(cacheBase + File.separator)
+                if (!file.isFile || !allowed) {
+                    throw SecurityException("Local video is outside Cutawan's private storage.")
+                }
+            }
+            else -> throw IllegalArgumentException("Unsupported video URI scheme.")
+        }
+    }
+
+    private fun openReadableSource(uri: Uri): InputStream {
+        validateReadableSource(uri)
+        return if (uri.scheme == "content") {
+            contentResolver.openInputStream(uri)
+                ?: throw IllegalStateException("Could not open the selected video.")
+        } else {
+            FileInputStream(File(uri.path!!))
+        }
+    }
+
+    private fun fingerprintVideo(rawUri: String, reply: MethodChannel.Result) {
+        ioExecutor.execute {
+            try {
+                val uri = Uri.parse(rawUri)
+                val digest = MessageDigest.getInstance("SHA-256")
+                openReadableSource(uri).use { input ->
+                    val buffer = ByteArray(1024 * 1024)
+                    while (true) {
+                        val count = input.read(buffer)
+                        if (count < 0) break
+                        if (count > 0) digest.update(buffer, 0, count)
+                    }
+                }
+                val hex = digest.digest().joinToString("") { "%02x".format(it) }
+                mainHandler.post { reply.success(mapOf("sha256" to hex)) }
+            } catch (error: Exception) {
+                mainHandler.post { reply.error("SOURCE_FINGERPRINT_FAILED", error.message, null) }
+            }
+        }
+    }
+
+    private fun startRender(call: io.flutter.plugin.common.MethodCall, reply: MethodChannel.Result) {
+        try {
+            val rawUri = call.argument<String>("uri")
+                ?: throw IllegalArgumentException("A source URI is required.")
+            val clipId = call.argument<String>("clipId")
+                ?: throw IllegalArgumentException("A clip ID is required.")
+            val outputPath = call.argument<String>("outputPath")
+                ?: throw IllegalArgumentException("An output path is required.")
+            val startMs = call.argument<Number>("startMs")?.toLong()
+                ?: throw IllegalArgumentException("A clip start time is required.")
+            val endMs = call.argument<Number>("endMs")?.toLong()
+                ?: throw IllegalArgumentException("A clip end time is required.")
+            val aspectRatio = call.argument<Number>("aspectRatio")?.toFloat()
+                ?: throw IllegalArgumentException("An output aspect ratio is required.")
+            if (!clipId.matches(Regex("^[A-Za-z0-9_-]{1,160}$")) ||
+                startMs < 0 || endMs <= startMs ||
+                !aspectRatio.isFinite() || aspectRatio <= 0f || aspectRatio > 4f
+            ) {
+                throw IllegalArgumentException("Clip ID, range or aspect ratio is invalid.")
+            }
+            if (renderSessions.values.any { it.status == "running" }) {
+                throw IllegalStateException("Another video export is already running.")
+            }
+            val sourceUri = Uri.parse(rawUri)
+            validateReadableSource(sourceUri)
+            val outputFile = File(outputPath)
+            val canonicalOutput = outputFile.canonicalPath
+            val filesBase = filesDir.canonicalPath + File.separator
+            if (!canonicalOutput.startsWith(filesBase) ||
+                !canonicalOutput.endsWith(".mp4", ignoreCase = true)
+            ) {
+                throw SecurityException("Export output must remain inside Cutawan's private storage.")
+            }
+            val parent = outputFile.parentFile
+                ?: throw IllegalArgumentException("Export output directory is missing.")
+            if (!parent.exists() && !parent.mkdirs()) {
+                throw IllegalStateException("Could not create the export directory.")
+            }
+            if (outputFile.exists() && !outputFile.delete()) {
+                throw IllegalStateException("Could not replace the previous partial export.")
+            }
+
+            val renderId = "render_" + java.util.UUID.randomUUID().toString().replace("-", "")
+            val mediaItem = MediaItem.Builder()
+                .setUri(sourceUri)
+                .setClippingConfiguration(
+                    MediaItem.ClippingConfiguration.Builder()
+                        .setStartPositionMs(startMs)
+                        .setEndPositionMs(endMs)
+                        .build()
+                )
+                .build()
+            val editedItem = EditedMediaItem.Builder(mediaItem)
+                .setEffects(
+                    Effects(
+                        emptyList(),
+                        listOf(
+                            Presentation.createForAspectRatio(
+                                aspectRatio,
+                                Presentation.LAYOUT_SCALE_TO_FIT
+                            )
+                        )
+                    )
+                )
+                .build()
+
+            val transformer = Transformer.Builder(this)
+                .setVideoMimeType(MimeTypes.VIDEO_H264)
+                .setAudioMimeType(MimeTypes.AUDIO_AAC)
+                .addListener(object : Transformer.Listener {
+                    override fun onCompleted(
+                        composition: androidx.media3.transformer.Composition,
+                        exportResult: ExportResult
+                    ) {
+                        val session = renderSessions[renderId] ?: return
+                        if (session.cancelRequested || session.status == "cancelled") {
+                            if (outputFile.exists()) outputFile.delete()
+                            session.status = "cancelled"
+                            return
+                        }
+                        try {
+                            val validated = validateRenderedVideo(outputFile, endMs - startMs)
+                            val published = publishRenderedVideo(outputFile, clipId)
+                            session.result = mapOf(
+                                "outputUri" to published.first.toString(),
+                                "displayName" to published.second,
+                                "sha256" to validated.sha256,
+                                "sizeBytes" to validated.sizeBytes,
+                                "durationMs" to validated.durationMs,
+                                "width" to validated.width,
+                                "height" to validated.height,
+                                "hasAudio" to validated.hasAudio,
+                                "validated" to true
+                            )
+                            session.progress = 100
+                            session.status = "completed"
+                            if (outputFile.exists()) outputFile.delete()
+                        } catch (error: Exception) {
+                            if (outputFile.exists()) outputFile.delete()
+                            session.status = "failed"
+                            session.error = error.message ?: "Rendered video validation failed."
+                        }
+                    }
+
+                    override fun onError(
+                        composition: androidx.media3.transformer.Composition,
+                        exportResult: ExportResult,
+                        exportException: ExportException
+                    ) {
+                        val session = renderSessions[renderId] ?: return
+                        session.status = if (session.cancelRequested) "cancelled" else "failed"
+                        session.error = if (session.cancelRequested) "Cancelled by user."
+                            else (exportException.message ?: "Media3 export failed.")
+                        if (outputFile.exists()) outputFile.delete()
+                    }
+                })
+                .build()
+            renderSessions[renderId] = RenderSession(
+                id = renderId,
+                transformer = transformer,
+                progressHolder = ProgressHolder(),
+                outputFile = outputFile
+            )
+            transformer.start(editedItem, outputFile.absolutePath)
+            reply.success(mapOf("renderId" to renderId))
+        } catch (error: Exception) {
+            reply.error("RENDER_START_FAILED", error.message, null)
+        }
+    }
+
+    private data class ValidatedRender(
+        val sha256: String,
+        val sizeBytes: Long,
+        val durationMs: Long,
+        val width: Int,
+        val height: Int,
+        val hasAudio: Boolean
+    )
+
+    private fun validateRenderedVideo(output: File, expectedDurationMs: Long): ValidatedRender {
+        if (!output.isFile || output.length() < 2048L) {
+            throw IllegalStateException("Media3 completed without a usable output file.")
+        }
+        val retriever = MediaMetadataRetriever()
+        var durationMs = -1L
+        var width = -1
+        var height = -1
+        try {
+            retriever.setDataSource(output.absolutePath)
+            durationMs = retriever.extractMetadata(
+                MediaMetadataRetriever.METADATA_KEY_DURATION
+            )?.toLongOrNull() ?: -1L
+            width = retriever.extractMetadata(
+                MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH
+            )?.toIntOrNull() ?: -1
+            height = retriever.extractMetadata(
+                MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT
+            )?.toIntOrNull() ?: -1
+        } finally {
+            try { retriever.release() } catch (_: Exception) { }
+        }
+        if (durationMs <= 0L || width <= 0 || height <= 0) {
+            throw IllegalStateException("Rendered MP4 has missing duration or video dimensions.")
+        }
+        val tolerance = max(1500L, expectedDurationMs / 10L)
+        if (kotlin.math.abs(durationMs - expectedDurationMs) > tolerance) {
+            throw IllegalStateException(
+                "Rendered duration " + durationMs + " ms differs from requested " +
+                    expectedDurationMs + " ms."
+            )
+        }
+        val extractor = MediaExtractor()
+        var hasVideo = false
+        var hasAudio = false
+        try {
+            extractor.setDataSource(output.absolutePath)
+            for (index in 0 until extractor.trackCount) {
+                val mime = extractor.getTrackFormat(index).getString(MediaFormat.KEY_MIME) ?: continue
+                if (mime.startsWith("video/")) hasVideo = true
+                if (mime.startsWith("audio/")) hasAudio = true
+            }
+        } finally {
+            try { extractor.release() } catch (_: Exception) { }
+        }
+        if (!hasVideo) throw IllegalStateException("Rendered MP4 contains no video track.")
+        val digest = MessageDigest.getInstance("SHA-256")
+        FileInputStream(output).use { input ->
+            val buffer = ByteArray(1024 * 1024)
+            while (true) {
+                val count = input.read(buffer)
+                if (count < 0) break
+                if (count > 0) digest.update(buffer, 0, count)
+            }
+        }
+        return ValidatedRender(
+            sha256 = digest.digest().joinToString("") { "%02x".format(it) },
+            sizeBytes = output.length(),
+            durationMs = durationMs,
+            width = width,
+            height = height,
+            hasAudio = hasAudio
+        )
+    }
+
+    private fun publishRenderedVideo(source: File, clipId: String): Pair<Uri, String> {
+        val displayName = "CUTAWAN_" + clipId.take(80) + "_" +
+            System.currentTimeMillis() + ".mp4"
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val values = ContentValues().apply {
+                put(MediaStore.MediaColumns.DISPLAY_NAME, displayName)
+                put(MediaStore.MediaColumns.MIME_TYPE, "video/mp4")
+                put(
+                    MediaStore.MediaColumns.RELATIVE_PATH,
+                    Environment.DIRECTORY_MOVIES + "/CUTAWAN"
+                )
+                put(MediaStore.MediaColumns.IS_PENDING, 1)
+            }
+            val uri = contentResolver.insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, values)
+                ?: throw IllegalStateException("Android could not create the Movies/CUTAWAN export.")
+            try {
+                contentResolver.openOutputStream(uri, "w")?.use { destination ->
+                    FileInputStream(source).use { input -> input.copyTo(destination) }
+                } ?: throw IllegalStateException("Android could not open the exported video destination.")
+                val ready = ContentValues().apply {
+                    put(MediaStore.MediaColumns.IS_PENDING, 0)
+                }
+                contentResolver.update(uri, ready, null, null)
+                return Pair(uri, displayName)
+            } catch (error: Exception) {
+                contentResolver.delete(uri, null, null)
+                throw error
+            }
+        }
+        val directory = File(
+            getExternalFilesDir(Environment.DIRECTORY_MOVIES) ?: filesDir,
+            "CUTAWAN"
+        )
+        if (!directory.exists() && !directory.mkdirs()) {
+            throw IllegalStateException("Could not create the app-specific Movies/CUTAWAN folder.")
+        }
+        val target = File(directory, displayName)
+        FileInputStream(source).use { input ->
+            target.outputStream().use { destination -> input.copyTo(destination) }
+        }
+        return Pair(Uri.fromFile(target), displayName)
+    }
+
     private fun utcNowIso(): String {
         val formatter = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US)
         formatter.timeZone = TimeZone.getTimeZone("UTC")
@@ -835,6 +1225,11 @@ class MainActivity : FlutterActivity() {
 
     override fun onDestroy() {
         pendingPickerResult = null
+        renderSessions.values.filter { it.status == "running" }.forEach { session ->
+            try { session.transformer.cancel() } catch (_: Exception) { }
+            if (session.outputFile.exists()) session.outputFile.delete()
+        }
+        renderSessions.clear()
         ioExecutor.shutdown()
         super.onDestroy()
     }
