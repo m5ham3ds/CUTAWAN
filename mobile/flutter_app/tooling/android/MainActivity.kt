@@ -183,6 +183,7 @@ class MainActivity : FlutterActivity() {
                         if (id != null) renderSessions.remove(id)
                         result.success(null)
                     }
+                    "verifyExport" -> verifyExport(call, result)
                     else -> result.notImplemented()
                 }
             }
@@ -1215,6 +1216,136 @@ class MainActivity : FlutterActivity() {
             target.outputStream().use { destination -> input.copyTo(destination) }
         }
         return Pair(Uri.fromFile(target), displayName)
+    }
+
+
+    private fun verifyExport(call: io.flutter.plugin.common.MethodCall, reply: MethodChannel.Result) {
+        val rawUri = call.argument<String>("outputUri")
+        val expectedHash = call.argument<String>("sha256")
+        val expectedSize = call.argument<Number>("sizeBytes")?.toLong()
+        val expectedDuration = call.argument<Number>("durationMs")?.toLong()
+        val expectedWidth = call.argument<Number>("width")?.toInt()
+        val expectedHeight = call.argument<Number>("height")?.toInt()
+        if (rawUri.isNullOrBlank() || expectedHash.isNullOrBlank() ||
+            expectedSize == null || expectedDuration == null ||
+            expectedWidth == null || expectedHeight == null
+        ) {
+            reply.error("INVALID_EXPORT_RECORD", "Export verification metadata is incomplete.", null)
+            return
+        }
+        ioExecutor.execute {
+            try {
+                val uri = Uri.parse(rawUri)
+                val inputStream = when (uri.scheme) {
+                    "content" -> {
+                        val cursor = contentResolver.query(
+                            uri,
+                            arrayOf(MediaStore.MediaColumns.RELATIVE_PATH, MediaStore.MediaColumns.IS_PENDING),
+                            null,
+                            null,
+                            null
+                        ) ?: throw IllegalStateException("Export is no longer available in MediaStore.")
+                        val ownedPath = cursor.use {
+                            if (!it.moveToFirst()) false
+                            else {
+                                val pathIndex = it.getColumnIndex(MediaStore.MediaColumns.RELATIVE_PATH)
+                                val pendingIndex = it.getColumnIndex(MediaStore.MediaColumns.IS_PENDING)
+                                val path = if (pathIndex >= 0) it.getString(pathIndex) else null
+                                val pending = if (pendingIndex >= 0) it.getInt(pendingIndex) else 0
+                                path?.startsWith(Environment.DIRECTORY_MOVIES + "/CUTAWAN/") == true &&
+                                    pending == 0
+                            }
+                        }
+                        if (!ownedPath) {
+                            throw SecurityException("Export URI is not a published CUTAWAN video.")
+                        }
+                        contentResolver.openInputStream(uri)
+                            ?: throw IllegalStateException("Export content is no longer readable.")
+                    }
+                    "file" -> {
+                        val file = File(uri.path ?: "")
+                        val base = File(
+                            getExternalFilesDir(Environment.DIRECTORY_MOVIES) ?: filesDir,
+                            "CUTAWAN"
+                        ).canonicalPath + File.separator
+                        if (!file.isFile || !file.canonicalPath.startsWith(base)) {
+                            throw SecurityException("Export file is outside CUTAWAN's app-owned export folder.")
+                        }
+                        FileInputStream(file)
+                    }
+                    else -> throw IllegalArgumentException("Unsupported exported video URI scheme.")
+                }
+                val digest = MessageDigest.getInstance("SHA-256")
+                var sizeBytes = 0L
+                inputStream.use { input ->
+                    val buffer = ByteArray(1024 * 1024)
+                    while (true) {
+                        val count = input.read(buffer)
+                        if (count < 0) break
+                        if (count > 0) {
+                            digest.update(buffer, 0, count)
+                            sizeBytes += count.toLong()
+                        }
+                    }
+                }
+                val actualHash = digest.digest().joinToString("") { "%02x".format(it) }
+                val retriever = MediaMetadataRetriever()
+                var duration = -1L
+                var width = -1
+                var height = -1
+                try {
+                    if (uri.scheme == "content") retriever.setDataSource(this, uri)
+                    else retriever.setDataSource(File(uri.path!!).absolutePath)
+                    duration = retriever.extractMetadata(
+                        MediaMetadataRetriever.METADATA_KEY_DURATION
+                    )?.toLongOrNull() ?: -1L
+                    width = retriever.extractMetadata(
+                        MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH
+                    )?.toIntOrNull() ?: -1
+                    height = retriever.extractMetadata(
+                        MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT
+                    )?.toIntOrNull() ?: -1
+                } finally {
+                    try { retriever.release() } catch (_: Exception) { }
+                }
+                val extractor = MediaExtractor()
+                var hasVideo = false
+                try {
+                    if (uri.scheme == "content") extractor.setDataSource(this, uri, null)
+                    else extractor.setDataSource(File(uri.path!!).absolutePath)
+                    for (index in 0 until extractor.trackCount) {
+                        val mime = extractor.getTrackFormat(index).getString(MediaFormat.KEY_MIME) ?: continue
+                        if (mime.startsWith("video/")) hasVideo = true
+                    }
+                } finally {
+                    try { extractor.release() } catch (_: Exception) { }
+                }
+                val valid = actualHash == expectedHash &&
+                    sizeBytes == expectedSize &&
+                    duration == expectedDuration &&
+                    width == expectedWidth &&
+                    height == expectedHeight &&
+                    sizeBytes >= 2048L &&
+                    hasVideo
+                mainHandler.post {
+                    reply.success(
+                        mapOf(
+                            "valid" to valid,
+                            "sha256" to actualHash,
+                            "sizeBytes" to sizeBytes,
+                            "durationMs" to duration,
+                            "width" to width,
+                            "height" to height,
+                            "hasVideo" to hasVideo
+                        )
+                    )
+                }
+            } catch (error: Exception) {
+                mainHandler.post {
+                    reply.success(mapOf("valid" to false, "error" to (error.message ?: "Export verification failed.")))
+                }
+            }
+        }
     }
 
     private fun utcNowIso(): String {

@@ -269,9 +269,34 @@ class ProcessingPipelineService {
             }
           }
           if (existing != null && existing['validated'] == true) {
-            records.add(existing);
-            skipped++;
-            continue;
+            final outputUri = existing['outputUri'];
+            final hash = existing['sha256'];
+            final size = existing['sizeBytes'];
+            final duration = existing['durationMs'];
+            final width = existing['width'];
+            final height = existing['height'];
+            if (outputUri is String &&
+                hash is String &&
+                size is num &&
+                duration is num &&
+                width is num &&
+                height is num &&
+                await _exporter.verifyExport(
+                  outputUri: outputUri,
+                  sha256: hash,
+                  sizeBytes: size.toInt(),
+                  durationMs: duration.toInt(),
+                  width: width.toInt(),
+                  height: height.toInt(),
+                )) {
+              records.add(existing);
+              skipped++;
+              onProgress?.call(
+                'rendering',
+                0.62 + 0.28 * (index + 1) / total,
+              );
+              continue;
+            }
           }
         }
 

@@ -159,6 +159,46 @@ class VideoExportService {
     }
   }
 
+  Future<bool> verifyExport({
+    required String outputUri,
+    required String sha256,
+    required int sizeBytes,
+    required int durationMs,
+    required int width,
+    required int height,
+  }) async {
+    if (outputUri.trim().isEmpty ||
+        !ProcessingJobService.isSha256(sha256) ||
+        sizeBytes < 2048 ||
+        durationMs <= 0 ||
+        width <= 0 ||
+        height <= 0) {
+      return false;
+    }
+    try {
+      final result = await _channel.invokeMapMethod<String, dynamic>(
+        'verifyExport',
+        <String, Object?>{
+          'outputUri': outputUri,
+          'sha256': sha256,
+          'sizeBytes': sizeBytes,
+          'durationMs': durationMs,
+          'width': width,
+          'height': height,
+        },
+      );
+      return result?['valid'] == true &&
+          result?['sha256'] == sha256 &&
+          (result?['sizeBytes'] as num?)?.toInt() == sizeBytes &&
+          (result?['durationMs'] as num?)?.toInt() == durationMs &&
+          (result?['width'] as num?)?.toInt() == width &&
+          (result?['height'] as num?)?.toInt() == height &&
+          result?['hasVideo'] == true;
+    } on PlatformException {
+      return false;
+    }
+  }
+
   Future<void> cancelRender(String renderId) async {
     await _channel.invokeMethod<bool>(
       'cancelRender',
