@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../domain/caption_catalog.dart';
 import '../domain/clip_preferences.dart';
+import '../domain/project_contract.dart';
+import '../services/android_video_picker.dart';
+import '../services/local_project_repository.dart';
 
 class HomeShell extends StatefulWidget {
   const HomeShell({super.key});
@@ -11,13 +15,30 @@ class HomeShell extends StatefulWidget {
 }
 
 class _HomeShellState extends State<HomeShell> {
+  late final LocalProjectRepository _repository;
+  final ValueNotifier<List<CutawanProject>> _projects =
+      ValueNotifier<List<CutawanProject>>([]);
   int _selectedIndex = 0;
-  static const _pages = <Widget>[
-    CreatePage(),
-    JobsPage(),
-    ReviewPage(),
-    CaptionStudioPage(),
-  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _repository = LocalProjectRepository();
+    _reloadProjects();
+  }
+
+  Future<void> _reloadProjects() async {
+    try {
+      final projects = await _repository.listProjects();
+      if (mounted) _projects.value = projects;
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('تعذّر قراءة سجل المشاريع: $error')),
+        );
+      }
+    }
+  }
 
   void _openModels() {
     Navigator.of(context).push(
@@ -26,7 +47,28 @@ class _HomeShellState extends State<HomeShell> {
   }
 
   @override
+  void dispose() {
+    _projects.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final pages = <Widget>[
+      CreatePage(repository: _repository, onProjectSaved: _reloadProjects),
+      JobsPage(
+        projects: _projects,
+        repository: _repository,
+        onProjectsChanged: _reloadProjects,
+      ),
+      ReviewPage(
+        projects: _projects,
+        repository: _repository,
+        onProjectsChanged: _reloadProjects,
+      ),
+      const CaptionStudioPage(),
+    ];
+
     return Scaffold(
       appBar: AppBar(
         titleSpacing: 20,
@@ -38,11 +80,17 @@ class _HomeShellState extends State<HomeShell> {
           ],
         ),
         actions: [
-          IconButton(tooltip: 'مركز النماذج', onPressed: _openModels, icon: const Icon(Icons.memory_outlined)),
+          IconButton(
+            tooltip: 'مركز النماذج',
+            onPressed: _openModels,
+            icon: const Icon(Icons.memory_outlined),
+          ),
           const SizedBox(width: 8),
         ],
       ),
-      body: SafeArea(child: IndexedStack(index: _selectedIndex, children: _pages)),
+      body: SafeArea(
+        child: IndexedStack(index: _selectedIndex, children: pages),
+      ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,
         onDestinationSelected: (index) => setState(() => _selectedIndex = index),
@@ -58,7 +106,14 @@ class _HomeShellState extends State<HomeShell> {
 }
 
 class CreatePage extends StatefulWidget {
-  const CreatePage({super.key});
+  const CreatePage({
+    required this.repository,
+    required this.onProjectSaved,
+    super.key,
+  });
+
+  final LocalProjectRepository repository;
+  final Future<void> Function() onProjectSaved;
 
   @override
   State<CreatePage> createState() => _CreatePageState();
@@ -71,6 +126,7 @@ class _CreatePageState extends State<CreatePage> {
   ClipAspectRatio _ratio = ClipAspectRatio.portrait916;
   bool _captions = true;
   bool _speakerTracking = true;
+  bool _isImporting = false;
 
   @override
   void dispose() {
@@ -78,10 +134,51 @@ class _CreatePageState extends State<CreatePage> {
     super.dispose();
   }
 
-  void _showUnavailable(String feature) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('$feature غير متصل بمحرك Android حتى الآن. لم تبدأ أي معالجة.')),
-    );
+  void _showMessage(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Future<void> _importVideo() async {
+    if (_isImporting) return;
+    setState(() => _isImporting = true);
+    try {
+      final source = await AndroidVideoPicker.pickVideo();
+      if (!mounted) return;
+      if (source == null) {
+        _showMessage('تم إلغاء اختيار الفيديو.');
+        return;
+      }
+
+      final preferences = ClipPreferences(
+        requestedClipCount: _clipCount,
+        durationMode: _duration,
+        aspectRatio: _ratio,
+        captionsEnabled: _captions,
+        speakerTrackingEnabled: _speakerTracking,
+      );
+      final validationError = preferences.validate();
+      if (validationError != null) {
+        _showMessage(validationError);
+        return;
+      }
+
+      final project = CutawanProject.create(
+        source: source,
+        preferences: preferences,
+      );
+      await widget.repository.save(project);
+      await widget.onProjectSaved();
+      _showMessage('تم استيراد الفيديو وحفظ المشروع محليًا.');
+    } on PlatformException catch (error) {
+      _showMessage(error.message ?? 'تعذّر استيراد الفيديو من Android.');
+    } on FormatException catch (error) {
+      _showMessage('بيانات الفيديو غير صالحة: ${error.message}');
+    } catch (error) {
+      _showMessage('فشل حفظ المشروع: $error');
+    } finally {
+      if (mounted) setState(() => _isImporting = false);
+    }
   }
 
   String get _durationLabel => switch (_duration) {
@@ -101,11 +198,22 @@ class _CreatePageState extends State<CreatePage> {
       children: [
         const _Eyebrow('مساحة العمل  /  مشروع جديد'),
         const SizedBox(height: 14),
-        Text('فيديو طويل يدخل.\nمقاطع أقوى تخرج.',
-            style: theme.textTheme.headlineMedium?.copyWith(height: 1.08, fontWeight: FontWeight.w800, letterSpacing: -0.8)),
+        Text(
+          'فيديو طويل يدخل.\nمقاطع أقوى تخرج.',
+          style: theme.textTheme.headlineMedium?.copyWith(
+            height: 1.08,
+            fontWeight: FontWeight.w800,
+            letterSpacing: -0.8,
+          ),
+        ),
         const SizedBox(height: 10),
-        Text('اختر المصدر، ثم اضبط عدد المقاطع والمدة والتكوين قبل التحليل.',
-            style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant, height: 1.55)),
+        Text(
+          'اختر المصدر، ثم اضبط عدد المقاطع والمدة والتكوين قبل التحليل.',
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+            height: 1.55,
+          ),
+        ),
         const SizedBox(height: 28),
         const _Eyebrow('01  /  مصدر الفيديو'),
         const SizedBox(height: 8),
@@ -113,20 +221,43 @@ class _CreatePageState extends State<CreatePage> {
           controller: _urlController,
           keyboardType: TextInputType.url,
           textInputAction: TextInputAction.done,
-          decoration: const InputDecoration(hintText: 'ألصق رابط الفيديو هنا', prefixIcon: Icon(Icons.link)),
-          onSubmitted: (_) => _showUnavailable('تحليل الرابط'),
+          decoration: const InputDecoration(
+            hintText: 'ألصق رابط الفيديو هنا',
+            prefixIcon: Icon(Icons.link),
+          ),
+          onSubmitted: (_) => _showMessage('استيراد الروابط سيضاف في مرحلة منفصلة.'),
         ),
         const SizedBox(height: 12),
         Row(
           children: [
-            Expanded(child: FilledButton.icon(onPressed: () => _showUnavailable('تحليل الرابط'), icon: const Icon(Icons.play_arrow_rounded), label: const Text('بدء التحليل'))),
+            Expanded(
+              child: FilledButton.icon(
+                onPressed: () => _showMessage('تحليل الروابط غير متصل حتى الآن.'),
+                icon: const Icon(Icons.play_arrow_rounded),
+                label: const Text('بدء التحليل'),
+              ),
+            ),
             const SizedBox(width: 10),
-            OutlinedButton.icon(onPressed: () => _showUnavailable('استيراد الملف'), icon: const Icon(Icons.upload_file_outlined), label: const Text('ملف')),
+            OutlinedButton.icon(
+              onPressed: _isImporting ? null : _importVideo,
+              icon: _isImporting
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.upload_file_outlined),
+              label: Text(_isImporting ? 'جارٍ الاستيراد' : 'اختيار فيديو'),
+            ),
           ],
         ),
         const SizedBox(height: 9),
-        Text('استورد ملفًا تملك حق معالجته، أو أدخل رابطًا مدعومًا.',
-            style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+        Text(
+          'يفتح منتقي Android الرسمي ويحفظ صلاحية قراءة الملف لإعادة فتحه لاحقًا.',
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
         const SizedBox(height: 30),
         const Divider(),
         const SizedBox(height: 18),
@@ -137,11 +268,13 @@ class _CreatePageState extends State<CreatePage> {
         Wrap(
           spacing: 8,
           runSpacing: 8,
-          children: [5, 10, 15, 20].map((value) => ChoiceChip(
-            label: Text('$value'),
-            selected: _clipCount == value,
-            onSelected: (_) => setState(() => _clipCount = value),
-          )).toList(),
+          children: [5, 10, 15, 20]
+              .map((value) => ChoiceChip(
+                    label: Text('$value'),
+                    selected: _clipCount == value,
+                    onSelected: (_) => setState(() => _clipCount = value),
+                  ))
+              .toList(),
         ),
         const SizedBox(height: 22),
         Text('المدة المستهدفة', style: theme.textTheme.titleSmall),
@@ -149,18 +282,22 @@ class _CreatePageState extends State<CreatePage> {
         DropdownButtonFormField<ClipDurationMode>(
           initialValue: _duration,
           isExpanded: true,
-          items: ClipDurationMode.values.map((mode) => DropdownMenuItem(
-            value: mode,
-            child: Text(switch (mode) {
-              ClipDurationMode.automatic => 'تلقائي حسب اكتمال اللحظة',
-              ClipDurationMode.seconds15To30 => '15–30 ثانية',
-              ClipDurationMode.seconds30To45 => '30–45 ثانية',
-              ClipDurationMode.seconds30To60 => '30–60 ثانية',
-              ClipDurationMode.seconds60To90 => '60–90 ثانية',
-              ClipDurationMode.custom => 'مدة مخصصة',
-            }),
-          )).toList(),
-          onChanged: (value) { if (value != null) setState(() => _duration = value); },
+          items: ClipDurationMode.values
+              .map((mode) => DropdownMenuItem(
+                    value: mode,
+                    child: Text(switch (mode) {
+                      ClipDurationMode.automatic => 'تلقائي حسب اكتمال اللحظة',
+                      ClipDurationMode.seconds15To30 => '15–30 ثانية',
+                      ClipDurationMode.seconds30To45 => '30–45 ثانية',
+                      ClipDurationMode.seconds30To60 => '30–60 ثانية',
+                      ClipDurationMode.seconds60To90 => '60–90 ثانية',
+                      ClipDurationMode.custom => 'مدة مخصصة',
+                    }),
+                  ))
+              .toList(),
+          onChanged: (value) {
+            if (value != null) setState(() => _duration = value);
+          },
         ),
         const SizedBox(height: 22),
         Text('نسبة الأبعاد', style: theme.textTheme.titleSmall),
@@ -174,7 +311,11 @@ class _CreatePageState extends State<CreatePage> {
               ClipAspectRatio.landscape169 => '16:9',
               ClipAspectRatio.original => 'الأصلية',
             };
-            return ChoiceChip(label: Text(label), selected: _ratio == ratio, onSelected: (_) => setState(() => _ratio = ratio));
+            return ChoiceChip(
+              label: Text(label),
+              selected: _ratio == ratio,
+              onSelected: (_) => setState(() => _ratio = ratio),
+            );
           }).toList(),
         ),
         const SizedBox(height: 14),
@@ -188,7 +329,7 @@ class _CreatePageState extends State<CreatePage> {
         SwitchListTile(
           contentPadding: EdgeInsets.zero,
           title: const Text('تتبع المتحدث'),
-          subtitle: const Text('إعداد مبدئي؛ يحتاج محرك الرؤية'),
+          subtitle: const Text('إعداد محفوظ؛ يحتاج محرك الرؤية'),
           value: _speakerTracking,
           onChanged: (value) => setState(() => _speakerTracking = value),
         ),
@@ -203,7 +344,9 @@ class _CreatePageState extends State<CreatePage> {
                 contentPadding: EdgeInsets.zero,
                 leading: Icon(Icons.tune),
                 title: Text('التفاصيل الإضافية'),
-                subtitle: Text('ستضاف حدود المدة المخصصة وترتيب المقاطع ومستوى إزالة التكرار في مرحلة إعداد المحرك.'),
+                subtitle: Text(
+                  'ستضاف حدود المدة المخصصة وترتيب المقاطع ومستوى إزالة التكرار في مرحلة إعداد المحرك.',
+                ),
               ),
             ],
           ),
@@ -213,81 +356,280 @@ class _CreatePageState extends State<CreatePage> {
         const SizedBox(height: 12),
         _SummaryLine(label: 'عدد المقاطع', value: '$_clipCount'),
         _SummaryLine(label: 'المدة', value: _durationLabel),
-        _SummaryLine(label: 'التكوين', value: switch (_ratio) {
-          ClipAspectRatio.portrait916 => '9:16',
-          ClipAspectRatio.square11 => '1:1',
-          ClipAspectRatio.landscape169 => '16:9',
-          ClipAspectRatio.original => 'الأصلية',
-        }),
+        _SummaryLine(
+          label: 'التكوين',
+          value: switch (_ratio) {
+            ClipAspectRatio.portrait916 => '9:16',
+            ClipAspectRatio.square11 => '1:1',
+            ClipAspectRatio.landscape169 => '16:9',
+            ClipAspectRatio.original => 'الأصلية',
+          },
+        ),
         _SummaryLine(label: 'الكابشن', value: _captions ? 'مفعّل' : 'متوقف'),
-        _SummaryLine(label: 'تتبع المتحدث', value: _speakerTracking ? 'محدد' : 'متوقف'),
+        _SummaryLine(
+          label: 'تتبع المتحدث',
+          value: _speakerTracking ? 'محدد' : 'متوقف',
+        ),
         const SizedBox(height: 18),
-        const _StatusNote(text: 'هذه شاشة إعداد وتجهيز فقط. استيراد الوسائط وتنزيل الروابط والتحليل لم تُربط بمحركات Android بعد.'),
+        const _StatusNote(
+          text:
+              'استيراد الفيديو وحفظ بياناته محليًا متاحان الآن. تحليل الروابط والتفريغ الصوتي وإنشاء المقاطع لم تُربط بمحركاتها بعد.',
+        ),
       ],
     );
   }
 }
 
 class JobsPage extends StatelessWidget {
-  const JobsPage({super.key});
+  const JobsPage({
+    required this.projects,
+    required this.repository,
+    required this.onProjectsChanged,
+    super.key,
+  });
+
+  final ValueListenable<List<CutawanProject>> projects;
+  final LocalProjectRepository repository;
+  final Future<void> Function() onProjectsChanged;
+
+  Future<void> _cancel(BuildContext context, CutawanProject project) async {
+    try {
+      await repository.cancelJob(project.id);
+      await onProjectsChanged();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تم إلغاء سجل المهمة وحفظ الحالة.')),
+        );
+      }
+    } catch (error) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('تعذّر إلغاء المهمة: $error')),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
-      children: [
-        const _Eyebrow('مساحة العمل  /  سجل المعالجة'),
-        const SizedBox(height: 14),
-        Text('المهام والمشاريع', style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w800)),
-        const SizedBox(height: 8),
-        Text('تابع حالة كل مشروع ومراحل المعالجة وإمكانية الاستئناف.',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
-        const SizedBox(height: 28),
-        const _StatusNote(text: 'سجل المهام الدائم والاستئناف بعد إغلاق التطبيق ضمن مرحلة تخزين المشاريع ومحرك الوظائف.'),
-        const SizedBox(height: 28),
-        const _EmptyState(
-          icon: Icons.pending_actions_outlined,
-          title: 'لا توجد مهام بعد',
-          description: 'عند ربط الاستيراد والتحليل ستظهر هنا مراحل التنزيل والتفريغ الصوتي واكتشاف اللحظات والتصدير.',
-        ),
-      ],
+    return ValueListenableBuilder<List<CutawanProject>>(
+      valueListenable: projects,
+      builder: (context, items, _) => ListView(
+        padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
+        children: [
+          const _Eyebrow('مساحة العمل  /  سجل المعالجة'),
+          const SizedBox(height: 14),
+          Text(
+            'المهام والمشاريع',
+            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'هذه سجلات مشاريع محفوظة على الجهاز. لم يبدأ محرك التحليل الفعلي بعد.',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+          ),
+          const SizedBox(height: 24),
+          if (items.isEmpty)
+            const _EmptyState(
+              icon: Icons.pending_actions_outlined,
+              title: 'لا توجد مهام بعد',
+              description:
+                  'استورد فيديو من شاشة الإدخال ليظهر المشروع وسجل المهمة هنا.',
+            )
+          else
+            for (final project in items)
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        project.title,
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w800,
+                            ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(project.source.displayName),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          const Icon(Icons.circle, size: 9),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(_jobStatusLabel(project.job.status)),
+                          ),
+                          if (project.job.canCancel)
+                            TextButton.icon(
+                              onPressed: () => _cancel(context, project),
+                              icon: const Icon(Icons.cancel_outlined),
+                              label: const Text('إلغاء السجل'),
+                            ),
+                        ],
+                      ),
+                      Text(
+                        'المهمة: ${project.job.id}',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+        ],
+      ),
     );
   }
 }
 
 class ReviewPage extends StatelessWidget {
-  const ReviewPage({super.key});
+  const ReviewPage({
+    required this.projects,
+    required this.repository,
+    required this.onProjectsChanged,
+    super.key,
+  });
+
+  final ValueListenable<List<CutawanProject>> projects;
+  final LocalProjectRepository repository;
+  final Future<void> Function() onProjectsChanged;
+
+  Future<void> _verifySource(
+    BuildContext context,
+    CutawanProject project,
+  ) async {
+    try {
+      final refreshed = await AndroidVideoPicker.inspectVideo(project.source.uri);
+      final unchanged = project.source.hasSameMediaInfo(refreshed);
+      await repository.refreshSource(project.id, refreshed);
+      await onProjectsChanged();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              unchanged
+                  ? 'الملف ما زال متاحًا والبيانات تطابق السجل المحفوظ.'
+                  : 'الملف متاح؛ تم تحديث بياناته المحفوظة بعد إعادة الفحص.',
+            ),
+          ),
+        );
+      }
+    } on PlatformException catch (error) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(error.message ?? 'تعذّر الوصول إلى الملف المحفوظ.')),
+        );
+      }
+    } catch (error) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('فشل فحص مصدر الفيديو: $error')),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
-      children: [
-        const _Eyebrow('مساحة العمل  /  اختيار النتائج'),
-        const SizedBox(height: 14),
-        Text('مراجعة المقاطع', style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w800)),
-        const SizedBox(height: 8),
-        Text('شاهد المرشحين، قارن أسباب التقييم، ثم احتفظ بالمقاطع التي تريد تصديرها.',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant, height: 1.5)),
-        const SizedBox(height: 28),
-        Container(
-          height: 190,
-          decoration: BoxDecoration(
-            color: const Color(0xFF211E19),
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+    return ValueListenableBuilder<List<CutawanProject>>(
+      valueListenable: projects,
+      builder: (context, items, _) => ListView(
+        padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
+        children: [
+          const _Eyebrow('مساحة العمل  /  اختيار النتائج'),
+          const SizedBox(height: 14),
+          Text(
+            'مراجعة المشاريع',
+            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
           ),
-          child: const Center(child: Icon(Icons.movie_filter_outlined, size: 46)),
-        ),
-        const SizedBox(height: 18),
-        const _EmptyState(
-          icon: Icons.video_collection_outlined,
-          title: 'لا توجد مقاطع للمراجعة',
-          description: 'ستظهر بطاقات المقاطع هنا مع المدة والدرجة وسبب الاختيار والتحكم في الترتيب والقص الفردي.',
-        ),
-      ],
+          const SizedBox(height: 8),
+          Text(
+            'راجع ملف المصدر وبياناته المحفوظة، ثم أعد فحص صلاحية الوصول إلى الملف.',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  height: 1.5,
+                ),
+          ),
+          const SizedBox(height: 24),
+          if (items.isEmpty)
+            const _EmptyState(
+              icon: Icons.video_collection_outlined,
+              title: 'لا توجد مقاطع للمراجعة',
+              description:
+                  'بعد استيراد الفيديو سيظهر هنا مشروعه وبيانات المصدر. لا توجد مقاطع مولدة لأن محرك التحليل لم يُربط بعد.',
+            )
+          else
+            for (final project in items)
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        project.title,
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w800,
+                            ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(project.source.displayName),
+                      const SizedBox(height: 10),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          Chip(label: Text('${project.source.width} × ${project.source.height}')),
+                          Chip(label: Text(_formatDuration(project.source.durationMs))),
+                          Chip(label: Text(_formatBytes(project.source.sizeBytes))),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'المصدر: ${project.source.mimeType}',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                      const SizedBox(height: 12),
+                      OutlinedButton.icon(
+                        onPressed: () => _verifySource(context, project),
+                        icon: const Icon(Icons.verified_outlined),
+                        label: const Text('إعادة فحص الوصول والبيانات'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+        ],
+      ),
     );
   }
+}
+
+String _jobStatusLabel(ProjectJobStatus status) => switch (status) {
+      ProjectJobStatus.prepared => 'المصدر محفوظ — جاهز للتحليل (لم يبدأ المحرك)',
+      ProjectJobStatus.running => 'قيد التنفيذ',
+      ProjectJobStatus.completed => 'مكتملة',
+      ProjectJobStatus.cancelled => 'أُلغي سجل المهمة',
+      ProjectJobStatus.failed => 'فشلت المهمة',
+    };
+
+String _formatDuration(int milliseconds) {
+  final seconds = milliseconds ~/ 1000;
+  final minutes = seconds ~/ 60;
+  final remainder = seconds % 60;
+  return '${minutes.toString().padLeft(2, '0')}:${remainder.toString().padLeft(2, '0')}';
+}
+
+String _formatBytes(int bytes) {
+  if (bytes <= 0) return 'الحجم غير متاح';
+  if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(0)} KB';
+  return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
 }
 
 class CaptionStudioPage extends StatefulWidget {
