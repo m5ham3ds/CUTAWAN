@@ -225,6 +225,7 @@ class DirectVideoDownloader {
     IOSink? sink;
     var downloadAccepted = false;
     var receivedBytes = 0;
+    var lastStorageCheckBytes = 0;
     int? totalBytes;
 
     try {
@@ -309,6 +310,13 @@ class DirectVideoDownloader {
         if (receivedBytes + storageReserveBytes > availableBytes) {
           throw const FileSystemException('Free storage fell below the required safety reserve.');
         }
+        if (receivedBytes - lastStorageCheckBytes >= 16 * 1024 * 1024) {
+          final currentFreeBytes = await _availableStorageBytes();
+          if (currentFreeBytes <= storageReserveBytes) {
+            throw const FileSystemException('Current free storage reached the safety reserve.');
+          }
+          lastStorageCheckBytes = receivedBytes;
+        }
         sink.add(chunk);
         onProgress?.call(
           VideoDownloadProgress(
@@ -342,6 +350,9 @@ class DirectVideoDownloader {
     } on SocketException catch (error) {
       if (cancellation.isCancelled) throw const VideoDownloadCancelled();
       throw HttpException('Network download failed: ${error.message}');
+    } catch (_) {
+      if (cancellation.isCancelled) throw const VideoDownloadCancelled();
+      rethrow;
     } finally {
       cancellation.removeListener(abortRequest);
       client.close(force: true);
