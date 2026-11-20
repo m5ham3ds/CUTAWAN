@@ -1,50 +1,63 @@
-# Phase 9 — Professional mobile interface redesign
+# Phase 9 — Native Flutter phone app redesign
+
+## Non-negotiable target
+
+This phase applies **only** to `mobile/flutter_app/`, the native Android application implemented in Flutter/Dart. Do not implement the redesign in Electron/React or reuse desktop-only UI code. The root desktop application is outside this phase.
 
 ## Objective
 
-Replace the current large, monolithic screen composition with a coherent mobile design system and task-focused screens. Preserve all domain logic and tests while moving presentation to small feature widgets.
+Deliver a complete, coherent, modern mobile creator studio. Rebuild the actual screen hierarchy and interactions, not just the theme colors. Preserve domain logic and repositories while replacing presentation with reusable, feature-scoped Flutter widgets.
 
-## Proposed information architecture
+## Target information architecture
 
-- Dashboard / Projects: recent projects, storage use, quick resume, clear empty state.
-- Create: source import, permitted direct video URL, media metadata, output profile and run options.
-- Jobs: durable progress stage, active/queued/completed sections, cancel/retry/resume.
-- Review: candidate preview, time range, rationale, model provenance, keep/reject/reorder.
-- Clip editor: real preview, trim handles, safe crop, manual focus, transitions.
-- Caption Studio: preset gallery, typography, animation, word timing, RTL preview, custom color controls.
-- AI Center: local runtimes/models, provider selector, credentials, account-scoped model list and privacy mode.
-- Settings: performance, language, storage, privacy, exports and licenses.
+- **Dashboard / Projects:** recent projects, real storage usage, processing overview, quick resume, create-project entry and a polished empty state.
+- **Create:** local import, safe direct-video URL import, actual source metadata and preview, output profiles, clip duration/count, caption and speaker options, progressive disclosure for advanced settings.
+- **Jobs:** active, queued, failed and completed tasks; real stage/progress, cancel, retry and resume actions bound to durable job records.
+- **Review:** candidate preview, time range, score/rationale/provenance, keep/reject/reorder, inspect source and export state.
+- **Clip Editor:** real video playback, timeline/filmstrip, draggable trim handles, crop/aspect ratio, manual focus/reframe and transitions. No fake editor controls.
+- **Caption Studio:** real preset gallery, font and color controls, word timing, RTL/LTR preview and animated caption examples; persist selections to the project and export contract.
+- **AI Center:** installed/downloadable local runtimes and models, provider selection, credentials in secure storage, remote model catalogue, privacy mode and explicit cloud consent.
+- **Settings:** storage, performance, language, privacy, export defaults, accessibility, licenses and app diagnostics.
 
-## Design system
+## Visual system
 
-- Define semantic color and type tokens, surface levels, radii, spacing, controls, status/error/success styles.
-- Avoid dense raw controls and huge single-column forms; use progressive disclosure, collapsible advanced settings and clearly grouped cards.
-- Add reusable project/clip/model cards and shared loading/error/empty patterns.
-- Respect safe areas, keyboard insets, font scaling, landscape, narrow screens and RTL.
-- Avoid claiming unavailable functions; disabled controls explain the missing dependency.
-- Navigation and back-stack behavior must be consistent.
+Create a distinct mobile-first design language rather than recoloring the current layout:
+- Material 3 foundation with semantic color roles, typography scale, surfaces, gradients only where meaningful, spacing, radii, elevations and responsive breakpoints.
+- Strong visual hierarchy, spacious editorial cards, meaningful iconography, polished empty/loading/error states and touch-friendly controls.
+- Bottom navigation for top-level destinations and nested routes/sheets for editing and configuration.
+- Distinct visual treatment for import, progress, review, editor and caption studio rather than repeating one generic card layout.
+- Dark and light themes with system mode; check contrast and selection visibility.
+- Arabic RTL and English LTR with correct text direction and mirrored navigation where appropriate.
+- Motion: page transition, shared-axis or fade-through navigation, staggered list entrance, progress animation, button/selection feedback, bottom sheets, editor playhead/trim updates and real caption animation previews.
+- Honor reduced-motion preferences and avoid motion that delays core actions.
 
-## Tests
+## Open-source research and reuse
 
-- Golden/widget tests for light/dark theme, Arabic/English, small and large viewport, accessibility labels and keyboard.
-- Navigation between screens without losing state.
-- Every primary action has a callback to an implemented service and asserts state changes.
-- Verify no card overflow on 320dp width.
+Research and evaluate open-source Flutter/Android projects before coding. Prefer components suitable for direct Flutter adaptation, such as video player/trim/timeline/caption editors and animation primitives. For each adopted component:
+- Verify repository activity, Flutter/Dart compatibility, Android support and license.
+- Reuse focused packages/components rather than copying entire applications.
+- Record upstream repository, exact version or commit, license, files adapted and modifications in `mobile/flutter_app/THIRD_PARTY_UI_NOTICES.md`.
+- Do not copy incompatible React/Electron UI into Flutter. Cross-platform repositories can be visual/interaction references only.
+- Do not add a dependency without checking Android compatibility, maintenance and size impact.
 
-## Implementation update — 2026-11-20
+## Architecture
 
-**Status: architecture and first visual-system slice delivered; redesign remains in progress.**
+Split `HomeShell` into feature-scoped screens and reusable widgets. Avoid a monolithic `part of` library as the long-term structure. Introduce explicit routing/navigation and clear state ownership. Keep service/repository calls outside presentational widgets where practical. All visible controls must be one of:
+1. implemented and testable,
+2. disabled with an honest reason and a path to resolve it, or
+3. removed.
 
-- Extracted the previous large home_shell.dart presentation into feature part files for Create, Jobs, Review, Caption Studio, Models and shared widgets. The root file retains shared state/navigation and service wiring.
-- Added a shared Material 3 design system with light and dark themes selected using system appearance, semantic surfaces, shared card/input/button/navigation treatments and consistent radii.
-- Added job stage/progress presentation, direct Jobs-to-Review navigation, a single full-pipeline/resume action, visible export records and disabled conflicting manual actions while the pipeline is running.
-- Startup recovery converts interrupted running tasks into a visible resumable failure state.
+Preserve schema compatibility and existing project data. Never fabricate AI results or job completion.
 
-### Explicit remaining work and acceptance blockers
+## Acceptance tests
 
-- These are Dart part files in a single library, not yet fully isolated feature packages with independent state management and dependency boundaries.
-- Dashboard/Create/Jobs/Review/Clip Editor/Caption Studio/AI Center/Settings are not all redesigned to the complete information architecture; there is no complete clip editor with interactive trim/crop/focus controls.
-- New tests cover theme configuration and a narrow viewport smoke case, but comprehensive golden tests, RTL and English layouts, text scaling, keyboard insets, landscape, accessibility labels, back-stack navigation and state retention remain.
-- UI smoke tests and Android Flutter tests/build are pending for the latest commit; no physical-device screenshots or overflow acceptance evidence exists.
+- Every primary CTA and interactive control asserts a real state change or service invocation.
+- End-to-end navigation and back behavior without losing state.
+- Golden/widget tests for dark/light, Arabic/English, RTL/LTR, 320dp and larger screens, landscape, keyboard insets, safe areas and large text.
+- Semantics/accessibility labels, focus order and adequate tap targets.
+- Test cancellation, failure, retry and process-recovery paths.
+- Build ARM64 debug APK in CI. Run physical-device visual and workflow acceptance before declaring complete.
 
-Do not mark the phase complete until the remaining screens and design-system test matrix above pass.
+## Current status
+
+Redesign is **not complete**. Existing Flutter shell and feature parts are an initial implementation only. The current UI is not evidence that the target information architecture or editor has been delivered. Do not mark Phase 9 done until all applicable acceptance criteria pass.
