@@ -186,7 +186,7 @@ class _CaptionStudioPageState extends State<CaptionStudioPage> with SingleTicker
         const SizedBox(height: 8),
         Text('ابنِ بصمة بصرية متناسقة للكلمات: النمط، الخط، لوحة الألوان، موضع العرض وحركة التوقيت.', style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
         const SizedBox(height: 18),
-        _Panel(padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8), child: Row(children: [const Expanded(child: Text('معاينة اتجاه النص')), Switch(value: _rtl, onChanged: (value) => setState(() => _rtl = value)), Text(_rtl ? 'العربية' : 'English')])),
+        _Panel(padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8), child: Row(children: [const Expanded(child: Text('معاينة اتجاه النص')), Switch(key: const ValueKey('caption-direction-switch'), value: _rtl, onChanged: (value) => setState(() => _rtl = value)), Text(_rtl ? 'العربية' : 'English')])),
         const SizedBox(height: 8),
         AnimatedBuilder(
           animation: _animation,

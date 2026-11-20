@@ -201,7 +201,7 @@ class _CutawanNavigationBar extends StatelessWidget {
       margin: EdgeInsets.fromLTRB(compact ? 6 : 14, 0, compact ? 6 : 14, bottom > 0 ? 8 : 13),
       padding: EdgeInsets.fromLTRB(compact ? 3 : 7, 8, compact ? 3 : 7, 8),
       decoration: BoxDecoration(color: scheme.surfaceContainer.withValues(alpha: 0.96), borderRadius: BorderRadius.circular(24), border: Border.all(color: scheme.outlineVariant), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.24), blurRadius: 28, offset: const Offset(0, 10))]),
-      child: Row(children: List.generate(destinations.length, (index) {
+      child: ClipRect(child: Row(children: List.generate(destinations.length, (index) {
         final item = destinations[index];
         final selected = index == selectedIndex;
         return Expanded(child: Semantics(button: true, selected: selected, label: item.hint, child: InkWell(
@@ -218,7 +218,7 @@ class _CutawanNavigationBar extends StatelessWidget {
             ]),
           ),
         )));
-      })),
+      }))),
     );
   }
 }

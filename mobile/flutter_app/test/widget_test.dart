@@ -73,7 +73,7 @@ void main() {
         .firstWhere((widget) => widget.text.toPlainText().contains('هذه لحظة'));
     expect(arabicPreview.textDirection, TextDirection.rtl);
 
-    await tester.tap(find.byType(Switch).first);
+    await tester.tap(find.byKey(const ValueKey('caption-direction-switch')));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 350));
     expect(find.text('English'), findsOneWidget);

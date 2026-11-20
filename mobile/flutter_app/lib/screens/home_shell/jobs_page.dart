@@ -104,7 +104,7 @@ class JobsPage extends StatelessWidget {
         final storageFuture =
             (storageUsageBytes ?? _downloader().storageUsageBytes)();
         return ListView(
-          padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
+          padding: const EdgeInsets.fromLTRB(14, 24, 14, 32),
           children: [
             const _Eyebrow('مساحة العمل  /  سجل المعالجة', icon: Icons.grid_view_rounded),
             const SizedBox(height: 14),

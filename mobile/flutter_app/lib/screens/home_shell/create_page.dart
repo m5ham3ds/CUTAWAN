@@ -201,7 +201,7 @@ class _CreatePageState extends State<CreatePage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
+      padding: const EdgeInsets.fromLTRB(14, 24, 14, 32),
       children: [
         const _Eyebrow('مساحة العمل  /  مشروع جديد', icon: Icons.auto_awesome_rounded),
         const SizedBox(height: 14),
