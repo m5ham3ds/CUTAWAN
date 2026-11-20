@@ -79,3 +79,9 @@ The Android Flutter companion bundles the existing CUTAWAN caption font files:
 - Poppins Medium and Bold — SIL Open Font License 1.1; license text: `mobile/flutter_app/assets/fonts/OFL-Poppins.txt`.
 
 These files are copied from `resources/fonts/` without modification and are used by the native caption preview. See the included license texts for the complete terms.
+
+
+## Secure provider credentials
+
+- `flutter_secure_storage` (Flutter package, Android implementation): MIT License. Used for user-entered provider API keys and provider preferences. Android data is encrypted using the platform secure-storage implementation; the generated application manifest disables backup so ciphertext cannot be restored without the original device Keystore key material.
+- No API key is embedded in the APK, written into project JSON, or printed to logs.

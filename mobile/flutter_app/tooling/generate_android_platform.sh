@@ -19,7 +19,35 @@ install -m 0644 "$SCRIPT_DIR/android/MainActivity.kt" "$MAIN_ACTIVITY_DIR/MainAc
 
 # Direct HTTP/HTTPS media import needs INTERNET in the release manifest, too.
 MAIN_MANIFEST="android/app/src/main/AndroidManifest.xml"
-if ! grep -q 'android.permission.INTERNET' "$MAIN_MANIFEST"; then
+if ! grep -q 'android.permission.INTERNET' "$MAIN_MANIFEST"
+
+# Keep Keystore-backed credentials from being restored onto a device that
+# does not possess the original Android Keystore key material.
+python3 - <<'PY'
+from pathlib import Path
+import re
+
+manifest = Path("android/app/src/main/AndroidManifest.xml")
+source = manifest.read_text()
+match = re.search(r"<application\\b[^>]*>", source, flags=re.S)
+if not match:
+    raise SystemExit("Could not locate the Android application manifest element.")
+tag = match.group(0)
+if re.search(r'android:allowBackup\\s*=', tag):
+    tag = re.sub(
+        r'android:allowBackup\\s*=\\s*"[^"]*"',
+        'android:allowBackup="false"',
+        tag,
+    )
+else:
+    tag = tag[:-1] + ' android:allowBackup="false">'
+source = source[:match.start()] + tag + source[match.end():]
+manifest.write_text(source)
+if 'android:allowBackup="false"' not in manifest.read_text():
+    raise SystemExit("Android backup restriction was not applied.")
+print("Verified Android allowBackup=false for Keystore-backed AI credentials.")
+PY
+; then
   sed -i '/<manifest /a\    <uses-permission android:name="android.permission.INTERNET" />' "$MAIN_MANIFEST"
 fi
 grep -q 'android.permission.INTERNET' "$MAIN_MANIFEST"

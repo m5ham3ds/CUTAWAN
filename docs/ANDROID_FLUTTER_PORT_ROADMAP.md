@@ -531,3 +531,29 @@ See [PHASES_5_6_INTEGRATION.md](mobile/PHASES_5_6_INTEGRATION.md). The Flutter A
 ## 22. Android Phase 6 implementation record (2026-11-20)
 
 See [PHASES_5_6_INTEGRATION.md](mobile/PHASES_5_6_INTEGRATION.md). The Flutter Caption Studio now uses the 12 existing CUTAWAN caption presets, bundled Anton/Poppins fonts with OFL notices, ten separate preview animations, Arabic RTL controls, editable/persisted style settings, and a tested caption layout engine. Real transcript-synchronized preview, shared preview/export rendering, golden visual regression, and MP4 parity remain open until Phase 7.
+
+
+## 23. Provider integration, key security and execution-mode work (2026-11-20)
+
+**Target commit for this implementation:** tracked in `phases/07-ai-providers-and-secure-credentials.md`.
+
+### Existing completed capability retained
+
+Phases 1–6 remain in place. The previously green mainline commit `06fee1ca9e042f2505b9314d1495eb127b1d7220` passed the Mobile Android workflow `44751288974` and root CI `44751289006`. The pipeline still has important unaccepted scope: it proposes/stores candidates and crop plans but does not render the final clip video; local acoustic accuracy, physical-device storage access and crop quality remain open.
+
+### Provider work added
+
+The first AI-provider integration adds provider-specific API adapters for OpenAI Chat Completions, Google Gemini (Interactions API with GenerateContent compatibility fallback), Hugging Face Inference Providers Router, and user-defined OpenAI-compatible HTTPS endpoints. Model IDs are fetched from the user's account rather than advertised as a static universal catalogue. The Hugging Face provider metadata may report trial/free eligibility; the client does not infer that a model is free when the upstream response omits such a field.
+
+API keys and provider settings are persisted through `flutter_secure_storage`, never in the project JSON. Android backup is disabled for Keystore ciphertext. The user must explicitly consent before remote mode is enabled. Only bounded transcript excerpts for candidate annotation are sent; source video and API keys are not included in request content. Deterministic IDs, boundaries, evidence and scores are preserved by the existing annotation allow-list.
+
+### Constraints and acceptance boundary
+
+- The general endpoint is OpenAI Chat Completions-compatible; it is not a promise to speak every proprietary API. Other API formats require separate adapters.
+- A model appearing in a provider's list does not prove it supports the selected task, that the account can afford it, or that its API access is enabled. The user-triggered test call confirms a small text completion only.
+- Free/trial status is displayed only when the provider reports it; pricing and quota must be confirmed in the provider console.
+- Gemini Interactions availability can differ by model/account; a restricted compatibility fallback is attempted only for unsupported/endpoint-not-found errors.
+- Android Keystore persistence, rotation, deletion and backup behavior still require physical-device tests. Unit tests use a mock secure-storage adapter.
+- Cloud execution is only attached to short editorial annotation of already-discovered candidates in this phase. Whisper transcription, face analysis, rendering and video transfer remain local/not wired to the cloud.
+
+See `phases/README.md` for the current phase matrix and `phases/07-ai-providers-and-secure-credentials.md` for detailed design, tests and next steps.

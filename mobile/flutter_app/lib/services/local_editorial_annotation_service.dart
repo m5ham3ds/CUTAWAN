@@ -7,6 +7,25 @@ import '../domain/clip_candidate.dart';
 class LocalEditorialAnnotationService {
   const LocalEditorialAnnotationService();
 
+  static String buildAnnotationPrompt(CandidateSet candidateSet) {
+    final input = candidateSet.candidates.take(6).map((candidate) => {
+      'id': candidate.id,
+      'text': candidate.transcriptText.substring(
+        0,
+        candidate.transcriptText.length > 1000
+            ? 1000
+            : candidate.transcriptText.length,
+      ),
+    }).toList(growable: false);
+    return '''
+Return one JSON object only:
+{"items":[{"id":"existing id","title":"short title","hook":"opening hook","summary":"one factual sentence","explanations":["brief observation"]}]}
+Only annotate supplied IDs. Never invent facts, scores, timestamps, evidence, or model IDs. Write in the transcript language when clear.
+INPUT:
+${jsonEncode(input)}
+''';
+  }
+
   Future<CandidateSet> annotate(
     CandidateSet candidateSet, {
     required String modelPath,

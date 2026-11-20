@@ -102,3 +102,10 @@ See `docs/mobile/PHASES_3_4_INTEGRATION.md` for implementation boundaries and re
 | Anton Regular | `resources/fonts/Anton-Regular.ttf` | SIL OFL 1.1 | `mobile/flutter_app/assets/fonts/OFL-Anton.txt` |
 | Poppins Medium | `resources/fonts/Poppins-Medium.ttf` | SIL OFL 1.1 | `mobile/flutter_app/assets/fonts/OFL-Poppins.txt` |
 | Poppins Bold | `resources/fonts/Poppins-Bold.ttf` | SIL OFL 1.1 | `mobile/flutter_app/assets/fonts/OFL-Poppins.txt` |
+
+
+## Provider secret storage
+
+| Package | Version range | Purpose | License | Runtime notes |
+|---|---|---|---|---|
+| `flutter_secure_storage` | `^11.2.0` | Persist provider API keys, provider selection, selected model, execution mode and explicit cloud consent | MIT | Android Keystore-backed secure storage; Android Auto Backup disabled in generated manifest. Device-level Keystore validation remains an acceptance test. |
