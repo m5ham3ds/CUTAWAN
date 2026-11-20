@@ -25,21 +25,33 @@ fi
 grep -q 'android.permission.INTERNET' "$MAIN_MANIFEST"
 
 # The mobile artifact is intentionally ARM64-only.
-APP_GRADLE_KTS="android/app/build.gradle.kts"
-APP_GRADLE_GROOVY="android/app/build.gradle"
-if [[ -f "$APP_GRADLE_KTS" ]]; then
-  if ! grep -q 'abiFilters.*arm64-v8a' "$APP_GRADLE_KTS"; then
-    sed -i '/defaultConfig {/a\\        ndk {\\n            abiFilters += setOf("arm64-v8a")\\n        }' "$APP_GRADLE_KTS"
-  fi
-  grep -q 'abiFilters.*arm64-v8a' "$APP_GRADLE_KTS"
-elif [[ -f "$APP_GRADLE_GROOVY" ]]; then
-  if ! grep -q 'abiFilters.*arm64-v8a' "$APP_GRADLE_GROOVY"; then
-    sed -i "/defaultConfig {/a\\        ndk { abiFilters 'arm64-v8a' }" "$APP_GRADLE_GROOVY"
-  fi
-  grep -q 'abiFilters.*arm64-v8a' "$APP_GRADLE_GROOVY"
-else
-  echo "Flutter Android app Gradle file was not generated."
-  exit 1
-fi
+python3 - <<'PY'
+from pathlib import Path
+import re
+
+kts = Path("android/app/build.gradle.kts")
+groovy = Path("android/app/build.gradle")
+if kts.is_file():
+    path = kts
+    block = '        ndk {\n            abiFilters += setOf("arm64-v8a")\n        }'
+elif groovy.is_file():
+    path = groovy
+    block = "        ndk { abiFilters 'arm64-v8a' }"
+else:
+    raise SystemExit("Flutter Android app Gradle file was not generated.")
+
+source = path.read_text()
+if not re.search(r'abiFilters[^\n]*arm64-v8a', source):
+    match = re.search(r'(?m)^(\s*)defaultConfig\s*\{\s*$', source)
+    if not match:
+        raise SystemExit(f"Could not find defaultConfig block in {path}")
+    insertion = match.group(0) + "\n" + block
+    source = source[:match.start()] + insertion + source[match.end():]
+    path.write_text(source)
+
+if not re.search(r'abiFilters[^\n]*arm64-v8a', path.read_text()):
+    raise SystemExit(f"ARM64 ABI filter was not applied in {path}")
+print(f"Verified ARM64 ABI filter in {path}")
+PY
 
 flutter pub get
