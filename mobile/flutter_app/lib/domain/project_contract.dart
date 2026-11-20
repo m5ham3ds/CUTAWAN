@@ -184,7 +184,7 @@ class CutawanProject {
   }) {
     final created = (now ?? DateTime.now()).toUtc();
     final entropy = Random.secure().nextInt(1 << 32).toRadixString(16);
-    final id = 'cut_\${created.microsecondsSinceEpoch}_$entropy';
+    final id = 'cut_${created.microsecondsSinceEpoch}_$entropy';
     final title = source.displayName.replaceFirst(RegExp(r'\.[^.]+$'), '');
     return CutawanProject(
       schemaVersion: currentSchemaVersion,
@@ -239,7 +239,7 @@ class CutawanProject {
     final migrated = ProjectContract.migrate(json);
     if (migrated['schemaVersion'] != currentSchemaVersion) {
       throw FormatException(
-        'Unsupported project schema version: \${migrated['schemaVersion']}',
+        'Unsupported project schema version: ${migrated['schemaVersion']}',
       );
     }
     final id = migrated['id'] as String?;
