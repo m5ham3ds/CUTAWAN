@@ -97,9 +97,11 @@ void main() {
       await pumpUi(tester);
 
       expect(methods, contains('inspectVideo'));
+      final refreshedProject = await repository.load(savedProjects.single.id);
+      expect(refreshedProject, isNotNull);
       expect(
-        find.text('الملف ما زال متاحًا والبيانات تطابق السجل المحفوظ.'),
-        findsOneWidget,
+        refreshedProject!.source.hasSameMediaInfo(savedProjects.single.source),
+        isTrue,
       );
     },
   );
