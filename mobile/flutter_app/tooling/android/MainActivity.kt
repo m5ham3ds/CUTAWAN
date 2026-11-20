@@ -7,6 +7,7 @@ import android.provider.MediaStore
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.effect.MatrixTransformation
 import androidx.media3.effect.Presentation
 import androidx.media3.transformer.Effects
 import androidx.media3.transformer.EditedMediaItem
@@ -21,6 +22,7 @@ import android.app.Activity
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.graphics.Bitmap
+import android.graphics.Matrix
 import android.graphics.PointF
 import android.media.AudioFormat
 import android.media.MediaCodec
@@ -68,6 +70,16 @@ class MainActivity : FlutterActivity() {
         var cancelRequested: Boolean = false
     )
     private val renderSessions = mutableMapOf<String, RenderSession>()
+    private data class ReframeSegment(
+        val startMs: Long,
+        val endMs: Long,
+        val mode: String,
+        val x: Float = 0f,
+        val y: Float = 0f,
+        val width: Float = 1f,
+        val height: Float = 1f
+    )
+
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -985,12 +997,19 @@ class MainActivity : FlutterActivity() {
                 ?: throw IllegalArgumentException("A clip end time is required.")
             val aspectRatio = call.argument<Number>("aspectRatio")?.toFloat()
                 ?: throw IllegalArgumentException("An output aspect ratio is required.")
+            val sourceAspectRatio = call.argument<Number>("sourceAspectRatio")?.toFloat()
+                ?: throw IllegalArgumentException("A source aspect ratio is required.")
             if (!clipId.matches(Regex("^[A-Za-z0-9_-]{1,160}$")) ||
                 startMs < 0 || endMs <= startMs ||
-                !aspectRatio.isFinite() || aspectRatio <= 0f || aspectRatio > 4f
+                !aspectRatio.isFinite() || aspectRatio <= 0f || aspectRatio > 4f ||
+                !sourceAspectRatio.isFinite() || sourceAspectRatio <= 0f || sourceAspectRatio > 8f
             ) {
                 throw IllegalArgumentException("Clip ID, range or aspect ratio is invalid.")
             }
+            val reframeSegments = parseReframeSegments(
+                call.argument<List<*>>("reframeShots"),
+                endMs - startMs
+            )
             if (renderSessions.values.any { it.status == "running" }) {
                 throw IllegalStateException("Another video export is already running.")
             }
@@ -1023,16 +1042,20 @@ class MainActivity : FlutterActivity() {
                         .build()
                 )
                 .build()
+            val reframeTransformation = createReframeTransformation(
+                reframeSegments,
+                sourceAspectRatio,
+                aspectRatio
+            )
+            val presentation = Presentation.createForAspectRatio(
+                aspectRatio,
+                Presentation.LAYOUT_STRETCH_TO_FIT
+            )
             val editedItem = EditedMediaItem.Builder(mediaItem)
                 .setEffects(
                     Effects(
                         emptyList(),
-                        listOf(
-                            Presentation.createForAspectRatio(
-                                aspectRatio,
-                                Presentation.LAYOUT_SCALE_TO_FIT
-                            )
-                        )
+                        listOf(reframeTransformation, presentation)
                     )
                 )
                 .build()
@@ -1109,6 +1132,106 @@ class MainActivity : FlutterActivity() {
         val height: Int,
         val hasAudio: Boolean
     )
+
+    private fun parseReframeSegments(
+        raw: List<*>?,
+        clipDurationMs: Long
+    ): List<ReframeSegment> {
+        if (raw == null || raw.isEmpty()) return emptyList()
+        if (raw.size > 2000) {
+            throw IllegalArgumentException("A clip cannot contain more than 2000 reframe segments.")
+        }
+        val result = mutableListOf<ReframeSegment>()
+        var cursor = 0L
+        for (item in raw) {
+            val map = item as? Map<*>
+                ?: throw IllegalArgumentException("Reframe segment must be an object.")
+            val start = (map["startMs"] as? Number)?.toLong()
+                ?: throw IllegalArgumentException("Reframe segment start is missing.")
+            val end = (map["endMs"] as? Number)?.toLong()
+                ?: throw IllegalArgumentException("Reframe segment end is missing.")
+            val mode = map["mode"] as? String
+                ?: throw IllegalArgumentException("Reframe segment mode is missing.")
+            if (start != cursor || end <= start || end > clipDurationMs ||
+                (mode != "fit" && mode != "crop")
+            ) {
+                throw IllegalArgumentException("Reframe segments must be contiguous, ordered and within the clip.")
+            }
+            if (mode == "fit") {
+                if (map["region"] != null) {
+                    throw IllegalArgumentException("Fit segments cannot include a crop region.")
+                }
+                result.add(ReframeSegment(start, end, mode))
+            } else {
+                val region = map["region"] as? Map<*>
+                    ?: throw IllegalArgumentException("Crop segments require a frame region.")
+                val x = (region["x"] as? Number)?.toFloat()
+                    ?: throw IllegalArgumentException("Crop region x is missing.")
+                val y = (region["y"] as? Number)?.toFloat()
+                    ?: throw IllegalArgumentException("Crop region y is missing.")
+                val width = (region["width"] as? Number)?.toFloat()
+                    ?: throw IllegalArgumentException("Crop region width is missing.")
+                val height = (region["height"] as? Number)?.toFloat()
+                    ?: throw IllegalArgumentException("Crop region height is missing.")
+                if (!x.isFinite() || !y.isFinite() || !width.isFinite() || !height.isFinite() ||
+                    x < 0f || y < 0f || width <= 0f || height <= 0f ||
+                    x + width > 1.0001f || y + height > 1.0001f
+                ) {
+                    throw IllegalArgumentException("Crop region must be normalized and remain inside the source frame.")
+                }
+                result.add(ReframeSegment(start, end, mode, x, y, width, height))
+            }
+            cursor = end
+        }
+        if (cursor != clipDurationMs) {
+            throw IllegalArgumentException("Reframe segments must cover the complete clip duration.")
+        }
+        return result
+    }
+
+    private fun createReframeTransformation(
+        segments: List<ReframeSegment>,
+        sourceAspectRatio: Float,
+        targetAspectRatio: Float
+    ): MatrixTransformation {
+        return object : MatrixTransformation {
+            override fun getMatrix(presentationTimeUs: Long): Matrix {
+                val timeMs = (presentationTimeUs / 1000L).coerceAtLeast(0L)
+                val segment = segments.firstOrNull {
+                    timeMs >= it.startMs && timeMs < it.endMs
+                } ?: segments.lastOrNull()
+                val values = if (segment == null || segment.mode == "fit") {
+                    val scaleX: Float
+                    val scaleY: Float
+                    if (sourceAspectRatio > targetAspectRatio) {
+                        scaleX = 1f
+                        scaleY = targetAspectRatio / sourceAspectRatio
+                    } else {
+                        scaleX = sourceAspectRatio / targetAspectRatio
+                        scaleY = 1f
+                    }
+                    floatArrayOf(
+                        scaleX, 0f, 0f,
+                        0f, scaleY, 0f,
+                        0f, 0f, 1f
+                    )
+                } else {
+                    val scaleX = 1f / segment.width
+                    val scaleY = 1f / segment.height
+                    val translateX =
+                        (1f - 2f * segment.x - segment.width) / segment.width
+                    val translateY =
+                        (2f * segment.y + segment.height - 1f) / segment.height
+                    floatArrayOf(
+                        scaleX, 0f, translateX,
+                        0f, scaleY, translateY,
+                        0f, 0f, 1f
+                    )
+                }
+                return Matrix().apply { setValues(values) }
+            }
+        }
+    }
 
     private fun validateRenderedVideo(output: File, expectedDurationMs: Long): ValidatedRender {
         if (!output.isFile || output.length() < 2048L) {
