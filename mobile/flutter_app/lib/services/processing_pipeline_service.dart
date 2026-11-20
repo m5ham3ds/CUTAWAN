@@ -243,7 +243,7 @@ class ProcessingPipelineService {
       final total = candidates.candidates.length;
       for (var index = 0; index < total; index++) {
         final candidate = candidates.candidates[index];
-        final stageName = 'render_$candidate.id';
+        final stageName = 'render_${candidate.id}';
         final clipReframeShots = reframe.shots
             .where((shot) =>
                 shot.endMs > candidate.startMs &&
@@ -331,7 +331,7 @@ class ProcessingPipelineService {
         final progress = total == 0 ? 0.9 : 0.62 + 0.28 * index / total;
         await _jobs.setStage(
           projectId,
-          stage: 'rendering_$candidate.id',
+          stage: 'rendering_${candidate.id}',
           progress: progress,
         );
         onProgress?.call('rendering', progress);
@@ -363,7 +363,7 @@ class ProcessingPipelineService {
           onProgress: (fraction) {
             final value = 0.62 + 0.28 * (index + fraction) / total;
             onProgress?.call('rendering', value);
-            _persistProgress(projectId, 'rendering_$candidate.id', value);
+            _persistProgress(projectId, 'rendering_${candidate.id}', value);
           },
         );
         if (!rendered.validated ||

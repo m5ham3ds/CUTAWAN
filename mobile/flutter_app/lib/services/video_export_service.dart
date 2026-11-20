@@ -96,7 +96,12 @@ class VideoExportService {
         !(sourceAspectRatio ?? aspectRatio).isFinite ||
         (sourceAspectRatio ?? aspectRatio) <= 0 ||
         outputPath.trim().isEmpty ||
-        !_validReframeShots(reframeShots, endMs - startMs)) {
+        !_validReframeShots(
+          reframeShots,
+          endMs - startMs,
+          sourceAspectRatio ?? aspectRatio,
+          aspectRatio,
+        )) {
       throw const FormatException('Video export arguments are incomplete or invalid.');
     }
     final start = await _channel.invokeMapMethod<String, dynamic>(
@@ -169,8 +174,16 @@ class VideoExportService {
   static bool _validReframeShots(
     List<Map<String, Object?>> shots,
     int clipDurationMs,
+    double sourceAspectRatio,
+    double targetAspectRatio,
   ) {
     if (shots.isEmpty) return true;
+    if (!sourceAspectRatio.isFinite ||
+        sourceAspectRatio <= 0 ||
+        !targetAspectRatio.isFinite ||
+        targetAspectRatio <= 0) {
+      return false;
+    }
     var cursor = 0;
     for (final shot in shots) {
       final start = shot['startMs'];
@@ -207,7 +220,11 @@ class VideoExportService {
             width <= 0 ||
             height <= 0 ||
             x + width > 1.0001 ||
-            y + height > 1.0001) {
+            y + height > 1.0001 ||
+            ((sourceAspectRatio * width.toDouble() / height.toDouble()) -
+                        targetAspectRatio)
+                    .abs() >
+                targetAspectRatio * 0.03) {
           return false;
         }
       }
