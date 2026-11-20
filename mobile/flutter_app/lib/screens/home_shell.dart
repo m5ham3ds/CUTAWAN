@@ -938,7 +938,7 @@ class _ReviewPageState extends State<ReviewPage> {
   }
 
   Future<void> _transcribe(CutawanProject project) async {
-    if (_busyProjectId != null) return;
+    if (_busyProjectId != null) { return; }
     setState(() {
       _busyProjectId = project.id;
       _busyStage = 'whisper';
@@ -950,7 +950,7 @@ class _ReviewPageState extends State<ReviewPage> {
         sourceUri: project.source.uri,
         sourceDurationMs: project.source.durationMs,
         onProgress: (percent) {
-          if (!mounted || _busyProjectId != project.id) return;
+          if (!mounted || _busyProjectId != project.id) { return; }
           setState(() => _progress = percent / 100);
         },
       );
@@ -981,7 +981,7 @@ class _ReviewPageState extends State<ReviewPage> {
   }
 
   Future<void> _discover(CutawanProject project) async {
-    if (_busyProjectId != null) return;
+    if (_busyProjectId != null) { return; }
     setState(() {
       _busyProjectId = project.id;
       _busyStage = 'candidates';
