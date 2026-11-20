@@ -1333,7 +1333,7 @@ class MainActivity : FlutterActivity() {
             previousStart = start
             val words = mutableListOf<CaptionWordCue>()
             for (rawWord in rawWords) {
-                val word = rawWord as? Map<*>
+                val word = rawWord as? Map<*, *>
                     ?: throw IllegalArgumentException("Caption word must be an object.")
                 val wordText = word["text"] as? String
                     ?: throw IllegalArgumentException("Caption word text is missing.")
@@ -1421,7 +1421,7 @@ class MainActivity : FlutterActivity() {
 
     private class TimedCaptionOverlay(
         private val cues: List<TimedCaptionCue>,
-        private val style: CaptionRenderStyle,
+        private val captionStyle: CaptionRenderStyle,
         private val animationId: String
     ) : CanvasOverlay(true) {
         private var cachedCueIndex = -1
@@ -1454,9 +1454,9 @@ class MainActivity : FlutterActivity() {
             }
             val fill = cachedFillLayout ?: return
             val left = (canvas.width - fill.width) / 2f
-            val top = (canvas.height * style.positionY - fill.height / 2f)
+            val top = (canvas.height * captionStyle.positionY - fill.height / 2f)
                 .coerceIn(0f, (canvas.height - fill.height).coerceAtLeast(0).toFloat())
-            if (style.highlightBoxColor != null) {
+            if (captionStyle.highlightBoxColor != null) {
                 val paddingX = canvas.width * 0.018f
                 val paddingY = fill.height * 0.12f
                 val rect = RectF(
@@ -1466,7 +1466,7 @@ class MainActivity : FlutterActivity() {
                     top + fill.height + paddingY
                 )
                 val backgroundPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                    color = style.highlightBoxColor
+                    color = captionStyle.highlightBoxColor
                     style = Paint.Style.FILL
                 }
                 canvas.drawRoundRect(
@@ -1490,62 +1490,62 @@ class MainActivity : FlutterActivity() {
             canvasWidth: Int,
             canvasHeight: Int
         ) {
-            val value = if (style.uppercase) cue.text.uppercase(Locale.ROOT) else cue.text
+            val value = if (captionStyle.uppercase) cue.text.uppercase(Locale.ROOT) else cue.text
             val styled = SpannableString(value)
             if (animationId == "karaoke_fill" && activeWordIndex >= 0) {
                 val word = cue.words[activeWordIndex]
-                val start = if (style.uppercase) {
+                val start = if (captionStyle.uppercase) {
                     cue.text.substring(0, word.startOffset).uppercase(Locale.ROOT).length
                 } else {
                     word.startOffset
                 }
-                val end = if (style.uppercase) {
+                val end = if (captionStyle.uppercase) {
                     cue.text.substring(0, word.endOffset).uppercase(Locale.ROOT).length
                 } else {
                     word.endOffset
                 }
                 if (start >= 0 && end > start && end <= styled.length) {
                     styled.setSpan(
-                        ForegroundColorSpan(style.highlightColor),
+                        ForegroundColorSpan(captionStyle.highlightColor),
                         start,
                         end,
                         Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
                     )
                 }
             }
-            val textSize = (canvasHeight * style.fontScale).coerceIn(20f, canvasHeight * 0.12f)
+            val textSize = (canvasHeight * captionStyle.fontScale).coerceIn(20f, canvasHeight * 0.12f)
             val typeface = when {
-                style.fontFamily.contains("Anton", ignoreCase = true) ->
-                    Typeface.create("sans-serif-condensed", if (style.bold) Typeface.BOLD else Typeface.NORMAL)
-                style.fontFamily.contains("Medium", ignoreCase = true) ->
+                captionStyle.fontFamily.contains("Anton", ignoreCase = true) ->
+                    Typeface.create("sans-serif-condensed", if (captionStyle.bold) Typeface.BOLD else Typeface.NORMAL)
+                captionStyle.fontFamily.contains("Medium", ignoreCase = true) ->
                     Typeface.create("sans-serif-medium", Typeface.NORMAL)
-                else -> Typeface.create("sans-serif", if (style.bold) Typeface.BOLD else Typeface.NORMAL)
+                else -> Typeface.create("sans-serif", if (captionStyle.bold) Typeface.BOLD else Typeface.NORMAL)
             }
             val maxWidth = (canvasWidth * 0.90f).toInt().coerceAtLeast(120)
             val fillPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = style.textColor
+                color = captionStyle.textColor
                 textSize = textSize
                 this.typeface = typeface
                 style = Paint.Style.FILL
-                if (style.shadow > 0f) {
+                if (captionStyle.shadow > 0f) {
                     setShadowLayer(
-                        style.shadow * textSize * 0.12f,
+                        captionStyle.shadow * textSize * 0.12f,
                         0f,
-                        style.shadow * textSize * 0.05f,
+                        captionStyle.shadow * textSize * 0.05f,
                         Color.BLACK
                     )
                 }
             }
             val outlinePaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = style.outlineColor
+                color = captionStyle.outlineColor
                 textSize = textSize
                 this.typeface = typeface
                 style = Paint.Style.STROKE
                 strokeJoin = Paint.Join.ROUND
-                strokeWidth = style.outlineWidth * (textSize / 48f)
+                strokeWidth = captionStyle.outlineWidth * (textSize / 48f)
             }
             cachedFillLayout = buildCaptionLayout(styled, fillPaint, maxWidth)
-            cachedOutlineLayout = if (style.outlineWidth > 0f) {
+            cachedOutlineLayout = if (captionStyle.outlineWidth > 0f) {
                 buildCaptionLayout(styled, outlinePaint, maxWidth)
             } else {
                 null
