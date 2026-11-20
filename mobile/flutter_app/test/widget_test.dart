@@ -81,14 +81,14 @@ void main() {
         .firstWhere((widget) => widget.text.toPlainText().contains('THIS IS THE MOMENT'));
     expect(englishPreview.textDirection, TextDirection.ltr);
 
-    await tester.tap(find.text('Karaoke'));
+    await tester.tap(find.byKey(const ValueKey('caption-style-karaoke')));
     await tester.pump(const Duration(milliseconds: 100));
     final selectedStyles = tester
         .widgetList<ChoiceChip>(find.descendant(of: find.byKey(const ValueKey('caption-style-presets')), matching: find.byType(ChoiceChip)))
         .where((chip) => chip.selected);
     expect(selectedStyles, hasLength(1));
 
-    await tester.tap(find.text('Word Pop'));
+    await tester.tap(find.text('Word Pop').last);
     await tester.pump(const Duration(milliseconds: 100));
     expect(find.text('Karaoke Fill'), findsOneWidget);
   });

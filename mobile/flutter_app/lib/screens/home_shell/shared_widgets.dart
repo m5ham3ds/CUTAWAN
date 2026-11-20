@@ -4,7 +4,7 @@ String _jobStatusLabel(ProjectJobStatus status) => switch (status) {
   ProjectJobStatus.prepared => 'المصدر محفوظ — جاهز للتحليل (لم يبدأ المحرك)',
   ProjectJobStatus.running => 'قيد التنفيذ',
   ProjectJobStatus.completed => 'مكتمل',
-  ProjectJobStatus.cancelled => 'ملغي',
+  ProjectJobStatus.cancelled => 'أُلغي سجل المهمة',
   ProjectJobStatus.failed => 'فشل',
 };
 

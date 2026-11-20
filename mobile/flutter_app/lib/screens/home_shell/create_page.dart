@@ -249,17 +249,15 @@ class _CreatePageState extends State<CreatePage> {
           onSubmitted: (_) => _downloadDirectVideo(),
         ),
         const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: FilledButton.icon(
-                onPressed: _isImporting ? null : _downloadDirectVideo,
-                icon: const Icon(Icons.play_arrow_rounded),
-                label: const Text('تنزيل رابط مباشر'),
-              ),
-            ),
-            const SizedBox(width: 10),
-            OutlinedButton.icon(
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final narrow = constraints.maxWidth < 390;
+            final downloadButton = FilledButton.icon(
+              onPressed: _isImporting ? null : _downloadDirectVideo,
+              icon: const Icon(Icons.play_arrow_rounded),
+              label: const Text('تنزيل رابط مباشر'),
+            );
+            final importButton = OutlinedButton.icon(
               onPressed: _isImporting ? null : _importVideo,
               icon: _isImporting
                   ? const SizedBox(
@@ -269,8 +267,25 @@ class _CreatePageState extends State<CreatePage> {
                     )
                   : const Icon(Icons.upload_file_outlined),
               label: Text(_isImporting ? 'جارٍ الاستيراد' : 'اختيار فيديو'),
-            ),
-          ],
+            );
+            if (narrow) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  downloadButton,
+                  const SizedBox(height: 9),
+                  SizedBox(width: double.infinity, child: importButton),
+                ],
+              );
+            }
+            return Row(
+              children: [
+                Expanded(child: downloadButton),
+                const SizedBox(width: 10),
+                importButton,
+              ],
+            );
+          },
         ),
         if (_isImporting && _downloadProgress != null) ...[
           const SizedBox(height: 14),
