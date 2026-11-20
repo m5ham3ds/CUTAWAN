@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/services.dart';
 
+import 'processing_job_service.dart';
+
 class VideoExportCancelled implements Exception {
   const VideoExportCancelled();
 
@@ -51,7 +53,7 @@ class VideoExportResult {
       validated: json['validated'] as bool? ?? false,
     );
     if (value.outputUri.isEmpty ||
-        !RegExp(r'^[a-f0-9]{64}$').hasMatch(value.sha256) ||
+        !ProcessingJobService.isSha256(value.sha256) ||
         value.sizeBytes < 2048 ||
         value.durationMs <= 0 ||
         value.width <= 0 ||

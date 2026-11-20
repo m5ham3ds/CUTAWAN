@@ -56,7 +56,7 @@ class ProcessingPipelineService {
       var project = await _repository.load(projectId);
       if (project == null) throw StateError('Project not found: $projectId');
       final sourceSha = await _jobs.fingerprintSource(project);
-      if (!RegExp(r'^[a-f0-9]{64}$').hasMatch(sourceSha)) {
+      if (!ProcessingJobService.isSha256(sourceSha)) {
         throw const FormatException('Source SHA-256 fingerprint is invalid.');
       }
 
@@ -321,7 +321,7 @@ class ProcessingPipelineService {
             rendered.durationMs <= 0 ||
             rendered.width <= 0 ||
             rendered.height <= 0 ||
-            !RegExp(r'^[a-f0-9]{64}$').hasMatch(rendered.sha256)) {
+            !ProcessingJobService.isSha256(rendered.sha256)) {
           throw StateError('Rendered MP4 failed the output validation gate.');
         }
 

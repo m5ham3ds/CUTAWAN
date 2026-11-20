@@ -23,6 +23,15 @@ class ProcessingJobService {
   final LocalProjectRepository _repository;
   final Future<String> Function(String uri) _fingerprintVideo;
 
+  static bool isSha256(String value) {
+    if (value.length != 64) return false;
+    for (final unit in value.codeUnits) {
+      final valid = (unit >= 48 && unit <= 57) || (unit >= 97 && unit <= 102);
+      if (!valid) return false;
+    }
+    return true;
+  }
+
   Future<String> fingerprintSource(CutawanProject project) =>
       _fingerprintVideo(project.source.uri);
 
