@@ -201,7 +201,7 @@ class _CreatePageState extends State<CreatePage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return ListView(
-      padding: const EdgeInsets.fromLTRB(14, 24, 14, 32),
+      padding: const EdgeInsets.fromLTRB(8, 20, 8, 32),
       children: [
         const _Eyebrow('مساحة العمل  /  مشروع جديد', icon: Icons.auto_awesome_rounded),
         const SizedBox(height: 14),
@@ -224,16 +224,40 @@ class _CreatePageState extends State<CreatePage> {
         const SizedBox(height: 20),
         _Panel(
           accent: true,
-          child: Row(children: [
-            Container(width: 46, height: 46, decoration: BoxDecoration(color: theme.colorScheme.primary.withValues(alpha: 0.16), borderRadius: BorderRadius.circular(15)), child: Icon(Icons.movie_creation_outlined, color: theme.colorScheme.primary)),
-            const SizedBox(width: 13),
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('مساحة إنشاء جديدة', style: theme.textTheme.titleSmall),
-              const SizedBox(height: 3),
-              Text('إعداداتك محفوظة داخل المشروع ويمكن تعديلها قبل المعالجة.', style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-            ])),
-            Icon(Icons.arrow_back_rounded, color: theme.colorScheme.primary),
-          ]),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final compact = constraints.maxWidth < 360;
+              return Row(children: [
+                Container(
+                  width: compact ? 38 : 46,
+                  height: compact ? 38 : 46,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primary.withValues(alpha: 0.16),
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                  child: Icon(Icons.movie_creation_outlined, color: theme.colorScheme.primary),
+                ),
+                SizedBox(width: compact ? 8 : 13),
+                Expanded(child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('مساحة إنشاء جديدة', style: theme.textTheme.titleSmall),
+                    const SizedBox(height: 3),
+                    Text(
+                      'إعداداتك محفوظة داخل المشروع ويمكن تعديلها قبل المعالجة.',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                        fontSize: compact ? 10 : null,
+                      ),
+                      maxLines: compact ? 2 : null,
+                      overflow: compact ? TextOverflow.ellipsis : TextOverflow.visible,
+                    ),
+                  ],
+                )),
+                if (!compact) Icon(Icons.arrow_back_rounded, color: theme.colorScheme.primary),
+              ]);
+            },
+          ),
         ),
         const SizedBox(height: 24),
         const _Eyebrow('01  /  مصدر الفيديو', icon: Icons.video_file_outlined),
