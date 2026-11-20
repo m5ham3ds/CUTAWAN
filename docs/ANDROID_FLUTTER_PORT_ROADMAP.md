@@ -293,13 +293,19 @@ Choose one primary renderer. A hybrid is allowed only where a measured feature g
 - Added GitHub Actions workflow `.github/workflows/mobile-android.yml` using Flutter 3.47.6.
 - Run `44555130724` passed formatting, `flutter analyze --fatal-infos`, `flutter test`, ARM64 debug APK build, and artifact upload.
 - Artifact: `cutawan-mobile-arm64-debug` (41,818,489 bytes; SHA-256 `f4fecaf83a8fcb220ecb68e6cc5c64906366df92d6a059ad3b8353d44cbf7708`; expires 2026-12-03).
-- **Remaining gate:** install the APK on a physical Android device and verify startup/navigation. Native media/model integration is not yet present.
+- The post-UI run 44642837372 also passed formatting, static analysis, widget tests, ARM64 debug APK build, and artifact upload from main.
+- **Remaining gate:** install the APK on a physical Android device and verify startup/navigation. Phase 2 adds local media/project persistence, but the real Android document-provider round-trip still needs device verification.
 
-### Phase 2 — Project contract and local media
-- Define versioned project JSON and migration tests.
-- Import local media through Android storage APIs and inspect media metadata.
-- Add local project persistence and a cancellable job record.
-- **Gate:** import, reopen, and metadata inspection work after process restart.
+### Phase 2 — Project contract and local media (implementation committed; device gate open)
+- Added a versioned project JSON contract (schemaVersion 1), schema-0 migration, unknown-future-version rejection, and strict source/preferences/job validation.
+- Added the native Android Storage Access Framework picker (ACTION_OPEN_DOCUMENT) with a persistable read grant for the selected content URI. This avoids broad storage permission requests and avoids copying the entire source video into app storage.
+- Added Android metadata inspection for display name, MIME type, size when exposed by the provider, duration, width, height, and rotation through MediaMetadataRetriever.
+- Added durable project storage in the application-support directory. Writes use a temporary file followed by rename; saved projects can be listed, reopened, refreshed, and deleted.
+- Persisted the user's clip settings with the source metadata and a prepared job record that can be cancelled. The UI explicitly states that this record is not an active AI-processing task.
+- Connected Create, Jobs, and Review screens to the repository. Review can invoke the native metadata probe again for a previously saved URI.
+- Added contract/migration, repository, MethodChannel, and widget-flow tests for import → persist → reopen → cancel → re-probe.
+- CI compiles the generated Android app including the custom Kotlin bridge and runs the Flutter test suite.
+- **Remaining acceptance gate:** run the real Storage Access Framework selection and URI re-probe after force-stopping/reopening the app on a physical Android device. Widget tests use a mocked native channel and do not replace this device-level test.
 
 ### Phase 3 — Transcription and local model management
 - Integrate whisper.cpp on Android ARM64.
@@ -450,3 +456,15 @@ The Flutter shell now adopts the phone-first navigation and information architec
 The Flutter screen currently provides a UI and preference interaction shell. URL ingestion, file-picker integration, job persistence, media preview, actual animated rendering, AI inference, and export remain unimplemented. Buttons that would trigger those operations state that they are not yet connected instead of reporting a false success.
 
 The current widget tests cover the four primary destinations, caption preset/animation separation, and honest empty states for Jobs and Review. A new Android ARM64 build is being verified from `main` after this UI update.
+
+
+## 19. Phase 2 implementation record (2026-11-20)
+
+- Working branch: main; no feature branch was created for Phase 2.
+- Added the project_contract.dart versioned project/media contract and serialization/migration support in clip_preferences.dart.
+- Added local_project_repository.dart for durable local project/job records.
+- Added android_video_picker.dart and the native Kotlin source tooling/android/MainActivity.kt.
+- Updated the Android generation script to install the native bridge after Flutter creates its SDK-matched Gradle project.
+- Connected the Create, Jobs, and Review screens to persisted source and job data.
+- Added automated tests for contract round-trip, v0 migration, future schema rejection, metadata validation, repository persistence/cancellation/deletion, MethodChannel mapping, and the end-to-end widget flow.
+- Physical Android device verification remains open. The widget test simulates a fresh app shell with the same disk repository and mocks the native channel; it does not claim to prove OEM document-provider behavior after a real process death.
