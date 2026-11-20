@@ -8,7 +8,9 @@ import '../services/android_video_picker.dart';
 import '../services/local_project_repository.dart';
 
 class HomeShell extends StatefulWidget {
-  const HomeShell({super.key});
+  const HomeShell({super.key, this.repository});
+
+  final LocalProjectRepository? repository;
 
   @override
   State<HomeShell> createState() => _HomeShellState();
@@ -23,7 +25,7 @@ class _HomeShellState extends State<HomeShell> {
   @override
   void initState() {
     super.initState();
-    _repository = LocalProjectRepository();
+    _repository = widget.repository ?? LocalProjectRepository();
     _reloadProjects();
   }
 
