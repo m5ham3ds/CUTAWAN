@@ -2,12 +2,40 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:cutawan_mobile/app.dart';
+import 'package:cutawan_mobile/theme/cutawan_theme.dart';
 
 void configureCaptionStudioViewport(WidgetTester tester) {
   tester.view.physicalSize = const Size(1200, 3200);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
+  testWidgets('Cutawan design system exposes consistent Material 3 light and dark themes', (tester) async {
+    await tester.pumpWidget(MaterialApp(
+      theme: CutawanTheme.light(),
+      darkTheme: CutawanTheme.dark(),
+      themeMode: ThemeMode.dark,
+      home: const Scaffold(body: Text('Theme check')),
+    ));
+
+    final context = tester.element(find.text('Theme check'));
+    final theme = Theme.of(context);
+    expect(theme.useMaterial3, isTrue);
+    expect(theme.brightness, Brightness.dark);
+    expect(theme.cardTheme.shape, isNotNull);
+    expect(theme.filledButtonTheme.style, isNotNull);
+    expect(CutawanTheme.light().brightness, Brightness.light);
+  });
+
+  testWidgets('mobile shell remains stable at a narrow 320dp viewport', (tester) async {
+    tester.view.physicalSize = const Size(320, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(const CutawanApp());
+    await tester.pump();
+    expect(tester.takeException(), isNull);
+  });
+
 }
 
 void main() {
@@ -63,7 +91,7 @@ void main() {
     expect(find.text('Karaoke Fill'), findsOneWidget);
   });
 
-  testWidgets('jobs and review pages explain that processing is not connected yet', (tester) async {
+  testWidgets('jobs and review show clear empty states when no project exists', (tester) async {
     await tester.pumpWidget(const CutawanApp());
 
     await tester.tap(find.text('المهام'));
