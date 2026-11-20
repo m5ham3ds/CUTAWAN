@@ -57,6 +57,17 @@ void main() {
     });
   });
 
+  test('releasing a persisted SAF grant is sent to Android', () async {
+    await AndroidVideoPicker.releasePersistedPermission(
+      'content://media/external/video/media/42',
+    );
+
+    expect(calls.single.method, 'releasePersistedPermission');
+    expect(calls.single.arguments, {
+      'uri': 'content://media/external/video/media/42',
+    });
+  });
+
   test('cancelled selection returns null', () async {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(channel, (call) async => null);
