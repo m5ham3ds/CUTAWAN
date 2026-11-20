@@ -146,7 +146,7 @@ class VideoExportService {
         await Future<void>.delayed(const Duration(milliseconds: 700));
       }
       await cancelRender(renderId);
-      throw TimeoutException('Video export exceeded ' + timeout.inMinutes.toString() + ' minutes.');
+      throw TimeoutException('Video export exceeded ${timeout.inMinutes} minutes.');
     } finally {
       try {
         await _channel.invokeMethod<void>(

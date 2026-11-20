@@ -358,10 +358,9 @@ class _ReviewPageState extends State<ReviewPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'اكتمل خط المعالجة: ' + result.exportedCount.toString() +
-              ' ملف MP4 جديد، ' + result.skippedCount.toString() +
-              ' نتيجة مستعادة، ' + result.candidatesCount.toString() +
-              ' مقطع مقترح.',
+              'اكتمل خط المعالجة: ${result.exportedCount} ملف MP4 جديد، '
+              '${result.skippedCount} نتيجة مستعادة، '
+              '${result.candidatesCount} مقطع مقترح.',
             ),
           ),
         );
@@ -369,7 +368,7 @@ class _ReviewPageState extends State<ReviewPage> {
     } catch (error) {
       if (mounted) {
         setState(() => _lastError = 'توقفت المعالجة عند ' +
-            (_pipelineStage ?? 'مرحلة غير معروفة') + ': ' + error.toString());
+            'توقفت المعالجة عند ${_pipelineStage ?? 'مرحلة غير معروفة'}: $error');
       }
     } finally {
       if (mounted) {
@@ -499,8 +498,7 @@ class _ReviewPageState extends State<ReviewPage> {
               LinearProgressIndicator(value: _pipelineProgress),
               const SizedBox(height: 6),
               Text(
-                'المرحلة: ' + (_pipelineStage ?? 'بدء') + ' · ' +
-                    (100 * _pipelineProgress).round().toString() + '%',
+                'المرحلة: ${_pipelineStage ?? 'بدء'} · ${(100 * _pipelineProgress).round()}%',
                 style: theme.textTheme.bodySmall,
               ),
             ],

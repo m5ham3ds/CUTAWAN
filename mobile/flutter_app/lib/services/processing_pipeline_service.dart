@@ -142,7 +142,9 @@ class ProcessingPipelineService {
         work: () async {
           await analyzeFraming(project);
           final plan = await _repository.loadReframePlan(project.id);
-          if (plan == null) throw StateError('Reframe analysis did not persist a plan.');
+          if (plan == null) {
+            throw StateError('Reframe analysis did not persist a plan.');
+          }
         },
       );
 
@@ -241,7 +243,7 @@ class ProcessingPipelineService {
       final total = candidates.candidates.length;
       for (var index = 0; index < total; index++) {
         final candidate = candidates.candidates[index];
-        final stageName = 'render_${candidate.id}';
+        final stageName = 'render_$candidate.id';
         final fingerprint = _jobs.stageFingerprint(
           sourceSha256: sourceSha,
           stage: stageName,

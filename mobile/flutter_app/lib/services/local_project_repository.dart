@@ -449,7 +449,9 @@ class LocalProjectRepository {
   }
 
   bool _isSha256(String value) {
-    if (value.length != 64) return false;
+    if (value.length != 64) {
+      return false;
+    }
     for (final unit in value.codeUnits) {
       final valid = (unit >= 48 && unit <= 57) || (unit >= 97 && unit <= 102);
       if (!valid) return false;
