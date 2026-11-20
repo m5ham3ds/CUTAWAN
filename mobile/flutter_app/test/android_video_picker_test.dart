@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   const channel = MethodChannel('com.cutawan.mobile/media');
   final calls = <MethodCall>[];
 
