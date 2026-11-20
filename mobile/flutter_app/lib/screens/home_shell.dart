@@ -125,9 +125,16 @@ class CreatePage extends StatefulWidget {
 
 class _CreatePageState extends State<CreatePage> {
   final _urlController = TextEditingController();
+  final _minimumSecondsController = TextEditingController(text: '15');
+  final _maximumSecondsController = TextEditingController(text: '90');
   int _clipCount = 10;
   ClipDurationMode _duration = ClipDurationMode.automatic;
   ClipAspectRatio _ratio = ClipAspectRatio.portrait916;
+  int _customMinimumSeconds = 15;
+  int _customMaximumSeconds = 90;
+  String _resolution = '1080p';
+  String _captionStyleId = 'karaoke';
+  String _captionAnimationId = 'word_pop';
   bool _captions = true;
   bool _speakerTracking = true;
   bool _isImporting = false;
@@ -139,6 +146,8 @@ class _CreatePageState extends State<CreatePage> {
   void dispose() {
     _downloadCancellation?.cancel();
     _urlController.dispose();
+    _minimumSecondsController.dispose();
+    _maximumSecondsController.dispose();
     super.dispose();
   }
 
@@ -161,6 +170,11 @@ class _CreatePageState extends State<CreatePage> {
       final preferences = ClipPreferences(
         requestedClipCount: _clipCount,
         durationMode: _duration,
+        customMinimumSeconds: _customMinimumSeconds,
+        customMaximumSeconds: _customMaximumSeconds,
+        resolution: _resolution,
+        captionStyleId: _captionStyleId,
+        captionAnimationId: _captionAnimationId,
         aspectRatio: _ratio,
         captionsEnabled: _captions,
         speakerTrackingEnabled: _speakerTracking,
@@ -228,6 +242,11 @@ class _CreatePageState extends State<CreatePage> {
         preferences: ClipPreferences(
           requestedClipCount: _clipCount,
           durationMode: _duration,
+        customMinimumSeconds: _customMinimumSeconds,
+        customMaximumSeconds: _customMaximumSeconds,
+        resolution: _resolution,
+        captionStyleId: _captionStyleId,
+        captionAnimationId: _captionAnimationId,
           aspectRatio: _ratio,
           captionsEnabled: _captions,
           speakerTrackingEnabled: _speakerTracking,
@@ -400,6 +419,44 @@ class _CreatePageState extends State<CreatePage> {
             if (value != null) setState(() => _duration = value);
           },
         ),
+        if (_duration == ClipDurationMode.custom) ...[
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _minimumSecondsController,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'أقل مدة (ثانية)',
+                  ),
+                  onChanged: (value) {
+                    final parsed = int.tryParse(value);
+                    if (parsed != null) {
+                      setState(() => _customMinimumSeconds = parsed);
+                    }
+                  },
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: TextField(
+                  controller: _maximumSecondsController,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'أقصى مدة (ثانية)',
+                  ),
+                  onChanged: (value) {
+                    final parsed = int.tryParse(value);
+                    if (parsed != null) {
+                      setState(() => _customMaximumSeconds = parsed);
+                    }
+                  },
+                ),
+              ),
+            ],
+          ),
+        ],
         const SizedBox(height: 22),
         Text('نسبة الأبعاد', style: theme.textTheme.titleSmall),
         const SizedBox(height: 10),
@@ -419,6 +476,20 @@ class _CreatePageState extends State<CreatePage> {
             );
           }).toList(),
         ),
+        const SizedBox(height: 22),
+        Text('جودة التصدير', style: theme.textTheme.titleSmall),
+        const SizedBox(height: 8),
+        DropdownButtonFormField<String>(
+          initialValue: _resolution,
+          isExpanded: true,
+          items: const [
+            DropdownMenuItem(value: '720p', child: Text('720p')),
+            DropdownMenuItem(value: '1080p', child: Text('1080p')),
+          ],
+          onChanged: (value) {
+            if (value != null) setState(() => _resolution = value);
+          },
+        ),
         const SizedBox(height: 14),
         SwitchListTile(
           contentPadding: EdgeInsets.zero,
@@ -434,6 +505,40 @@ class _CreatePageState extends State<CreatePage> {
           value: _speakerTracking,
           onChanged: (value) => setState(() => _speakerTracking = value),
         ),
+        if (_captions) ...[
+          const SizedBox(height: 12),
+          Text('تصميم الكابشن', style: theme.textTheme.titleSmall),
+          const SizedBox(height: 8),
+          DropdownButtonFormField<String>(
+            initialValue: _captionStyleId,
+            isExpanded: true,
+            items: captionStylePresets
+                .map((style) => DropdownMenuItem(
+                      value: style.id,
+                      child: Text(style.name),
+                    ))
+                .toList(),
+            onChanged: (value) {
+              if (value != null) setState(() => _captionStyleId = value);
+            },
+          ),
+          const SizedBox(height: 16),
+          Text('حركة النص', style: theme.textTheme.titleSmall),
+          const SizedBox(height: 8),
+          DropdownButtonFormField<String>(
+            initialValue: _captionAnimationId,
+            isExpanded: true,
+            items: captionAnimationPresets
+                .map((animation) => DropdownMenuItem(
+                      value: animation.id,
+                      child: Text(animation.name),
+                    ))
+                .toList(),
+            onChanged: (value) {
+              if (value != null) setState(() => _captionAnimationId = value);
+            },
+          ),
+        ],
         Theme(
           data: theme.copyWith(dividerColor: Colors.transparent),
           child: ExpansionTile(
@@ -457,6 +562,21 @@ class _CreatePageState extends State<CreatePage> {
         const SizedBox(height: 12),
         _SummaryLine(label: 'عدد المقاطع', value: '$_clipCount'),
         _SummaryLine(label: 'المدة', value: _durationLabel),
+        _SummaryLine(label: 'الجودة', value: _resolution),
+        if (_captions) ...[
+          _SummaryLine(
+            label: 'تصميم الكابشن',
+            value: captionStylePresets
+                .firstWhere((style) => style.id == _captionStyleId)
+                .name,
+          ),
+          _SummaryLine(
+            label: 'حركة النص',
+            value: captionAnimationPresets
+                .firstWhere((animation) => animation.id == _captionAnimationId)
+                .name,
+          ),
+        ],
         _SummaryLine(
           label: 'التكوين',
           value: switch (_ratio) {
