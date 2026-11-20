@@ -326,7 +326,7 @@ class ProcessingPipelineService {
         if (freeBytes < estimatedBytes) {
           throw StateError(
             'Insufficient free storage for ${candidate.id}: '
-            '${freeBytes} bytes available; approximately $estimatedBytes required.',
+            '$freeBytes bytes available; approximately $estimatedBytes required.',
           );
         }
 

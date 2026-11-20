@@ -437,7 +437,9 @@ class LocalProjectRepository {
   }
 
   bool _isSafeToken(String value, {required int maxLength}) {
-    if (value.isEmpty || value.length > maxLength) return false;
+    if (value.isEmpty || value.length > maxLength) {
+      return false;
+    }
     for (final unit in value.codeUnits) {
       final valid = (unit >= 48 && unit <= 57) ||
           (unit >= 65 && unit <= 90) ||
