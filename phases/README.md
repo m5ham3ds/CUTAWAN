@@ -25,8 +25,8 @@
 | 5 | Face sampling and validated reframing plans | Implemented foundation; renderer acceptance open | Not active-speaker recognition; no completed clip render |
 | 6 | Caption Studio visual presets, motion preview, RTL and preference persistence | Implemented preview/domain foundation | Preview is not transcript-timed and is not the MP4 exporter |
 | 7 | Multi-provider model selection, secure user credentials, consented cloud editorial annotations | Implemented; automated gates passed on main | Physical Keystore validation, real provider account/model compatibility, billing and policy acceptance remain open |
-| 8 | End-to-end pipeline, real-time job orchestration, editor timeline and FFmpeg export | Planned; not complete | Requires rendering design, checkpoints, cancellation/resume and output verification |
-| 9 | Professional UI redesign and navigation/component architecture | Planned in depth; existing monolithic screen still needs refactor | Do not claim a full redesign has been delivered |
+| 8 | End-to-end pipeline, job orchestration and clip export | Implementation in progress; real MP4 trim/export and verification foundations added | Dynamic reframing, burned-in captions, full decode, process-death render recovery, fixture and physical-device gates remain open |
+| 9 | Professional UI redesign and navigation/component architecture | First slice delivered; screen parts and shared Material 3 themes added | Full information architecture, isolated feature boundaries, Clip Editor, accessibility, golden/RTL/responsive matrix and device evidence remain open |
 | 10 | Physical-device quality, security, performance and Arabic/English acceptance | Planned; incomplete | Needs representative real-video corpus and Android devices |
 
 ## Global engineering constraints
@@ -45,7 +45,7 @@
 ## Current next actions
 
 1. Perform physical-device checks for Phase 7: key save/replace/delete, backup disabled, restore/reinstall behavior, cloud-consent gating and provider success/failure without exposing secrets.
-2. Start Phase 8 by wiring the resumable processing state machine to persisted jobs/artifacts, then add real clip rendering and output validation.
-3. Start Phase 9 by extracting the large `home_shell.dart` into separate feature screens/components with a consistent Material 3 design system.
+2. Continue Phase 8 by applying frame-level reframe plans and timed captions to MP4 output, then add full decode, fixture, process-death and physical-device acceptance.
+3. Continue Phase 9 by completing screen architecture, Clip Editor, golden/RTL/accessibility/keyboard tests and device review.
 4. Complete Phase 10 with Arabic/English media fixtures and physical ARM64 quality, privacy, thermal and performance evidence.
 5. Do not mark Phases 3–10 fully accepted until their specific device and output evidence is attached.

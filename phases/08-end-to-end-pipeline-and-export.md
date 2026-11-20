@@ -29,3 +29,28 @@ Convert the current domain foundations into a usable pipeline that produces indi
 ## Restrictions
 
 No UI may state an export succeeded until a real output file exists and passes validation. The current phase 3–6 candidate and reframe artifacts are not final video files.
+
+## Implementation update — 2026-11-20
+
+**Status: implementation in progress; not phase-accepted.**
+
+The Flutter Android workspace now has a first end-to-end orchestration path:
+
+- Persisted job state updates and per-stage SHA-256 checkpoints with artifact-existence and path/symlink containment checks.
+- A source fingerprint operation executed in Android over the selected, persistently readable URI.
+- A pipeline service connecting source inspection, existing Whisper transcription, candidate discovery, framing-plan analysis, caption sidecar generation, clip rendering, manifest creation and final job state.
+- A Media3 Transformer Android renderer pinned to 1.11.1, producing H.264/AAC MP4 clips, trimming candidate time ranges and applying aspect-fit presentation.
+- A second verification operation reopening the published CUTAWAN output and comparing SHA-256, byte size, duration, dimensions and video-track presence before a checkpoint can be reused.
+- Output metadata records and per-project manifest. Interrupted running jobs are recovered as failed/resumable instead of remaining stuck.
+- Cancellation and progress plumbing, storage preflight, and cleanup of temporary render output after publishing.
+- Automated tests for repository checkpoints and job recovery, caption sidecars, export polling/cancellation/result validation and resume-verification channel behavior.
+
+### Explicit remaining work and acceptance blockers
+
+- The current Media3 export applies trim and aspect fit only. The persisted face/reframe plan is validated but its changing crop/focus keyframes are not yet applied to rendered frames.
+- SRT/ASS sidecars are generated from transcript word timings, including Arabic text, but they are not burned into the MP4 and do not yet share a tested pixel-identical renderer with Caption Studio preview.
+- Native output verification probes stream metadata and the video track; it does not yet perform a full end-to-end decode of every output or enforce all fixture cases.
+- Per-clip manual re-render/retry, background execution and notifications that survive Activity/process death, and robust native render-session recovery remain required.
+- No physical ARM64 device, thermal, memory, lifecycle, SAF provider, interrupted-render or Arabic/English golden-media test has been performed in this update.
+
+Do not mark this phase complete until the remaining items and the original required gates above pass.
