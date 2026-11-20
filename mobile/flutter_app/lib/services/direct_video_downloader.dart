@@ -212,11 +212,12 @@ class DirectVideoDownloader {
     File? partialFile;
     File? completedFile;
     IOSink? sink;
+    var downloadAccepted = false;
     var receivedBytes = 0;
     int? totalBytes;
 
     try {
-      HttpClientResponse? response;
+      late HttpClientResponse response;
       while (true) {
         cancellation.throwIfCancelled();
         final request = await client.getUrl(currentUri);
@@ -323,6 +324,7 @@ class DirectVideoDownloader {
       if (metadata.sizeBytes > 0 && metadata.sizeBytes != receivedBytes) {
         throw const FormatException('Native media size does not match downloaded file size.');
       }
+      downloadAccepted = true;
       return metadata;
     } on VideoDownloadCancelled {
       rethrow;
@@ -336,7 +338,7 @@ class DirectVideoDownloader {
       if (partialFile != null && await partialFile.exists()) {
         await partialFile.delete();
       }
-      if (completedFile != null && cancellation.isCancelled &&
+      if (completedFile != null && !downloadAccepted &&
           await completedFile.exists()) {
         await completedFile.delete();
       }
