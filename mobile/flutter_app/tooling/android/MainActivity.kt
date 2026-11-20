@@ -7,7 +7,9 @@ import android.provider.MediaStore
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.effect.CanvasOverlay
 import androidx.media3.effect.MatrixTransformation
+import androidx.media3.effect.OverlayEffect
 import androidx.media3.effect.Presentation
 import androidx.media3.transformer.Effects
 import androidx.media3.transformer.EditedMediaItem
@@ -22,7 +24,18 @@ import android.app.Activity
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Color
 import android.graphics.Matrix
+import android.graphics.Paint
+import android.graphics.RectF
+import android.graphics.Typeface
+import android.text.Layout
+import android.text.SpannableString
+import android.text.StaticLayout
+import android.text.TextDirectionHeuristics
+import android.text.TextPaint
+import android.text.style.ForegroundColorSpan
 import android.graphics.PointF
 import android.media.AudioFormat
 import android.media.MediaCodec
@@ -78,6 +91,34 @@ class MainActivity : FlutterActivity() {
         val y: Float = 0f,
         val width: Float = 1f,
         val height: Float = 1f
+    )
+    private data class CaptionWordCue(
+        val text: String,
+        val startMs: Long,
+        val endMs: Long,
+        val startOffset: Int,
+        val endOffset: Int
+    )
+
+    private data class TimedCaptionCue(
+        val startMs: Long,
+        val endMs: Long,
+        val text: String,
+        val words: List<CaptionWordCue>
+    )
+
+    private data class CaptionRenderStyle(
+        val fontFamily: String,
+        val fontScale: Float,
+        val uppercase: Boolean,
+        val textColor: Int,
+        val highlightColor: Int,
+        val highlightBoxColor: Int?,
+        val outlineColor: Int,
+        val outlineWidth: Float,
+        val shadow: Float,
+        val bold: Boolean,
+        val positionY: Float
     )
 
 
@@ -1010,6 +1051,16 @@ class MainActivity : FlutterActivity() {
                 call.argument<List<*>>("reframeShots"),
                 endMs - startMs
             )
+            val captionCues = parseCaptionCues(
+                call.argument<List<*>>("captionCues"),
+                endMs - startMs
+            )
+            val captionStyle = if (captionCues.isEmpty()) {
+                null
+            } else {
+                parseCaptionStyle(call.argument<Map<*, *>>("captionStyle"))
+            }
+            val captionAnimationId = call.argument<String>("captionAnimationId") ?: "static"
             if (renderSessions.values.any { it.status == "running" }) {
                 throw IllegalStateException("Another video export is already running.")
             }
@@ -1051,11 +1102,28 @@ class MainActivity : FlutterActivity() {
                 aspectRatio,
                 Presentation.LAYOUT_STRETCH_TO_FIT
             )
+            val videoEffects = mutableListOf<androidx.media3.common.Effect>(
+                reframeTransformation,
+                presentation
+            )
+            if (captionStyle != null && captionCues.isNotEmpty()) {
+                videoEffects.add(
+                    OverlayEffect(
+                        listOf(
+                            TimedCaptionOverlay(
+                                captionCues,
+                                captionStyle,
+                                captionAnimationId
+                            )
+                        )
+                    )
+                )
+            }
             val editedItem = EditedMediaItem.Builder(mediaItem)
                 .setEffects(
                     Effects(
                         emptyList(),
-                        listOf(reframeTransformation, presentation)
+                        videoEffects
                     )
                 )
                 .build()
@@ -1230,6 +1298,275 @@ class MainActivity : FlutterActivity() {
                 }
                 return Matrix().apply { setValues(values) }
             }
+        }
+    }
+
+
+    private fun parseCaptionCues(
+        raw: List<*>?,
+        clipDurationMs: Long
+    ): List<TimedCaptionCue> {
+        if (raw == null || raw.isEmpty()) return emptyList()
+        if (raw.size > 2000) {
+            throw IllegalArgumentException("A clip cannot contain more than 2000 caption cues.")
+        }
+        val cues = mutableListOf<TimedCaptionCue>()
+        var previousStart = -1L
+        for (item in raw) {
+            val map = item as? Map<*, *>
+                ?: throw IllegalArgumentException("Caption cue must be an object.")
+            val start = (map["startMs"] as? Number)?.toLong()
+                ?: throw IllegalArgumentException("Caption cue start is missing.")
+            val end = (map["endMs"] as? Number)?.toLong()
+                ?: throw IllegalArgumentException("Caption cue end is missing.")
+            val text = map["text"] as? String
+                ?: throw IllegalArgumentException("Caption cue text is missing.")
+            val rawWords = map["words"] as? List<*>
+                ?: throw IllegalArgumentException("Caption cue words are missing.")
+            if (start < 0 || end <= start || end > clipDurationMs ||
+                start < previousStart || text.isBlank() || text.length > 1200 ||
+                rawWords.isEmpty() || rawWords.size > 100
+            ) {
+                throw IllegalArgumentException("Caption cue timing or text is invalid.")
+            }
+            previousStart = start
+            val words = mutableListOf<CaptionWordCue>()
+            for (rawWord in rawWords) {
+                val word = rawWord as? Map<*>
+                    ?: throw IllegalArgumentException("Caption word must be an object.")
+                val wordText = word["text"] as? String
+                    ?: throw IllegalArgumentException("Caption word text is missing.")
+                val wordStart = (word["startMs"] as? Number)?.toLong()
+                    ?: throw IllegalArgumentException("Caption word start is missing.")
+                val wordEnd = (word["endMs"] as? Number)?.toLong()
+                    ?: throw IllegalArgumentException("Caption word end is missing.")
+                val offsetStart = (word["startOffset"] as? Number)?.toInt()
+                    ?: throw IllegalArgumentException("Caption word text start is missing.")
+                val offsetEnd = (word["endOffset"] as? Number)?.toInt()
+                    ?: throw IllegalArgumentException("Caption word text end is missing.")
+                if (wordText.isBlank() || wordStart < start || wordEnd <= wordStart ||
+                    wordEnd > end || offsetStart < 0 || offsetEnd <= offsetStart ||
+                    offsetEnd > text.length ||
+                    text.substring(offsetStart, offsetEnd) != wordText
+                ) {
+                    throw IllegalArgumentException("Caption word does not match its timed text range.")
+                }
+                words.add(
+                    CaptionWordCue(
+                        wordText,
+                        wordStart,
+                        wordEnd,
+                        offsetStart,
+                        offsetEnd
+                    )
+                )
+            }
+            cues.add(TimedCaptionCue(start, end, text, words))
+        }
+        return cues
+    }
+
+    private fun parseCaptionStyle(raw: Map<*, *>?): CaptionRenderStyle {
+        val value = raw ?: throw IllegalArgumentException("Caption style is required.")
+        val family = value["fontFamily"] as? String
+            ?: throw IllegalArgumentException("Caption font family is missing.")
+        val scale = (value["fontScale"] as? Number)?.toFloat()
+            ?: throw IllegalArgumentException("Caption font scale is missing.")
+        val uppercase = value["uppercase"] as? Boolean
+            ?: throw IllegalArgumentException("Caption uppercase preference is missing.")
+        val textColor = parseCaptionColor(value["textColor"], "textColor")
+        val highlightColor = parseCaptionColor(value["highlightColor"], "highlightColor")
+        val outlineColor = parseCaptionColor(value["outlineColor"], "outlineColor")
+        val boxRaw = value["highlightBoxColor"]
+        val box = if (boxRaw == null) null else parseCaptionColor(boxRaw, "highlightBoxColor")
+        val outlineWidth = (value["outlineWidth"] as? Number)?.toFloat()
+            ?: throw IllegalArgumentException("Caption outline width is missing.")
+        val shadow = (value["shadow"] as? Number)?.toFloat()
+            ?: throw IllegalArgumentException("Caption shadow is missing.")
+        val bold = value["bold"] as? Boolean
+            ?: throw IllegalArgumentException("Caption bold preference is missing.")
+        val positionY = (value["positionY"] as? Number)?.toFloat()
+            ?: throw IllegalArgumentException("Caption vertical position is missing.")
+        if (family.isBlank() || !scale.isFinite() || scale <= 0f ||
+            !outlineWidth.isFinite() || outlineWidth < 0f ||
+            !shadow.isFinite() || shadow < 0f ||
+            !positionY.isFinite() || positionY <= 0f || positionY >= 1f
+        ) {
+            throw IllegalArgumentException("Caption style values are outside supported bounds.")
+        }
+        return CaptionRenderStyle(
+            family,
+            scale,
+            uppercase,
+            textColor,
+            highlightColor,
+            box,
+            outlineColor,
+            outlineWidth,
+            shadow,
+            bold,
+            positionY
+        )
+    }
+
+    private fun parseCaptionColor(raw: Any?, name: String): Int {
+        val value = raw as? String
+            ?: throw IllegalArgumentException("Caption " + name + " is missing.")
+        if (!value.matches(Regex("^#[0-9A-Fa-f]{6}$"))) {
+            throw IllegalArgumentException("Caption " + name + " must be #RRGGBB.")
+        }
+        return Color.parseColor(value)
+    }
+
+    private class TimedCaptionOverlay(
+        private val cues: List<TimedCaptionCue>,
+        private val style: CaptionRenderStyle,
+        private val animationId: String
+    ) : CanvasOverlay(true) {
+        private var cachedCueIndex = -1
+        private var cachedWordIndex = -2
+        private var cachedWidth = -1
+        private var cachedHeight = -1
+        private var cachedFillLayout: StaticLayout? = null
+        private var cachedOutlineLayout: StaticLayout? = null
+
+        override fun onDraw(canvas: Canvas, presentationTimeUs: Long) {
+            val timeMs = (presentationTimeUs / 1000L).coerceAtLeast(0L)
+            val cueIndex = cues.indexOfFirst {
+                timeMs >= it.startMs && timeMs < it.endMs
+            }
+            if (cueIndex < 0) return
+            val cue = cues[cueIndex]
+            val activeWordIndex = if (animationId == "karaoke_fill") {
+                cue.words.indexOfFirst {
+                    timeMs >= it.startMs && timeMs < it.endMs
+                }
+            } else {
+                -1
+            }
+            if (cueIndex != cachedCueIndex ||
+                activeWordIndex != cachedWordIndex ||
+                canvas.width != cachedWidth ||
+                canvas.height != cachedHeight
+            ) {
+                rebuildLayouts(cue, cueIndex, activeWordIndex, canvas.width, canvas.height)
+            }
+            val fill = cachedFillLayout ?: return
+            val left = (canvas.width - fill.width) / 2f
+            val top = (canvas.height * style.positionY - fill.height / 2f)
+                .coerceIn(0f, (canvas.height - fill.height).coerceAtLeast(0).toFloat())
+            if (style.highlightBoxColor != null) {
+                val paddingX = canvas.width * 0.018f
+                val paddingY = fill.height * 0.12f
+                val rect = RectF(
+                    left - paddingX,
+                    top - paddingY,
+                    left + fill.width + paddingX,
+                    top + fill.height + paddingY
+                )
+                val backgroundPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                    color = style.highlightBoxColor
+                    style = Paint.Style.FILL
+                }
+                canvas.drawRoundRect(
+                    rect,
+                    (canvas.height * 0.012f).coerceAtLeast(8f),
+                    (canvas.height * 0.012f).coerceAtLeast(8f),
+                    backgroundPaint
+                )
+            }
+            canvas.save()
+            canvas.translate(left, top)
+            cachedOutlineLayout?.draw(canvas)
+            fill.draw(canvas)
+            canvas.restore()
+        }
+
+        private fun rebuildLayouts(
+            cue: TimedCaptionCue,
+            cueIndex: Int,
+            activeWordIndex: Int,
+            canvasWidth: Int,
+            canvasHeight: Int
+        ) {
+            val value = if (style.uppercase) cue.text.uppercase(Locale.ROOT) else cue.text
+            val styled = SpannableString(value)
+            if (animationId == "karaoke_fill" && activeWordIndex >= 0) {
+                val word = cue.words[activeWordIndex]
+                val start = if (style.uppercase) {
+                    cue.text.substring(0, word.startOffset).uppercase(Locale.ROOT).length
+                } else {
+                    word.startOffset
+                }
+                val end = if (style.uppercase) {
+                    cue.text.substring(0, word.endOffset).uppercase(Locale.ROOT).length
+                } else {
+                    word.endOffset
+                }
+                if (start >= 0 && end > start && end <= styled.length) {
+                    styled.setSpan(
+                        ForegroundColorSpan(style.highlightColor),
+                        start,
+                        end,
+                        SpannableString.SPAN_EXCLUSIVE_EXCLUSIVE
+                    )
+                }
+            }
+            val textSize = (canvasHeight * style.fontScale).coerceIn(20f, canvasHeight * 0.12f)
+            val typeface = when {
+                style.fontFamily.contains("Anton", ignoreCase = true) ->
+                    Typeface.create("sans-serif-condensed", if (style.bold) Typeface.BOLD else Typeface.NORMAL)
+                style.fontFamily.contains("Medium", ignoreCase = true) ->
+                    Typeface.create("sans-serif-medium", Typeface.NORMAL)
+                else -> Typeface.create("sans-serif", if (style.bold) Typeface.BOLD else Typeface.NORMAL)
+            }
+            val maxWidth = (canvasWidth * 0.90f).toInt().coerceAtLeast(120)
+            val fillPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = style.textColor
+                textSize = textSize
+                this.typeface = typeface
+                style = Paint.Style.FILL
+                if (style.shadow > 0f) {
+                    setShadowLayer(
+                        style.shadow * textSize * 0.12f,
+                        0f,
+                        style.shadow * textSize * 0.05f,
+                        Color.BLACK
+                    )
+                }
+            }
+            val outlinePaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = style.outlineColor
+                textSize = textSize
+                this.typeface = typeface
+                style = Paint.Style.STROKE
+                strokeJoin = Paint.Join.ROUND
+                strokeWidth = style.outlineWidth * (textSize / 48f)
+            }
+            cachedFillLayout = buildCaptionLayout(styled, fillPaint, maxWidth)
+            cachedOutlineLayout = if (style.outlineWidth > 0f) {
+                buildCaptionLayout(styled, outlinePaint, maxWidth)
+            } else {
+                null
+            }
+            cachedCueIndex = cueIndex
+            cachedWordIndex = activeWordIndex
+            cachedWidth = canvasWidth
+            cachedHeight = canvasHeight
+        }
+
+        private fun buildCaptionLayout(
+            text: CharSequence,
+            paint: TextPaint,
+            width: Int
+        ): StaticLayout {
+            return StaticLayout.Builder.obtain(text, 0, text.length, paint, width)
+                .setAlignment(Layout.Alignment.ALIGN_CENTER)
+                .setTextDirection(TextDirectionHeuristics.FIRSTSTRONG_RTL)
+                .setIncludePad(false)
+                .setMaxLines(2)
+                .setLineSpacing(0f, 1.04f)
+                .build()
         }
     }
 
