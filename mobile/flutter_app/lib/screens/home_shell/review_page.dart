@@ -580,18 +580,35 @@ class _ReviewPageState extends State<ReviewPage> {
               Text('الملفات المصدّرة · ${_exportRecords[project.id]!.length}',
                   style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800)),
               for (final export in _exportRecords[project.id]!)
-                Material(
-                  color: Colors.transparent,
-                  borderRadius: BorderRadius.circular(14),
-                  child: ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: const Icon(Icons.video_file_outlined),
-                    title: Text(export['displayName'] as String? ?? 'CUTAWAN export.mp4'),
-                    subtitle: Text(
-                      '${export['width']} × ${export['height']} · '
-                      '${_formatDuration((export['durationMs'] as num? ?? 0).toInt())} · '
-                      '${_formatBytes((export['sizeBytes'] as num? ?? 0).toInt())} · SHA-256 verified',
-                    ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 7),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Padding(
+                        padding: EdgeInsets.only(top: 3),
+                        child: Icon(Icons.video_file_outlined, size: 20),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              export['displayName'] as String? ?? 'CUTAWAN export.mp4',
+                              style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              '${export['width']} × ${export['height']} · '
+                              '${_formatDuration((export['durationMs'] as num? ?? 0).toInt())} · '
+                              '${_formatBytes((export['sizeBytes'] as num? ?? 0).toInt())} · SHA-256 verified',
+                              style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
             ],
@@ -613,19 +630,39 @@ class _ReviewPageState extends State<ReviewPage> {
               ),
               const SizedBox(height: 8),
               for (final candidate in candidateSet.candidates)
-                Material(
-                  color: Colors.transparent,
-                  borderRadius: BorderRadius.circular(14),
-                  child: ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: Text(candidate.title.isEmpty ? 'مقطع مقترح' : candidate.title),
-                    subtitle: Text(
-                      '${_formatDuration(candidate.startMs)}–${_formatDuration(candidate.endMs)} · ${candidate.durationMs ~/ 1000}s · ${candidate.score.toStringAsFixed(0)}/100'
-                      '${candidate.modelAnnotated ? ' · وصف محلي' : ''}'
-                      '\n${candidate.explanations.take(2).join(' · ')}',
-                    ),
-                    isThreeLine: true,
-                    leading: const Icon(Icons.movie_creation_outlined),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 9),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Padding(
+                        padding: EdgeInsets.only(top: 3),
+                        child: Icon(Icons.movie_creation_outlined, size: 20),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              candidate.title.isEmpty ? 'مقطع مقترح' : candidate.title,
+                              style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              '${_formatDuration(candidate.startMs)}–${_formatDuration(candidate.endMs)} · ${candidate.durationMs ~/ 1000}s · ${candidate.score.toStringAsFixed(0)}/100'
+                              '${candidate.modelAnnotated ? ' · وصف محلي' : ''}',
+                              style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              candidate.explanations.take(2).join(' · '),
+                              style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
             ],
