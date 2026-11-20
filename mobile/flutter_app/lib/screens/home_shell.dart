@@ -46,9 +46,9 @@ class _HomeShellState extends State<HomeShell> with SingleTickerProviderStateMix
 
   static const _destinations = [
     (label: 'إنشاء', icon: Icons.add_circle_outline_rounded, selected: Icons.add_circle_rounded, hint: 'Create'),
-    (label: 'المشاريع', icon: Icons.grid_view_rounded, selected: Icons.grid_view_rounded, hint: 'Projects'),
+    (label: 'المهام', icon: Icons.grid_view_rounded, selected: Icons.grid_view_rounded, hint: 'Projects'),
     (label: 'المراجعة', icon: Icons.movie_filter_outlined, selected: Icons.movie_filter_rounded, hint: 'Review'),
-    (label: 'الكابشن', icon: Icons.closed_caption_outlined, selected: Icons.closed_caption_rounded, hint: 'Captions'),
+    (label: 'الاستوديو', icon: Icons.closed_caption_outlined, selected: Icons.closed_caption_rounded, hint: 'Captions'),
   ];
 
   @override
@@ -149,8 +149,8 @@ class _CutawanTopBar extends StatelessWidget {
         Container(width: 43, height: 43, decoration: BoxDecoration(color: scheme.primary, borderRadius: BorderRadius.circular(15), boxShadow: [BoxShadow(color: scheme.primary.withValues(alpha: 0.18), blurRadius: 18, offset: const Offset(0, 6))]), child: Icon(Icons.auto_awesome_rounded, color: scheme.onPrimary, size: 23)),
         const SizedBox(width: 12),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('CUTAWAN', style: theme.textTheme.titleMedium?.copyWith(letterSpacing: 1.4, fontWeight: FontWeight.w900)),
-          Text('AI CREATOR STUDIO', style: theme.textTheme.labelSmall?.copyWith(color: scheme.onSurfaceVariant, letterSpacing: 1.35, fontSize: 9)),
+          FittedBox(fit: BoxFit.scaleDown, alignment: AlignmentDirectional.centerStart, child: Text('CUTAWAN', style: theme.textTheme.titleMedium?.copyWith(letterSpacing: 1.0, fontWeight: FontWeight.w900, fontSize: 16))),
+          Text('AI CREATOR STUDIO', maxLines: 1, overflow: TextOverflow.clip, style: theme.textTheme.labelSmall?.copyWith(color: scheme.onSurfaceVariant, letterSpacing: 0.7, fontSize: 7.5)),
         ])),
         _TopBarAction(icon: Icons.refresh_rounded, tooltip: 'تحديث المشاريع', onTap: onRefresh),
         const SizedBox(width: 8),

@@ -46,9 +46,9 @@ void main() {
     expect(find.text('CUTAWAN'), findsOneWidget);
     expect(find.text('AI CREATOR STUDIO'), findsOneWidget);
     expect(find.text('إنشاء'), findsOneWidget);
-    expect(find.text('المشاريع'), findsOneWidget);
+    expect(find.text('المهام'), findsOneWidget);
     expect(find.text('المراجعة'), findsOneWidget);
-    expect(find.text('الكابشن'), findsOneWidget);
+    expect(find.text('الاستوديو'), findsOneWidget);
     expect(find.textContaining('من المصدر إلى'), findsOneWidget);
   });
 
