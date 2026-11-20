@@ -32,6 +32,7 @@ import android.graphics.RectF
 import android.graphics.Typeface
 import android.text.Layout
 import android.text.SpannableString
+import android.text.Spanned
 import android.text.StaticLayout
 import android.text.TextDirectionHeuristics
 import android.text.TextPaint
@@ -1508,7 +1509,7 @@ class MainActivity : FlutterActivity() {
                         ForegroundColorSpan(style.highlightColor),
                         start,
                         end,
-                        SpannableString.SPAN_EXCLUSIVE_EXCLUSIVE
+                        Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
                     )
                 }
             }
