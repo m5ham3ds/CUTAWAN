@@ -1391,13 +1391,22 @@ class _CaptionStudioPageState extends State<CaptionStudioPage> with SingleTicker
   }
 
   Future<void> _loadLatestPreferences() async {
-    if (_loaded) return;
+    if (_loaded) {
+      return;
+    }
     final projects = widget.projects.value;
-    if (projects.isEmpty) { if (mounted) setState(() => _loaded = true); return; }
+    if (projects.isEmpty) {
+      if (mounted) {
+        setState(() => _loaded = true);
+      }
+      return;
+    }
     final prefs = projects.first.preferences;
     final matches = captionStylePresets.where((item) => item.id == prefs.captionStyleId);
     final style = matches.isEmpty ? captionStylePresets.first : matches.first;
-    if (!mounted) return;
+    if (!mounted) {
+      return;
+    }
     setState(() {
       _styleId = style.id;
       _animationId = captionAnimationPresets.any((item) => item.id == prefs.captionAnimationId) ? prefs.captionAnimationId : 'static';
@@ -1427,7 +1436,592 @@ class _CaptionStudioPageState extends State<CaptionStudioPage> with SingleTicker
     });
   }
   void _setColor(String field, String value) {
-    if (!RegExp(r'^#[0-9A-Fa-f]{6}$').hasMatch(value)) { setState(() => _error = 'اكتب اللون بصيغة #RRGGBB'); return; }
+    if (!RegExp(r'^#[0-9A-Fa-f]{6}
+    setState(() {
+      switch (field) {
+        case 'text': _textColor = value.toUpperCase(); break;
+        case 'highlight': _highlightColor = value.toUpperCase(); break;
+        case 'background': _backgroundColor = value.toUpperCase(); break;
+      }
+      _error = null;
+    });
+  }
+  CaptionAnimationFrame _frameFor(double progress) => const CaptionAnimationEngine().evaluate(animationId: _animationId, progress: progress, wordCount: 7, activeWord: 3, characterCount: (_rtl ? _arabicSample : _englishSample).runes.length);
+  Future<void> _savePreferences() async {
+    if (_savingProjectId != null) {
+      return;
+    }
+    final projects = widget.projects.value;
+    if (projects.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('أنشئ مشروعاً أولاً حتى تحفظ إعدادات الاستوديو داخله.')));
+      return;
+    }
+    final project = projects.first;
+    final prefs = ClipPreferences.fromJson({
+      ...project.preferences.toJson(),
+      'captionStyleId': _styleId,
+      'captionAnimationId': _animationId,
+      'mainTextColor': _textColor,
+      'highlightColor': _highlightColor,
+      'captionBackgroundColor': _backgroundColor,
+      'captionFontFamily': _fontFamily,
+      'captionFontScale': _fontScale,
+      'captionPositionY': _positionY,
+      'captionUppercase': _uppercase,
+      'captionBold': _bold,
+    });
+    setState(() { _savingProjectId = project.id; _error = null; });
+    try {
+      await widget.repository.save(project.copyWith(preferences: prefs, updatedAtUtc: DateTime.now().toUtc()));
+      await widget.onProjectsChanged();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تم حفظ إعدادات الاستوديو في المشروع.')),
+        );
+      }
+    } catch (error) {
+      if (mounted) {
+        setState(() => _error = 'تعذّر حفظ إعدادات الاستوديو: $error');
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _savingProjectId = null);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final style = _preset;
+    final motion = _motion;
+    final preview = _rtl
+        ? _arabicSample
+        : (_uppercase ? _englishSample.toUpperCase() : _englishSample);
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
+      children: [
+        const _Eyebrow('مساحة العمل  /  Caption Studio'),
+        const SizedBox(height: 14),
+        Text('اصنع أسلوبك الخاص', style: theme.textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w800)),
+        const SizedBox(height: 8),
+        Text('اختر أحد الأنماط الأصلية الاثني عشر، ثم عدّل الخط والألوان والموضع والحركة بصورة مستقلة.', style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+        const SizedBox(height: 18),
+        Row(children: [const Expanded(child: Text('معاينة عربية / RTL')), Switch(value: _rtl, onChanged: (value) => setState(() => _rtl = value)), Text(_rtl ? 'العربية' : 'English')]),
+        const SizedBox(height: 8),
+        AnimatedBuilder(
+          animation: _animation,
+          builder: (context, _) {
+            final frame = _frameFor(_animation.value);
+            return Container(
+              height: 250,
+              decoration: BoxDecoration(color: const Color(0xFF171717), borderRadius: BorderRadius.circular(18), border: Border.all(color: theme.colorScheme.outlineVariant)),
+              clipBehavior: Clip.antiAlias,
+              child: Stack(children: [
+                Positioned.fill(child: CustomPaint(painter: _PreviewSafeFramePainter(showFrame: _showSafeFrame))),
+                Align(
+                  alignment: Alignment(0, _positionY * 2 - 1),
+                  child: Transform.translate(
+                    offset: Offset(0, frame.translateY),
+                    child: Opacity(
+                      opacity: frame.opacity,
+                      child: Transform.scale(
+                        scale: frame.scale,
+                        child: Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 18),
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                          decoration: BoxDecoration(color: style.highlightBoxColor == null ? Colors.transparent : _colorFromHex(_backgroundColor), borderRadius: BorderRadius.circular(10), boxShadow: frame.glow > 0 ? [BoxShadow(color: _colorFromHex(_highlightColor).withValues(alpha: 0.25 * frame.glow), blurRadius: 18)] : null),
+                          child: Directionality(
+                            textDirection: _rtl ? TextDirection.rtl : TextDirection.ltr,
+                            child: _buildPreviewText(preview, style, frame),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ]),
+            );
+          },
+        ),
+        const SizedBox(height: 8),
+        Text('المعاينة الحركية محلية. مزامنة الكلمات مع الفيديو وتصدير ASS/MP4 متطابقان ضمن المرحلة السابعة.', style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+        if (_error != null) ...[const SizedBox(height: 10), _StatusNote(text: _error!)],
+        const SizedBox(height: 22),
+        const _Eyebrow('التصميم البصري'),
+        const SizedBox(height: 10),
+        Wrap(spacing: 8, runSpacing: 8, children: captionStylePresets.map((item) => ChoiceChip(label: Text(item.name), selected: _styleId == item.id, onSelected: (_) => _selectStyle(item))).toList()),
+        const SizedBox(height: 22),
+        const _Eyebrow('الحركة المستقلة'),
+        const SizedBox(height: 10),
+        DropdownButtonFormField<String>(
+          initialValue: _animationId,
+          isExpanded: true,
+          items: captionAnimationPresets.map((item) => DropdownMenuItem(value: item.id, child: Text(item.name))).toList(),
+          onChanged: (value) { if (value != null) {
+              setState(() => _animationId = value);
+            } },
+        ),
+        const SizedBox(height: 6),
+        Text('${motion.name}: ${motion.description}', style: theme.textTheme.bodySmall),
+        const SizedBox(height: 18),
+        const _Eyebrow('الخط والتنسيق'),
+        const SizedBox(height: 8),
+        DropdownButtonFormField<String>(
+          initialValue: _fontFamily,
+          decoration: const InputDecoration(labelText: 'عائلة الخط'),
+          items: const [DropdownMenuItem(value: 'Anton', child: Text('Anton')), DropdownMenuItem(value: 'Poppins', child: Text('Poppins')), DropdownMenuItem(value: 'Poppins Medium', child: Text('Poppins Medium'))],
+          onChanged: (value) { if (value != null) {
+              setState(() => _fontFamily = value);
+            } },
+        ),
+        SwitchListTile(contentPadding: EdgeInsets.zero, title: const Text('نص عريض'), value: _bold, onChanged: (value) => setState(() => _bold = value)),
+        SwitchListTile(contentPadding: EdgeInsets.zero, title: const Text('أحرف كبيرة للإنجليزية'), value: _uppercase, onChanged: (value) => setState(() => _uppercase = value)),
+        Text('حجم الخط · ${(_fontScale * 100).toStringAsFixed(1)}%'),
+        Slider(value: _fontScale, min: 0.025, max: 0.075, divisions: 50, onChanged: (value) => setState(() => _fontScale = value)),
+        Text('موضع النص · ${(_positionY * 100).round()}% من أعلى الإطار'),
+        Slider(value: _positionY, min: 0.1, max: 0.9, divisions: 80, onChanged: (value) => setState(() => _positionY = value)),
+        SwitchListTile(contentPadding: EdgeInsets.zero, title: const Text('إظهار إطار الأمان'), value: _showSafeFrame, onChanged: (value) => setState(() => _showSafeFrame = value)),
+        const SizedBox(height: 8),
+        const _Eyebrow('الألوان'),
+        const SizedBox(height: 8),
+        _CaptionColorField(label: 'لون النص', value: _textColor, onChanged: (value) => _setColor('text', value)),
+        _CaptionColorField(label: 'لون التمييز', value: _highlightColor, onChanged: (value) => _setColor('highlight', value)),
+        _CaptionColorField(label: 'خلفية صندوق التمييز', value: _backgroundColor, onChanged: (value) => _setColor('background', value)),
+        const SizedBox(height: 10),
+        FilledButton.icon(
+          onPressed: _savingProjectId == null ? _savePreferences : null,
+          icon: _savingProjectId == null ? const Icon(Icons.save_outlined) : const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)),
+          label: Text(_savingProjectId == null ? 'حفظ إعدادات الاستوديو في المشروع' : 'جارٍ الحفظ…'),
+        ),
+        const SizedBox(height: 8),
+        Text('Preset: ${style.id} · Animation: ${motion.id}', style: theme.textTheme.labelSmall),
+      ],
+    );
+  }
+
+  Widget _buildPreviewText(String text, CaptionStylePreset style, CaptionAnimationFrame frame) {
+    if (_animationId == 'typewriter') {
+      final partial = String.fromCharCodes(text.runes.take(frame.revealedCharacters));
+      return Text(partial, textAlign: TextAlign.center, style: TextStyle(
+        color: _colorFromHex(_textColor),
+        fontFamily: _fontFamily,
+        fontSize: (250 * _fontScale).clamp(10.0, 36.0).toDouble(),
+        fontWeight: (_bold || style.bold) ? FontWeight.bold : FontWeight.w600,
+        shadows: [if (style.outlineWidth > 0) Shadow(color: _colorFromHex(style.outlineColor), blurRadius: style.outlineWidth * 1.6)],
+      ));
+    }
+    final words = text.split(RegExp(r'\s+'));
+    final visible = words.take(frame.revealedWords);
+    final spans = <InlineSpan>[];
+    var index = 0;
+    for (final word in visible) {
+      final active = index == frame.highlightedWord;
+      spans.add(TextSpan(text: '$word ', style: TextStyle(
+        color: active ? _colorFromHex(_highlightColor) : _colorFromHex(_textColor),
+        fontFamily: _fontFamily,
+        fontSize: (250 * _fontScale).clamp(10.0, 36.0).toDouble(),
+        fontWeight: (_bold || style.bold) ? FontWeight.bold : FontWeight.w600,
+        shadows: [
+          if (style.outlineWidth > 0) Shadow(color: _colorFromHex(style.outlineColor), blurRadius: style.outlineWidth * 1.6),
+          if (style.shadow > 0) Shadow(color: Colors.black.withValues(alpha: 0.5), blurRadius: style.shadow * 3, offset: const Offset(1, 2)),
+        ],
+      )));
+      index++;
+    }
+    return RichText(textAlign: TextAlign.center, textDirection: _rtl ? TextDirection.rtl : TextDirection.ltr, text: TextSpan(children: spans));
+  }
+}
+
+class _CaptionColorField extends StatefulWidget {
+  const _CaptionColorField({required this.label, required this.value, required this.onChanged});
+  final String label;
+  final String value;
+  final ValueChanged<String> onChanged;
+  @override State<_CaptionColorField> createState() => _CaptionColorFieldState();
+}
+class _CaptionColorFieldState extends State<_CaptionColorField> {
+  late final TextEditingController _controller;
+  @override void initState() { super.initState(); _controller = TextEditingController(text: widget.value); }
+  @override void didUpdateWidget(covariant _CaptionColorField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.value != widget.value) {
+      _controller.value = TextEditingValue(text: widget.value, selection: TextSelection.collapsed(offset: widget.value.length));
+      }
+  }
+  @override void dispose() { _controller.dispose(); super.dispose(); }
+  @override Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(bottom: 8),
+    child: TextField(controller: _controller, textCapitalization: TextCapitalization.characters, decoration: InputDecoration(labelText: widget.label, hintText: '#RRGGBB', prefixIcon: Padding(padding: const EdgeInsets.all(12), child: CircleAvatar(backgroundColor: _colorFromHex(widget.value), radius: 10))), onSubmitted: widget.onChanged),
+  );
+}
+class _PreviewSafeFramePainter extends CustomPainter {
+  const _PreviewSafeFramePainter({required this.showFrame});
+  final bool showFrame;
+  @override void paint(Canvas canvas, Size size) {
+    if (!showFrame) {
+      return;
+    }
+    final paint = Paint()..color = Colors.white.withValues(alpha: 0.18)..style = PaintingStyle.stroke..strokeWidth = 1;
+    canvas.drawRect(Rect.fromLTWH(size.width * 0.08, size.height * 0.08, size.width * 0.84, size.height * 0.84), paint);
+  }
+  @override bool shouldRepaint(covariant _PreviewSafeFramePainter oldDelegate) => oldDelegate.showFrame != showFrame;
+}
+class ModelsPage extends StatefulWidget {
+  const ModelsPage({super.key});
+
+  @override
+  State<ModelsPage> createState() => _ModelsPageState();
+}
+
+class _ModelsPageState extends State<ModelsPage> {
+  final WhisperModelManager _whisper = WhisperModelManager();
+  final QwenModelManager _qwen = QwenModelManager();
+  bool _loading = true;
+  bool _busy = false;
+  bool _whisperInstalled = false;
+  bool _qwenInstalled = false;
+  double? _progress;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _refreshModels();
+  }
+
+  @override
+  void dispose() {
+    _whisper.close();
+    super.dispose();
+  }
+
+  Future<void> _refreshModels() async {
+    try {
+      final whisperFile =
+          await _whisper.findCatalogModel(WhisperModelCatalog.base);
+      final qwenFile = await _qwen.findInstalled();
+      if (!mounted) { return; }
+      setState(() {
+        _whisperInstalled = whisperFile != null;
+        _qwenInstalled = qwenFile != null;
+        _loading = false;
+      });
+    } catch (error) {
+      if (mounted) {
+        setState(() {
+          _error = 'تعذّر التحقق من سلامة أحد النماذج: $error';
+          _loading = false;
+        });
+      }
+    }
+  }
+
+  Future<bool> _hasFreeSpace(int requiredBytes) async {
+    final available = await AndroidVideoPicker.availableStorageBytes();
+    if (available >= requiredBytes) { return true; }
+    if (mounted) {
+      setState(() => _error =
+          'المساحة الحرة غير كافية. المطلوب نحو ${_formatBytes(requiredBytes)}، والمتاح ${_formatBytes(available)}.');
+    }
+    return false;
+  }
+
+  Future<void> _downloadWhisper() async {
+    if (_busy) { return; }
+    final required = WhisperModelCatalog.base.approximateBytes +
+        96 * 1024 * 1024;
+    if (!await _hasFreeSpace(required)) { return; }
+    setState(() {
+      _busy = true;
+      _progress = 0;
+      _error = null;
+    });
+    try {
+      await for (final update
+          in _whisper.downloadCatalogModel(WhisperModelCatalog.base)) {
+        if (mounted) { setState(() => _progress = update.fraction); }
+      }
+      await _refreshModels();
+    } catch (error) {
+      if (mounted) { setState(() => _error = 'فشل تنزيل/التحقق من Whisper: $error'); }
+    } finally {
+      if (mounted) { setState(() { _busy = false; _progress = null; }); }
+    }
+  }
+
+  Future<void> _downloadQwen() async {
+    if (_busy) { return; }
+    if (!await _hasFreeSpace(QwenModelManager.minimumFreeBytes)) { return; }
+    setState(() {
+      _busy = true;
+      _progress = 0;
+      _error = null;
+    });
+    try {
+      await _qwen.download(onProgress: (update) {
+        if (mounted) { setState(() => _progress = update.fraction); }
+      });
+      await _refreshModels();
+    } catch (error) {
+      if (mounted) { setState(() => _error = 'فشل تنزيل/التحقق من Qwen: $error'); }
+    } finally {
+      if (mounted) { setState(() { _busy = false; _progress = null; }); }
+    }
+  }
+
+  Future<void> _deleteWhisper() async {
+    if (_busy) { return; }
+    try {
+      final directory = await _whisper.directory;
+      final model = await _whisper.find(WhisperModelCatalog.base.fileName);
+      if (model != null) { await model.delete(); }
+      if (mounted) { setState(() => _whisperInstalled = false); }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('تم حذف ملف Whisper من ${directory.path}.')),
+        );
+      }
+    } catch (error) {
+      if (mounted) { setState(() => _error = 'تعذّر حذف نموذج Whisper: $error'); }
+    }
+  }
+
+  Future<void> _deleteQwen() async {
+    if (_busy) { return; }
+    try {
+      await _qwen.deleteInstalled();
+      if (mounted) { setState(() => _qwenInstalled = false); }
+    } catch (error) {
+      if (mounted) { setState(() => _error = 'تعذّر حذف نموذج Qwen: $error'); }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Scaffold(
+      appBar: AppBar(title: const Text('مركز النماذج المحلية')),
+      body: ListView(
+        padding: const EdgeInsets.all(20),
+        children: [
+          Text(
+            'نماذج الذكاء الاصطناعي',
+            style: theme.textTheme.headlineMedium?.copyWith(
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            'تُنزل النماذج عند اختيارك فقط، وتُحفظ في مساحة التطبيق. تُتحقق بصمة SHA-256 قبل إتاحتها للمحركات.',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+              height: 1.5,
+            ),
+          ),
+          if (_error != null) ...[
+            const SizedBox(height: 12),
+            _StatusNote(text: _error!),
+          ],
+          if (_busy) ...[
+            const SizedBox(height: 16),
+            LinearProgressIndicator(value: _progress),
+            const SizedBox(height: 6),
+            Text(
+              _progress == null
+                  ? 'جارٍ تجهيز النموذج…'
+                  : 'اكتمل ${(_progress! * 100).round()}%',
+              style: theme.textTheme.bodySmall,
+            ),
+          ],
+          const SizedBox(height: 20),
+          _modelCard(
+            context,
+            title: 'Whisper Base متعدد اللغات',
+            description:
+                'تفريغ محلي للعربية والإنجليزية مع توقيتات الكلمات. الحجم التقريبي 148 MB؛ المحرك يعمل بوضع CPU على ARM64.',
+            metadata: 'whisper.cpp · مرجع نموذج مثبت · ملف الأوزان لا يُضمّن في APK',
+            installed: _whisperInstalled,
+            onInstall: _downloadWhisper,
+            onRemove: _deleteWhisper,
+          ),
+          const SizedBox(height: 12),
+          _modelCard(
+            context,
+            title: 'Qwen2.5-0.5B-Instruct Q4_K_M',
+            description:
+                'نموذج GGUF محلي لتعليقات تحريرية على المقاطع الموجودة. الحجم 491.4 MB تقريبًا؛ CPU ونافذة سياق صغيرة لتقليل الذاكرة.',
+            metadata: 'llama.cpp · Qwen · Apache-2.0 · لا يغيّر توقيت المقاطع أو درجاتها',
+            installed: _qwenInstalled,
+            onInstall: _downloadQwen,
+            onRemove: _deleteQwen,
+          ),
+          const SizedBox(height: 16),
+          const _StatusNote(
+            text: 'كشف المشاهد هنا يعتمد على تغيّر الإطارات، وليس كشف الوجوه أو فهم المشهد. لا يوجد إرسال سحابي للتفريغ أو الفيديو. يلزم اختبار الأداء والحرارة على جهاز فعلي قبل اعتماد جودة الإنتاج.',
+          ),
+          if (_loading) ...[
+            const SizedBox(height: 16),
+            const LinearProgressIndicator(),
+          ],
+          TextButton.icon(
+            onPressed: _busy ? null : _refreshModels,
+            icon: const Icon(Icons.refresh),
+            label: const Text('إعادة فحص النماذج'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _modelCard(
+    BuildContext context, {
+    required String title,
+    required String description,
+    required String metadata,
+    required bool installed,
+    required Future<void> Function() onInstall,
+    required Future<void> Function() onRemove,
+  }) {
+    final theme = Theme.of(context);
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const CircleAvatar(child: Icon(Icons.memory_outlined)),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                Chip(
+                  label: Text(installed ? 'متحقق' : 'غير مثبت'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(description),
+            const SizedBox(height: 6),
+            Text(
+              metadata,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              children: [
+                FilledButton.tonalIcon(
+                  onPressed: _busy ? null : installed ? null : onInstall,
+                  icon: const Icon(Icons.download_outlined),
+                  label: Text(installed ? 'مثبت' : 'تنزيل والتحقق'),
+                ),
+                if (installed)
+                  TextButton.icon(
+                    onPressed: _busy ? null : onRemove,
+                    icon: const Icon(Icons.delete_outline),
+                    label: const Text('إزالة'),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _Eyebrow extends StatelessWidget {
+  const _Eyebrow(this.text);
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => Text(
+        text.toUpperCase(),
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+          color: Theme.of(context).colorScheme.secondary,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 1.1,
+        ),
+      );
+}
+
+class _SummaryLine extends StatelessWidget {
+  const _SummaryLine({required this.label, required this.value});
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        child: Row(children: [
+          Expanded(child: Text(label, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant))),
+          Text(value, style: const TextStyle(fontWeight: FontWeight.w700)),
+        ]),
+      );
+}
+
+class _StatusNote extends StatelessWidget {
+  const _StatusNote({required this.text});
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+        ),
+        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Icon(Icons.info_outline, size: 18, color: Theme.of(context).colorScheme.secondary),
+          const SizedBox(width: 10),
+          Expanded(child: Text(text, style: Theme.of(context).textTheme.bodySmall?.copyWith(height: 1.45))),
+        ]),
+      );
+}
+
+class _EmptyState extends StatelessWidget {
+  const _EmptyState({required this.icon, required this.title, required this.description});
+  final IconData icon;
+  final String title;
+  final String description;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 22, horizontal: 10),
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        Icon(icon, size: 52, color: theme.colorScheme.secondary),
+        const SizedBox(height: 16),
+        Text(title, style: theme.textTheme.titleLarge),
+        const SizedBox(height: 8),
+        Text(description, textAlign: TextAlign.center,
+            style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant, height: 1.5)),
+      ]),
+    );
+  }
+}
+
+Color _colorFromHex(String hex) {
+  final value = hex.replaceFirst('#', '');
+  final parsed = int.tryParse(value, radix: 16) ?? 0xFFFFFF;
+  return Color(0xFF000000 | parsed);
+}
+).hasMatch(value)) {
+      setState(() => _error = 'اكتب اللون بصيغة #RRGGBB');
+      return;
+    }
     setState(() {
       switch (field) {
         case 'text': _textColor = value.toUpperCase(); break;
