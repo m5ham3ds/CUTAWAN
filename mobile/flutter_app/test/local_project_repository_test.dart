@@ -109,12 +109,12 @@ void main() {
     final project = makeProject();
     await repository.save(project);
     final artifactDirectory = Directory(
-      '\${directory.path}\${Platform.pathSeparator}artifacts'
-      '\${Platform.pathSeparator}\${project.id}',
+      '${directory.path}${Platform.pathSeparator}artifacts'
+      '${Platform.pathSeparator}${project.id}',
     );
     await artifactDirectory.create(recursive: true);
     final artifact = File(
-      '\${artifactDirectory.path}\${Platform.pathSeparator}transcript.json',
+      '${artifactDirectory.path}${Platform.pathSeparator}transcript.json',
     );
     await artifact.writeAsString('{"ok":true}');
     final fingerprint = List.filled(64, 'a').join();

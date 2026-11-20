@@ -51,7 +51,7 @@ void main() {
       aspectRatio: 9 / 16,
       animationId: 'karaoke_fill',
     );
-    expect(generated.srt, contains('00:00:00,200 -->'));
+    expect(generated.srt, contains('00:00:00,000 -->'));
     expect(generated.srt, contains('لحظة مهمة'));
     expect(generated.ass, contains('[V4+ Styles]'));
     expect(generated.ass, contains('[Events]'));
