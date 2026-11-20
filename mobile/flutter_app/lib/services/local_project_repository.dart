@@ -454,7 +454,9 @@ class LocalProjectRepository {
     }
     for (final unit in value.codeUnits) {
       final valid = (unit >= 48 && unit <= 57) || (unit >= 97 && unit <= 102);
-      if (!valid) return false;
+      if (!valid) {
+        return false;
+      }
     }
     return true;
   }
