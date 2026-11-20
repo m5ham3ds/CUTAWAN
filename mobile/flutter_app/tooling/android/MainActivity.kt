@@ -11,6 +11,10 @@ import android.provider.OpenableColumns
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
 import java.util.concurrent.Executors
 
 class MainActivity : FlutterActivity() {
@@ -182,8 +186,14 @@ class MainActivity : FlutterActivity() {
             "width" to width,
             "height" to height,
             "rotationDegrees" to rotation,
-            "importedAtUtc" to java.time.Instant.now().toString()
+            "importedAtUtc" to utcNowIso()
         )
+    }
+
+    private fun utcNowIso(): String {
+        val formatter = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US)
+        formatter.timeZone = TimeZone.getTimeZone("UTC")
+        return formatter.format(Date())
     }
 
     override fun onDestroy() {
