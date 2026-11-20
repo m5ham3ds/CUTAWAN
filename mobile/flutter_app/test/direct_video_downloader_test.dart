@@ -13,6 +13,8 @@ void main() {
   final fixture = List<int>.generate(256 * 1024, (index) => index % 251);
 
   setUp(() async {
+    servedPaths.clear();
+    availableBytes = 1024 * 1024 * 1024;
     directory = await Directory.systemTemp.createTemp('cutawan-download-');
     server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
     server.listen((request) async {
@@ -150,7 +152,7 @@ void main() {
     expect(directory.listSync(), isEmpty);
   });
 
-  test('insufficient storage is rejected before contacting the server', () async {
+  test('insufficient storage is rejected before writing any video bytes', () async {
     availableBytes = DirectVideoDownloader.storageReserveBytes + 1024;
 
     await expectLater(
@@ -161,7 +163,8 @@ void main() {
       throwsA(isA<FileSystemException>()),
     );
 
-    expect(servedPaths, isEmpty);
+    expect(servedPaths, ['/clip.mp4']);
+    expect(directory.listSync(), isEmpty);
   });
 
   test('cancelled download does not start or create temporary files', () async {
