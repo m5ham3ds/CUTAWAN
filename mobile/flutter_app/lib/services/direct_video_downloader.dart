@@ -120,6 +120,7 @@ class DirectVideoDownloader {
     final directory = await _directory();
     final root = directory.resolveSymbolicLinksSync();
     final file = File.fromUri(uri);
+    if (!await file.exists()) return;
     final resolved = await file.resolveSymbolicLinks();
     if (!resolved.startsWith('$root${Platform.pathSeparator}')) {
       throw const FormatException('The selected file is outside Cutawan media storage.');
