@@ -6,6 +6,7 @@ import '../domain/caption_catalog.dart';
 import '../domain/clip_preferences.dart';
 import '../domain/project_contract.dart';
 import '../services/android_video_picker.dart';
+import '../services/direct_video_downloader.dart';
 import '../services/local_project_repository.dart';
 
 class HomeShell extends StatefulWidget {
@@ -130,9 +131,13 @@ class _CreatePageState extends State<CreatePage> {
   bool _captions = true;
   bool _speakerTracking = true;
   bool _isImporting = false;
+  DownloadCancellation? _downloadCancellation;
+  VideoDownloadProgress? _downloadProgress;
+  DateTime _lastProgressUpdate = DateTime.fromMillisecondsSinceEpoch(0);
 
   @override
   void dispose() {
+    _downloadCancellation?.cancel();
     _urlController.dispose();
     super.dispose();
   }
@@ -184,6 +189,75 @@ class _CreatePageState extends State<CreatePage> {
     }
   }
 
+  Future<void> _downloadDirectVideo() async {
+    if (_isImporting) return;
+    final url = _urlController.text.trim();
+    if (url.isEmpty) {
+      _showMessage('أدخل رابط ملف فيديو مباشر أولًا.');
+      return;
+    }
+
+    final cancellation = DownloadCancellation();
+    setState(() {
+      _isImporting = true;
+      _downloadCancellation = cancellation;
+      _downloadProgress = null;
+    });
+
+    try {
+      final downloader = DirectVideoDownloader(
+        availableStorageBytes: AndroidVideoPicker.availableStorageBytes,
+        inspectLocalFile: AndroidVideoPicker.inspectLocalFile,
+      );
+      final source = await downloader.download(
+        url,
+        cancellation: cancellation,
+        onProgress: (progress) {
+          final now = DateTime.now();
+          if (now.difference(_lastProgressUpdate).inMilliseconds < 180 &&
+              progress.fraction != 1) {
+            return;
+          }
+          _lastProgressUpdate = now;
+          if (mounted) setState(() => _downloadProgress = progress);
+        },
+      );
+      if (!mounted) return;
+      final project = CutawanProject.create(
+        source: source,
+        preferences: ClipPreferences(
+          requestedClipCount: _clipCount,
+          durationMode: _duration,
+          aspectRatio: _ratio,
+          captionsEnabled: _captions,
+          speakerTrackingEnabled: _speakerTracking,
+        ),
+      );
+      await widget.repository.save(project);
+      await widget.onProjectSaved();
+      _urlController.clear();
+      _showMessage('اكتمل التنزيل، وفُحص الفيديو، وحُفظ المشروع محليًا.');
+    } on VideoDownloadCancelled {
+      _showMessage('أُلغي التنزيل وحُذفت الأجزاء المؤقتة.');
+    } on PlatformException catch (error) {
+      _showMessage(error.message ?? 'تعذّر الوصول إلى خدمات تخزين Android.');
+    } catch (error) {
+      _showMessage('تعذّر تنزيل الفيديو: $error');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isImporting = false;
+          _downloadCancellation = null;
+          _downloadProgress = null;
+        });
+      }
+    }
+  }
+
+  void _cancelDownload() {
+    _downloadCancellation?.cancel();
+  }
+
   String get _durationLabel => switch (_duration) {
         ClipDurationMode.automatic => 'تلقائي حسب اكتمال اللحظة',
         ClipDurationMode.seconds15To30 => '15–30 ثانية',
@@ -225,19 +299,19 @@ class _CreatePageState extends State<CreatePage> {
           keyboardType: TextInputType.url,
           textInputAction: TextInputAction.done,
           decoration: const InputDecoration(
-            hintText: 'ألصق رابط الفيديو هنا',
+            hintText: 'رابط مباشر لملف MP4 / MOV / WebM',
             prefixIcon: Icon(Icons.link),
           ),
-          onSubmitted: (_) => _showMessage('استيراد الروابط سيضاف في مرحلة منفصلة.'),
+          onSubmitted: (_) => _downloadDirectVideo(),
         ),
         const SizedBox(height: 12),
         Row(
           children: [
             Expanded(
               child: FilledButton.icon(
-                onPressed: () => _showMessage('تحليل الروابط غير متصل حتى الآن.'),
+                onPressed: _isImporting ? null : _downloadDirectVideo,
                 icon: const Icon(Icons.play_arrow_rounded),
-                label: const Text('بدء التحليل'),
+                label: const Text('تنزيل رابط مباشر'),
               ),
             ),
             const SizedBox(width: 10),
@@ -254,9 +328,28 @@ class _CreatePageState extends State<CreatePage> {
             ),
           ],
         ),
+        if (_isImporting && _downloadProgress != null) ...[
+          const SizedBox(height: 14),
+          LinearProgressIndicator(value: _downloadProgress!.fraction),
+          const SizedBox(height: 6),
+          Text(
+            _downloadProgress!.totalBytes == null
+                ? 'تم تنزيل ${_formatBytes(_downloadProgress!.receivedBytes)}'
+                : '${_formatBytes(_downloadProgress!.receivedBytes)} من ${_formatBytes(_downloadProgress!.totalBytes!)}',
+            style: theme.textTheme.bodySmall,
+          ),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              onPressed: _cancelDownload,
+              icon: const Icon(Icons.cancel_outlined),
+              label: const Text('إلغاء التنزيل'),
+            ),
+          ),
+        ],
         const SizedBox(height: 9),
         Text(
-          'يفتح منتقي Android الرسمي ويحفظ صلاحية قراءة الملف لإعادة فتحه لاحقًا.',
+          'يدعم تنزيل روابط HTTP/HTTPS المباشرة لملفات الفيديو فقط. روابط YouTube والمنصات الاجتماعية التي تتطلب تجاوز قيود أو DRM غير مدعومة. ويمكنك اختيار ملف محلي عبر منتقي Android.',
           style: theme.textTheme.bodySmall?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
