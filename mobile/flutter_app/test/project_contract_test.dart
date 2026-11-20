@@ -117,6 +117,23 @@ void main() {
     );
   });
 
+  test('local file URI cannot include a non-empty authority', () {
+    expect(
+      () => VideoAssetMetadata.fromJson({
+        'uri': 'file://remote-host/private/video.mp4',
+        'displayName': 'video.mp4',
+        'mimeType': 'video/mp4',
+        'sizeBytes': 100,
+        'durationMs': 1000,
+        'width': 640,
+        'height': 360,
+        'rotationDegrees': 0,
+        'importedAtUtc': '2026-11-20T01:00:00.000Z',
+      }),
+      throwsA(isA<FormatException>()),
+    );
+  });
+
   test('job progress is range checked', () {
     expect(
       () => ProjectJob.fromJson({
