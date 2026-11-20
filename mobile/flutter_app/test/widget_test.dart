@@ -48,7 +48,7 @@ void main() {
     expect(find.text('إنشاء'), findsOneWidget);
     expect(find.text('المشاريع'), findsOneWidget);
     expect(find.text('المراجعة'), findsOneWidget);
-    expect(find.text('الاستوديو'), findsOneWidget);
+    expect(find.text('الكابشن'), findsOneWidget);
     expect(find.textContaining('من المصدر إلى'), findsOneWidget);
   });
 
@@ -60,12 +60,12 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
-    expect(find.text('اصنع أسلوبك الخاص'), findsOneWidget);
+    expect(find.text('مختبر الهوية النصية'), findsOneWidget);
     expect(find.byType(AnimatedBuilder), findsWidgets);
     expect(find.byType(ChoiceChip), findsNWidgets(12));
     expect(find.text('Beast'), findsOneWidget);
     expect(find.text('Karaoke'), findsOneWidget);
-    expect(find.text('معاينة عربية / RTL'), findsOneWidget);
+    expect(find.text('معاينة اتجاه النص'), findsOneWidget);
     expect(find.text('حفظ إعدادات الاستوديو في المشروع'), findsOneWidget);
 
     final arabicPreview = tester

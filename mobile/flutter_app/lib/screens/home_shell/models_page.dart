@@ -422,7 +422,7 @@ class _ModelsPageState extends State<ModelsPage> {
     final theme = Theme.of(context);
     final provider = AiProviderCatalog.byId(_provider);
     return Scaffold(
-      appBar: AppBar(title: const Text('مركز النماذج والذكاء الاصطناعي')),
+      appBar: AppBar(title: const Text('مركز النماذج'), centerTitle: false),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 18, 20, 32),
         children: [

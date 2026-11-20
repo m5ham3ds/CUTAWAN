@@ -388,7 +388,7 @@ class _ReviewPageState extends State<ReviewPage> {
       builder: (context, items, _) => ListView(
         padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
         children: [
-          const _Eyebrow('مساحة العمل  /  التحليل والمراجعة'),
+          const _Eyebrow('مساحة العمل  /  التحليل والمراجعة', icon: Icons.movie_filter_rounded),
           const SizedBox(height: 14),
           Text(
             'مراجعة المشاريع',
@@ -436,14 +436,12 @@ class _ReviewPageState extends State<ReviewPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              project.title,
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w800,
-              ),
-            ),
+            Row(children: [
+              Expanded(child: Text(project.title, style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900))),
+              _StatusBadge(label: _jobStatusLabel(project.job.status), status: project.job.status),
+            ]),
             const SizedBox(height: 6),
-            Text(project.source.displayName),
+            Text(project.source.displayName, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
             const SizedBox(height: 10),
             Wrap(
               spacing: 8,
@@ -458,7 +456,9 @@ class _ReviewPageState extends State<ReviewPage> {
               'المصدر: ${project.source.mimeType}',
               style: theme.textTheme.bodySmall,
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
+            const _Eyebrow('إجراءات المشروع', icon: Icons.tune_rounded),
+            const SizedBox(height: 9),
             Wrap(
               spacing: 8,
               runSpacing: 8,
@@ -488,14 +488,17 @@ class _ReviewPageState extends State<ReviewPage> {
                 ),
               ],
             ),
-            FilledButton.icon(
-              onPressed: isBusy || _pipelineRunning ? null : () => _runFullPipeline(project),
-              icon: Icon(_pipelineRunning ? Icons.hourglass_top : Icons.play_arrow_rounded),
-              label: Text(_pipelineRunning ? 'المعالجة تعمل…' : 'تشغيل خط المعالجة الكامل / استئناف'),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: isBusy || _pipelineRunning ? null : () => _runFullPipeline(project),
+                icon: Icon(_pipelineRunning ? Icons.hourglass_top_rounded : Icons.rocket_launch_rounded),
+                label: Text(_pipelineRunning ? 'المعالجة تعمل…' : 'تشغيل المعالجة الكاملة / استئناف'),
+              ),
             ),
             if (_pipelineRunning && _busyProjectId == null) ...[
               const SizedBox(height: 10),
-              LinearProgressIndicator(value: _pipelineProgress),
+              ClipRRect(borderRadius: BorderRadius.circular(99), child: LinearProgressIndicator(value: _pipelineProgress, minHeight: 7)),
               const SizedBox(height: 6),
               Text(
                 'المرحلة: ${_pipelineStage ?? 'بدء'} · ${(100 * _pipelineProgress).round()}%',
@@ -504,7 +507,7 @@ class _ReviewPageState extends State<ReviewPage> {
             ],
             if (isBusy) ...[
               const SizedBox(height: 10),
-              LinearProgressIndicator(value: _progress),
+              ClipRRect(borderRadius: BorderRadius.circular(99), child: LinearProgressIndicator(value: _progress, minHeight: 6)),
               const SizedBox(height: 6),
               Text(
                 _busyStage == 'whisper'
@@ -520,7 +523,9 @@ class _ReviewPageState extends State<ReviewPage> {
               const LinearProgressIndicator(),
             ],
             if (transcript != null) ...[
-              const Divider(height: 24),
+              const SizedBox(height: 20),
+              const _Eyebrow('01 / التفريغ الصوتي', icon: Icons.graphic_eq_rounded),
+              const SizedBox(height: 8),
               Text(
                 'التفريغ • ${transcript.language} • ${transcript.words.length} كلمة',
                 style: theme.textTheme.titleSmall?.copyWith(
@@ -548,7 +553,9 @@ class _ReviewPageState extends State<ReviewPage> {
               ],
             ],
             if (reframePlan != null) ...[
-              const Divider(height: 24),
+              const SizedBox(height: 20),
+              const _Eyebrow('02 / خطة التأطير', icon: Icons.center_focus_strong_rounded),
+              const SizedBox(height: 8),
               Text(
                 'التأطير • ${reframePlan.shots.length} مقطع زمني • ${reframePlan.aspectRatio.toStringAsFixed(3)}',
                 style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
@@ -567,7 +574,9 @@ class _ReviewPageState extends State<ReviewPage> {
               ),
             ],
             if ((_exportRecords[project.id] ?? const []).isNotEmpty) ...[
-              const Divider(height: 24),
+              const SizedBox(height: 20),
+              const _Eyebrow('03 / التصديرات', icon: Icons.video_file_rounded),
+              const SizedBox(height: 8),
               Text('الملفات المصدّرة · ${_exportRecords[project.id]!.length}',
                   style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800)),
               for (final export in _exportRecords[project.id]!)
@@ -583,7 +592,9 @@ class _ReviewPageState extends State<ReviewPage> {
                 ),
             ],
             if (candidateSet != null) ...[
-              const Divider(height: 24),
+              const SizedBox(height: 20),
+              const _Eyebrow('04 / المقاطع المقترحة', icon: Icons.auto_awesome_rounded),
+              const SizedBox(height: 8),
               Text(
                 'الاقتراحات • ${candidateSet.candidates.length}',
                 style: theme.textTheme.titleSmall?.copyWith(

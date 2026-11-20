@@ -180,20 +180,20 @@ class _CaptionStudioPageState extends State<CaptionStudioPage> with SingleTicker
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
       children: [
-        const _Eyebrow('مساحة العمل  /  Caption Studio'),
+        const _Eyebrow('مساحة العمل  /  Caption Studio', icon: Icons.closed_caption_rounded),
         const SizedBox(height: 14),
-        Text('اصنع أسلوبك الخاص', style: theme.textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w800)),
+        Text('مختبر الهوية النصية', style: theme.textTheme.headlineLarge?.copyWith(fontWeight: FontWeight.w900, fontSize: 31)),
         const SizedBox(height: 8),
-        Text('اختر أحد الأنماط الأصلية الاثني عشر، ثم عدّل الخط والألوان والموضع والحركة بصورة مستقلة.', style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+        Text('ابنِ بصمة بصرية متناسقة للكلمات: النمط، الخط، لوحة الألوان، موضع العرض وحركة التوقيت.', style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
         const SizedBox(height: 18),
-        Row(children: [const Expanded(child: Text('معاينة عربية / RTL')), Switch(value: _rtl, onChanged: (value) => setState(() => _rtl = value)), Text(_rtl ? 'العربية' : 'English')]),
+        _Panel(padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8), child: Row(children: [const Expanded(child: Text('معاينة اتجاه النص')), Switch(value: _rtl, onChanged: (value) => setState(() => _rtl = value)), Text(_rtl ? 'العربية' : 'English')])),
         const SizedBox(height: 8),
         AnimatedBuilder(
           animation: _animation,
           builder: (context, _) {
             final frame = _frameFor(_animation.value);
             return Container(
-              height: 250,
+              height: 270,
               decoration: BoxDecoration(color: const Color(0xFF171717), borderRadius: BorderRadius.circular(18), border: Border.all(color: theme.colorScheme.outlineVariant)),
               clipBehavior: Clip.antiAlias,
               child: Stack(children: [
@@ -224,14 +224,14 @@ class _CaptionStudioPageState extends State<CaptionStudioPage> with SingleTicker
           },
         ),
         const SizedBox(height: 8),
-        Text('المعاينة الحركية محلية. مزامنة الكلمات مع الفيديو وتصدير ASS/MP4 متطابقان ضمن المرحلة السابعة.', style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+        Text('المعاينة تفاعلية محلياً. يتبع التصدير توقيت الكلمات المحفوظ مع النمط، ويُحرق النص في MP4 عند تفعيل الكابشن.', style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
         if (_error != null) ...[const SizedBox(height: 10), _StatusNote(text: _error!)],
         const SizedBox(height: 22),
-        const _Eyebrow('التصميم البصري'),
+        const _Eyebrow('التصميم البصري', icon: Icons.palette_outlined),
         const SizedBox(height: 10),
         Wrap(spacing: 8, runSpacing: 8, children: captionStylePresets.map((item) => ChoiceChip(label: Text(item.name), selected: _styleId == item.id, onSelected: (_) => _selectStyle(item))).toList()),
         const SizedBox(height: 22),
-        const _Eyebrow('الحركة المستقلة'),
+        const _Eyebrow('الحركة المستقلة', icon: Icons.motion_photos_on_outlined),
         const SizedBox(height: 10),
         DropdownButtonFormField<String>(
           initialValue: _animationId,
@@ -244,7 +244,7 @@ class _CaptionStudioPageState extends State<CaptionStudioPage> with SingleTicker
         const SizedBox(height: 6),
         Text('${motion.name}: ${motion.description}', style: theme.textTheme.bodySmall),
         const SizedBox(height: 18),
-        const _Eyebrow('الخط والتنسيق'),
+        const _Eyebrow('الخط والتنسيق', icon: Icons.text_fields_rounded),
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
           initialValue: _fontFamily,
@@ -262,7 +262,7 @@ class _CaptionStudioPageState extends State<CaptionStudioPage> with SingleTicker
         Slider(value: _positionY, min: 0.1, max: 0.9, divisions: 80, onChanged: (value) => setState(() => _positionY = value)),
         SwitchListTile(contentPadding: EdgeInsets.zero, title: const Text('إظهار إطار الأمان'), value: _showSafeFrame, onChanged: (value) => setState(() => _showSafeFrame = value)),
         const SizedBox(height: 8),
-        const _Eyebrow('الألوان'),
+        const _Eyebrow('الألوان', icon: Icons.color_lens_outlined),
         const SizedBox(height: 8),
         _CaptionColorField(label: 'لون النص', value: _textColor, onChanged: (value) => _setColor('text', value)),
         _CaptionColorField(label: 'لون التمييز', value: _highlightColor, onChanged: (value) => _setColor('highlight', value)),
