@@ -443,7 +443,9 @@ class LocalProjectRepository {
           (unit >= 65 && unit <= 90) ||
           (unit >= 97 && unit <= 122) ||
           unit == 45 || unit == 95;
-      if (!valid) return false;
+      if (!valid) {
+        return false;
+      }
     }
     return true;
   }

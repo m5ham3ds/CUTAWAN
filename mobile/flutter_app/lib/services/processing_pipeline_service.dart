@@ -342,7 +342,7 @@ class ProcessingPipelineService {
           onProgress: (fraction) {
             final value = 0.62 + 0.28 * (index + fraction) / total;
             onProgress?.call('rendering', value);
-            _persistProgress(projectId, 'rendering_${candidate.id}', value);
+            _persistProgress(projectId, 'rendering_$candidate.id', value);
           },
         );
         if (!rendered.validated ||

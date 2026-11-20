@@ -157,7 +157,7 @@ class CaptionSidecarGenerator {
     final minutes = (total % 3600000) ~/ 60000;
     final seconds = (total % 60000) ~/ 1000;
     final centiseconds = (total % 1000) ~/ 10;
-    return '$hours:${minutes.toString.padLeft(2, '0')}:'
+    return '$hours:${minutes.toString().padLeft(2, '0')}:'
         '${seconds.toString().padLeft(2, '0')}.'
         '${centiseconds.toString().padLeft(2, '0')}';
   }
