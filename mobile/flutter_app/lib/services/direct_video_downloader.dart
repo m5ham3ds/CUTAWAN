@@ -211,15 +211,16 @@ class DirectVideoDownloader {
       throw const FileSystemException('المساحة المتاحة لا تكفي لتنزيل الفيديو بأمان.');
     }
 
+    final directory = await _directory();
+    await cleanupInterruptedDownloads();
+    cancellation.throwIfCancelled();
+
     final client = _httpClientFactory();
     client.connectionTimeout = const Duration(seconds: 20);
     client.idleTimeout = const Duration(seconds: 30);
+    client.autoUncompress = false;
     void abortRequest() => client.close(force: true);
     cancellation.addListener(abortRequest);
-
-    final directory = await _directory();
-    await cleanupInterruptedDownloads();
-    client.autoUncompress = false;
     File? partialFile;
     File? completedFile;
     IOSink? sink;
