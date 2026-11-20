@@ -33,10 +33,10 @@ kts = Path("android/app/build.gradle.kts")
 groovy = Path("android/app/build.gradle")
 if kts.is_file():
     path = kts
-    block = '        ndk {\n            abiFilters += setOf("arm64-v8a")\n        }'
+    block = '        ndk {\n            abiFilters.clear()\n            abiFilters.addAll(listOf("arm64-v8a"))\n        }'
 elif groovy.is_file():
     path = groovy
-    block = "        ndk { abiFilters 'arm64-v8a' }"
+    block = "        ndk { abiFilters.clear(); abiFilters.addAll(['arm64-v8a']) }"
 else:
     raise SystemExit("Flutter Android app Gradle file was not generated.")
 
