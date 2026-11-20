@@ -7,6 +7,7 @@ import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.os.Handler
 import android.os.Looper
+import android.os.StatFs
 import android.provider.OpenableColumns
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
@@ -30,6 +31,9 @@ class MainActivity : FlutterActivity() {
             .setMethodCallHandler { call, result ->
                 when (call.method) {
                     "pickVideo" -> openVideoPicker(result)
+                    "getAvailableStorageBytes" -> {
+                        result.success(StatFs(filesDir.absolutePath).availableBytes)
+                    }
                     "inspectVideo" -> {
                         val rawUri = call.argument<String>("uri")
                         if (rawUri.isNullOrBlank()) {
@@ -113,13 +117,29 @@ class MainActivity : FlutterActivity() {
         ioExecutor.execute {
             try {
                 val uri = Uri.parse(rawUri)
-                if (requirePersistedGrant) {
-                    val hasGrant = contentResolver.persistedUriPermissions.any {
-                        it.uri == uri && it.isReadPermission
+                when (uri.scheme) {
+                    "content" -> if (requirePersistedGrant) {
+                        val hasGrant = contentResolver.persistedUriPermissions.any {
+                            it.uri == uri && it.isReadPermission
+                        }
+                        if (!hasGrant) {
+                            throw SecurityException("No persistent read permission exists for this video.")
+                        }
                     }
-                    if (!hasGrant) {
-                        throw SecurityException("No persistent read permission exists for this video.")
+                    "file" -> {
+                        val selectedFile = java.io.File(uri.path ?: throw IllegalArgumentException("File URI has no path."))
+                        val canonicalPath = selectedFile.canonicalPath
+                        val filesRoot = java.io.File(filesDir, "app_flutter").canonicalPath
+                        val filesBase = java.io.File(filesDir).canonicalPath
+                        val cacheBase = java.io.File(cacheDir).canonicalPath
+                        val allowed = canonicalPath.startsWith(filesRoot + java.io.File.separator) ||
+                            canonicalPath.startsWith(filesBase + java.io.File.separator) ||
+                            canonicalPath.startsWith(cacheBase + java.io.File.separator)
+                        if (!selectedFile.isFile || !allowed) {
+                            throw SecurityException("Local video is outside Cutawan's private storage.")
+                        }
                     }
+                    else -> throw IllegalArgumentException("Unsupported video URI scheme.")
                 }
                 val metadata = readVideoMetadata(uri)
                 mainHandler.post { reply.success(metadata) }
@@ -138,17 +158,23 @@ class MainActivity : FlutterActivity() {
     private fun readVideoMetadata(uri: Uri): Map<String, Any> {
         var displayName = uri.lastPathSegment ?: "video"
         var sizeBytes = 0L
-        contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME, OpenableColumns.SIZE), null, null, null)
-            ?.use { cursor ->
-                if (cursor.moveToFirst()) {
-                    val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-                    if (nameIndex >= 0) displayName = cursor.getString(nameIndex) ?: displayName
-                    val sizeIndex = cursor.getColumnIndex(OpenableColumns.SIZE)
-                    if (sizeIndex >= 0 && !cursor.isNull(sizeIndex)) {
-                        sizeBytes = cursor.getLong(sizeIndex).coerceAtLeast(0L)
+        val localFile = if (uri.scheme == "file") java.io.File(uri.path!!) else null
+        if (localFile != null) {
+            displayName = localFile.name
+            sizeBytes = localFile.length().coerceAtLeast(0L)
+        } else {
+            contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME, OpenableColumns.SIZE), null, null, null)
+                ?.use { cursor ->
+                    if (cursor.moveToFirst()) {
+                        val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                        if (nameIndex >= 0) displayName = cursor.getString(nameIndex) ?: displayName
+                        val sizeIndex = cursor.getColumnIndex(OpenableColumns.SIZE)
+                        if (sizeIndex >= 0 && !cursor.isNull(sizeIndex)) {
+                            sizeBytes = cursor.getLong(sizeIndex).coerceAtLeast(0L)
+                        }
                     }
                 }
-            }
+        }
 
         val retriever = MediaMetadataRetriever()
         val durationMs: Long
@@ -156,7 +182,11 @@ class MainActivity : FlutterActivity() {
         val height: Int
         val rotation: Int
         try {
-            retriever.setDataSource(this, uri)
+            if (localFile != null) {
+                retriever.setDataSource(localFile.absolutePath)
+            } else {
+                retriever.setDataSource(this, uri)
+            }
             durationMs = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)
                 ?.toLongOrNull() ?: 0L
             width = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH)
