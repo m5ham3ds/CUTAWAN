@@ -201,7 +201,7 @@ class _CreatePageState extends State<CreatePage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return ListView(
-      padding: const EdgeInsets.fromLTRB(8, 20, 8, 32),
+      padding: const EdgeInsets.fromLTRB(4, 18, 4, 32),
       children: [
         const _Eyebrow('مساحة العمل  /  مشروع جديد', icon: Icons.auto_awesome_rounded),
         const SizedBox(height: 14),
@@ -229,15 +229,15 @@ class _CreatePageState extends State<CreatePage> {
               final compact = constraints.maxWidth < 360;
               return Row(children: [
                 Container(
-                  width: compact ? 38 : 46,
-                  height: compact ? 38 : 46,
+                  width: compact ? 34 : 46,
+                  height: compact ? 34 : 46,
                   decoration: BoxDecoration(
                     color: theme.colorScheme.primary.withValues(alpha: 0.16),
                     borderRadius: BorderRadius.circular(15),
                   ),
                   child: Icon(Icons.movie_creation_outlined, color: theme.colorScheme.primary),
                 ),
-                SizedBox(width: compact ? 8 : 13),
+                SizedBox(width: compact ? 5 : 13),
                 Expanded(child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -247,7 +247,7 @@ class _CreatePageState extends State<CreatePage> {
                       'إعداداتك محفوظة داخل المشروع ويمكن تعديلها قبل المعالجة.',
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
-                        fontSize: compact ? 10 : null,
+                        fontSize: compact ? 9 : null,
                       ),
                       maxLines: compact ? 2 : null,
                       overflow: compact ? TextOverflow.ellipsis : TextOverflow.visible,
