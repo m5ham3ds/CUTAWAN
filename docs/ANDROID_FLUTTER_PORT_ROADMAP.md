@@ -1,6 +1,6 @@
 # Android / Flutter Port — Product and Engineering Roadmap
 
-**Status:** Baseline and roadmap committed; Phase 1 Flutter shell implemented. GitHub Actions successfully formatted, analyzed, tested, built, and uploaded an ARM64 debug APK. Physical-device installation and runtime verification remain open.  
+**Status:** Phases 1–2 implementation and automated gates passed on `main`. Flutter analysis and all 31 tests passed; ARM64-only APK built, ABI-inspected, downloaded, and SHA-256 verified. Physical-device installation and source-provider/runtime verification remain open.  
 **Working repository:** `m5ham3ds/CUTAWAN`  
 **Working branch:** `main` (all implementation updates are committed directly to the default branch).  
 **Baseline:** Cutawan v0.14.0, commit `084d0b2933f64800ee5ca1b22269704f060e65f5`  
@@ -293,8 +293,10 @@ Choose one primary renderer. A hybrid is allowed only where a measured feature g
 - Added GitHub Actions workflow `.github/workflows/mobile-android.yml` using Flutter 3.47.6.
 - Run `44555130724` passed formatting, `flutter analyze --fatal-infos`, `flutter test`, ARM64 debug APK build, and artifact upload.
 - Artifact: `cutawan-mobile-arm64-debug` (41,818,489 bytes; SHA-256 `f4fecaf83a8fcb220ecb68e6cc5c64906366df92d6a059ad3b8353d44cbf7708`; expires 2026-12-03).
-- The post-UI run 44642837372 also passed formatting, static analysis, widget tests, ARM64 debug APK build, and artifact upload from main.
-- **Remaining gate:** install the APK on a physical Android device and verify startup/navigation. Phase 2 adds local media/project persistence, but the real Android document-provider round-trip still needs device verification.
+- The post-UI Phase 1 run 44642837372 passed formatting, analysis, tests, ARM64 debug APK build, and artifact upload.
+- Final combined Phase 1–2 run: `44659732349` (commit `21db8988350b7ad77fa6849e0326f2faf285856b`) passed all 31 tests, built the debug APK, verified that its native ABI set is exactly `{arm64-v8a}`, and uploaded artifact `14595760317`.
+- Final APK SHA-256: `33723e853795f9941097ed65c3662407d127726e433c4a85970b2cb880d20108`; APK size is approximately 76 MB. The downloadable build artifact is `cutawan-mobile-arm64-debug`.
+- **Remaining gate:** install on a physical Android device and verify startup/navigation.
 
 ### Phase 2 — Project contract and source ingestion (implementation committed; device gate open)
 - Added a versioned project JSON contract (schemaVersion 1), schema-0 migration, unknown-future-version rejection, and strict source/preferences/job validation.
@@ -308,6 +310,7 @@ Choose one primary renderer. A hybrid is allowed only where a measured feature g
 - Added contract/migration, repository, downloader, MethodChannel, and widget-flow tests for import/download → persist → reopen → cancel → re-probe → cleanup.
 - CI compiles the generated Android app including the custom Kotlin bridge and runs the Flutter test suite.
 - **Scope boundary:** direct file URLs are supported; social-platform page extraction, DRM/authentication bypass, AI analysis, transcription, clip generation, and export are not implemented in these two phases.
+- Final automated validation: GitHub Actions run `44659732349` passed all 31 tests and built the Android debug APK. A post-build ZIP inspection confirmed that the only native ABI directory is `arm64-v8a`; CI now enforces this assertion before artifact upload.
 - **Remaining acceptance gate:** perform a real local-file SAF import and a direct-video download, then force-stop/reopen the app and re-probe both sources on a physical Android device. Widget tests mock the native channel and do not replace device-level/OEM document-provider tests.
 
 ### Phase 3 — Transcription and local model management
@@ -482,3 +485,17 @@ The current widget tests cover the four primary destinations, caption preset/ani
 - Jobs displays the app-managed download footprint and supports deliberate removal of downloaded media plus its project record. SAF records release their persisted read grant only when no other saved project refers to that same URI.
 - Added download tests for successful transfer/progress, redirects, platform/private URL rejection, non-video responses, insufficient storage, cancellation before/during transfer, interrupted part cleanup, storage accounting/deletion, and unsafe filename/query handling.
 - Physical Android verification is still required for actual URL network access, Android private-path checks, SAF permission persistence across process death, and media probing on the OEM document provider.
+
+
+## 21. Automated completion record for Phases 1–2 (2026-11-20)
+
+- Final source SHA on `main`: `21db8988350b7ad77fa6849e0326f2faf285856b`.
+- Mobile workflow: `44659732349` — success.
+- Root CI workflow: `44659732275` — success. Release workflow `44659732258` was skipped as expected; this was not a release build.
+- Flutter 3.47.6: formatting, static analysis (`flutter analyze --fatal-infos`), and all **31 tests** passed.
+- Android ARM64 debug build succeeded. The native ABI assertion passed with exactly `arm64-v8a` and no `armeabi-v7a` or `x86_64` directories.
+- Artifact: `cutawan-mobile-arm64-debug` (artifact ID `14595760317`, 44,293,109-byte ZIP archive).
+- Extracted APK: approximately 76 MB; SHA-256 `33723e853795f9941097ed65c3662407d127726e433c4a85970b2cb880d20108`.
+- Licensing audit records: `THIRD_PARTY_NOTICES.md` and `docs/DEPENDENCY_LICENSE_INVENTORY.md`. Unverified ONNX asset licenses remain excluded from the mobile bundle.
+- No feature branch was created for these phases; all implementation and fixes were pushed directly to `main`.
+- Physical-device install and real SAF provider / direct URL process-restart verification remain open. This is the only Phase 1–2 acceptance item not completed within this environment.
