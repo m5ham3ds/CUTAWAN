@@ -73,7 +73,6 @@ void main() {
     expect(generated.ass, contains(r'{\kf'));
     expect(generated.ass, contains(r'\pos(540,'));
     expect(generated.ass, contains('لحظة'));
-    expect(generated.cues, isEmpty);
   });
 
   test('returns empty sidecars when no timed word overlaps the clip', () {
@@ -98,5 +97,6 @@ void main() {
     );
     expect(generated.srt, isEmpty);
     expect(generated.ass, isEmpty);
+    expect(generated.cues, isEmpty);
   });
 }

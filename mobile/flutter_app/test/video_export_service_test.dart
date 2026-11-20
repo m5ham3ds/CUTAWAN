@@ -144,8 +144,12 @@ void main() {
     expect(arguments, containsPair('sourceAspectRatio', 16 / 9));
     expect(arguments['reframeShots'], cropPlan);
     expect(arguments['captionAnimationId'], 'karaoke_fill');
-    expect(arguments['captionCues'], isA<List<Map<String, Object?>>>());
-    expect(arguments['captionStyle'], isA<Map<String, Object?>>());
+    expect(arguments['captionCues'], isA<List>());
+    final sentCues = arguments['captionCues'] as List;
+    expect(sentCues, hasLength(1));
+    expect((sentCues.single as Map)['text'], 'مرحبا بالعالم');
+    expect(arguments['captionStyle'], isA<Map>());
+    expect((arguments['captionStyle'] as Map)['positionY'], 0.74);
   });
 
   test('rejects reframe segments that do not cover the complete clip', () async {
