@@ -155,8 +155,8 @@ class MainActivity : FlutterActivity() {
                         val selectedFile = java.io.File(uri.path ?: throw IllegalArgumentException("File URI has no path."))
                         val canonicalPath = selectedFile.canonicalPath
                         val filesRoot = java.io.File(filesDir, "app_flutter").canonicalPath
-                        val filesBase = java.io.File(filesDir).canonicalPath
-                        val cacheBase = java.io.File(cacheDir).canonicalPath
+                        val filesBase = filesDir.canonicalPath
+                        val cacheBase = cacheDir.canonicalPath
                         val allowed = canonicalPath.startsWith(filesRoot + java.io.File.separator) ||
                             canonicalPath.startsWith(filesBase + java.io.File.separator) ||
                             canonicalPath.startsWith(cacheBase + java.io.File.separator)
