@@ -356,40 +356,51 @@ class _CreatePageState extends State<CreatePage> {
         ),
         if (_duration == ClipDurationMode.custom) ...[
           const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _minimumSecondsController,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: 'أقل مدة (ثانية)',
-                  ),
-                  onChanged: (value) {
-                    final parsed = int.tryParse(value);
-                    if (parsed != null) {
-                      setState(() => _customMinimumSeconds = parsed);
-                    }
-                  },
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final minimumField = TextField(
+                controller: _minimumSecondsController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'أقل مدة (ثانية)',
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: TextField(
-                  controller: _maximumSecondsController,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: 'أقصى مدة (ثانية)',
-                  ),
-                  onChanged: (value) {
-                    final parsed = int.tryParse(value);
-                    if (parsed != null) {
-                      setState(() => _customMaximumSeconds = parsed);
-                    }
-                  },
+                onChanged: (value) {
+                  final parsed = int.tryParse(value);
+                  if (parsed != null) {
+                    setState(() => _customMinimumSeconds = parsed);
+                  }
+                },
+              );
+              final maximumField = TextField(
+                controller: _maximumSecondsController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'أقصى مدة (ثانية)',
                 ),
-              ),
-            ],
+                onChanged: (value) {
+                  final parsed = int.tryParse(value);
+                  if (parsed != null) {
+                    setState(() => _customMaximumSeconds = parsed);
+                  }
+                },
+              );
+              if (constraints.maxWidth < 390) {
+                return Column(
+                  children: [
+                    minimumField,
+                    const SizedBox(height: 10),
+                    maximumField,
+                  ],
+                );
+              }
+              return Row(
+                children: [
+                  Expanded(child: minimumField),
+                  const SizedBox(width: 12),
+                  Expanded(child: maximumField),
+                ],
+              );
+            },
           ),
         ],
         const SizedBox(height: 22),
