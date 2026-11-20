@@ -192,11 +192,14 @@ class _CaptionStudioPageState extends State<CaptionStudioPage> with SingleTicker
           animation: _animation,
           builder: (context, _) {
             final frame = _frameFor(_animation.value);
-            return Container(
-              height: 270,
-              decoration: BoxDecoration(color: const Color(0xFF171717), borderRadius: BorderRadius.circular(18), border: Border.all(color: theme.colorScheme.outlineVariant)),
-              clipBehavior: Clip.antiAlias,
-              child: Stack(children: [
+            return Material(
+              color: Colors.transparent,
+              borderRadius: BorderRadius.circular(18),
+              child: Container(
+                height: 270,
+                decoration: BoxDecoration(color: const Color(0xFF171717), borderRadius: BorderRadius.circular(18), border: Border.all(color: theme.colorScheme.outlineVariant)),
+                clipBehavior: Clip.antiAlias,
+                child: Stack(children: [
                 Positioned.fill(child: CustomPaint(painter: _PreviewSafeFramePainter(showFrame: _showSafeFrame))),
                 Align(
                   alignment: Alignment(0, _positionY * 2 - 1),
@@ -219,7 +222,8 @@ class _CaptionStudioPageState extends State<CaptionStudioPage> with SingleTicker
                     ),
                   ),
                 ),
-              ]),
+                ]),
+              ),
             );
           },
         ),
