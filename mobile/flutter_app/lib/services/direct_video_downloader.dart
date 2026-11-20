@@ -92,6 +92,15 @@ class DirectVideoDownloader {
     return root;
   }
 
+  Future<void> cleanupInterruptedDownloads() async {
+    final directory = await _directory();
+    await for (final entity in directory.list(followLinks: false)) {
+      if (entity is File && entity.path.endsWith('.part')) {
+        await entity.delete();
+      }
+    }
+  }
+
   Future<int> storageUsageBytes() async {
     final directory = await _directory();
     var total = 0;
@@ -209,6 +218,8 @@ class DirectVideoDownloader {
     cancellation.addListener(abortRequest);
 
     final directory = await _directory();
+    await cleanupInterruptedDownloads();
+    client.autoUncompress = false;
     File? partialFile;
     File? completedFile;
     IOSink? sink;
