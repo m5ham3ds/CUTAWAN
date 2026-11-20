@@ -156,10 +156,38 @@ class _CreatePageState extends State<CreatePage> {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
 
+  ClipPreferences _currentPreferences() {
+    final minimumSeconds = _duration == ClipDurationMode.custom
+        ? int.tryParse(_minimumSecondsController.text.trim())
+        : _customMinimumSeconds;
+    final maximumSeconds = _duration == ClipDurationMode.custom
+        ? int.tryParse(_maximumSecondsController.text.trim())
+        : _customMaximumSeconds;
+    if (minimumSeconds == null || maximumSeconds == null) {
+      throw const FormatException('أدخل حدّي المدة المخصصة كأرقام صحيحة.');
+    }
+    final preferences = ClipPreferences(
+      requestedClipCount: _clipCount,
+      durationMode: _duration,
+      customMinimumSeconds: minimumSeconds,
+      customMaximumSeconds: maximumSeconds,
+      aspectRatio: _ratio,
+      resolution: _resolution,
+      captionsEnabled: _captions,
+      speakerTrackingEnabled: _speakerTracking,
+      captionStyleId: _captionStyleId,
+      captionAnimationId: _captionAnimationId,
+    );
+    final validationError = preferences.validate();
+    if (validationError != null) throw FormatException(validationError);
+    return preferences;
+  }
+
   Future<void> _importVideo() async {
     if (_isImporting) return;
     setState(() => _isImporting = true);
     try {
+      final preferences = _currentPreferences();
       final source = await AndroidVideoPicker.pickVideo();
       if (!mounted) {
         if (source != null) {
@@ -169,24 +197,6 @@ class _CreatePageState extends State<CreatePage> {
       }
       if (source == null) {
         _showMessage('تم إلغاء اختيار الفيديو.');
-        return;
-      }
-
-      final preferences = ClipPreferences(
-        requestedClipCount: _clipCount,
-        durationMode: _duration,
-        customMinimumSeconds: _customMinimumSeconds,
-        customMaximumSeconds: _customMaximumSeconds,
-        resolution: _resolution,
-        captionStyleId: _captionStyleId,
-        captionAnimationId: _captionAnimationId,
-        aspectRatio: _ratio,
-        captionsEnabled: _captions,
-        speakerTrackingEnabled: _speakerTracking,
-      );
-      final validationError = preferences.validate();
-      if (validationError != null) {
-        _showMessage(validationError);
         return;
       }
 
@@ -213,6 +223,14 @@ class _CreatePageState extends State<CreatePage> {
     final url = _urlController.text.trim();
     if (url.isEmpty) {
       _showMessage('أدخل رابط ملف فيديو مباشر أولًا.');
+      return;
+    }
+
+    late final ClipPreferences preferences;
+    try {
+      preferences = _currentPreferences();
+    } on FormatException catch (error) {
+      _showMessage(error.message);
       return;
     }
 
@@ -247,18 +265,7 @@ class _CreatePageState extends State<CreatePage> {
       }
       final project = CutawanProject.create(
         source: source,
-        preferences: ClipPreferences(
-          requestedClipCount: _clipCount,
-          durationMode: _duration,
-        customMinimumSeconds: _customMinimumSeconds,
-        customMaximumSeconds: _customMaximumSeconds,
-        resolution: _resolution,
-        captionStyleId: _captionStyleId,
-        captionAnimationId: _captionAnimationId,
-          aspectRatio: _ratio,
-          captionsEnabled: _captions,
-          speakerTrackingEnabled: _speakerTracking,
-        ),
+        preferences: preferences,
       );
       try {
         await widget.repository.save(project);
