@@ -10,9 +10,10 @@ import '../services/direct_video_downloader.dart';
 import '../services/local_project_repository.dart';
 
 class HomeShell extends StatefulWidget {
-  const HomeShell({super.key, this.repository});
+  const HomeShell({super.key, this.repository, this.storageUsageBytes});
 
   final LocalProjectRepository? repository;
+  final Future<int> Function()? storageUsageBytes;
 
   @override
   State<HomeShell> createState() => _HomeShellState();
@@ -64,6 +65,7 @@ class _HomeShellState extends State<HomeShell> {
         projects: _projects,
         repository: _repository,
         onProjectsChanged: _reloadProjects,
+        storageUsageBytes: widget.storageUsageBytes,
       ),
       ReviewPage(
         projects: _projects,
@@ -621,12 +623,14 @@ class JobsPage extends StatelessWidget {
     required this.projects,
     required this.repository,
     required this.onProjectsChanged,
+    this.storageUsageBytes,
     super.key,
   });
 
   final ValueListenable<List<CutawanProject>> projects;
   final LocalProjectRepository repository;
   final Future<void> Function() onProjectsChanged;
+  final Future<int> Function()? storageUsageBytes;
 
   DirectVideoDownloader _downloader() => DirectVideoDownloader(
         availableStorageBytes: AndroidVideoPicker.availableStorageBytes,
@@ -712,7 +716,8 @@ class JobsPage extends StatelessWidget {
     return ValueListenableBuilder<List<CutawanProject>>(
       valueListenable: projects,
       builder: (context, items, _) {
-        final storageFuture = _downloader().storageUsageBytes();
+        final storageFuture =
+            (storageUsageBytes ?? _downloader().storageUsageBytes)();
         return ListView(
           padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
           children: [
