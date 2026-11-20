@@ -23,6 +23,15 @@ void main() {
         await request.response.close();
         return;
       }
+      if (request.uri.path == '/unsafe-redirect') {
+        request.response.statusCode = HttpStatus.found;
+        request.response.headers.set(
+          HttpHeaders.locationHeader,
+          'https://www.youtube.com/watch?v=blocked',
+        );
+        await request.response.close();
+        return;
+      }
       if (request.uri.path == '/html') {
         request.response.headers.contentType = ContentType.html;
         request.response.write('<html>not a video</html>');
@@ -153,6 +162,28 @@ void main() {
 
     expect(directory.listSync(), isEmpty);
     expect(servedPaths, isEmpty);
+  });
+
+  test('unsafe redirect destinations are rejected before a second request', () async {
+    await expectLater(
+      downloader.download(
+        url('/unsafe-redirect'),
+        cancellation: DownloadCancellation(),
+      ),
+      throwsA(isA<HttpException>()),
+    );
+
+    expect(servedPaths, ['/unsafe-redirect']);
+    expect(directory.listSync(), isEmpty);
+  });
+
+  test('interrupted partial downloads are removed before the next attempt', () async {
+    final partial = File('${directory.path}${Platform.pathSeparator}orphan.mp4.part');
+    await partial.writeAsString('partial');
+
+    await downloader.cleanupInterruptedDownloads();
+
+    expect(await partial.exists(), isFalse);
   });
 
   test('downloaded media can be removed from managed storage', () async {
