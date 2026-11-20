@@ -7,6 +7,13 @@ import 'package:cutawan_mobile/services/local_project_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:cutawan_mobile/app.dart';
 
+void configureCaptionStudioViewport(WidgetTester tester) {
+  tester.view.physicalSize = const Size(1200, 3200);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
+}
+
 void main() {
   testWidgets('mobile shell shows the four AutoClip-inspired destinations', (tester) async {
     await tester.pumpWidget(const CutawanApp());
@@ -20,6 +27,7 @@ void main() {
   });
 
   testWidgets('caption studio keeps visual presets separate from animation choices', (tester) async {
+    configureCaptionStudioViewport(tester);
     await tester.pumpWidget(const CutawanApp());
 
     await tester.tap(find.text('الاستوديو'));
@@ -28,7 +36,6 @@ void main() {
 
     expect(find.text('اصنع أسلوبك الخاص'), findsOneWidget);
     expect(find.text('Beast'), findsOneWidget);
-    await tester.scrollUntilVisible(find.text('Word Pop'), 220);
     await tester.pump(const Duration(milliseconds: 100));
     expect(find.text('Word Pop'), findsOneWidget);
     await tester.tap(find.text('Word Pop'));
@@ -37,6 +44,7 @@ void main() {
   });
 
   testWidgets('caption studio preview is animated and persists edits in the latest project', (tester) async {
+    configureCaptionStudioViewport(tester);
     final directory = await Directory.systemTemp.createTemp('cutawan-caption-widget-');
     addTearDown(() async {
       if (await directory.exists()) await directory.delete(recursive: true);
@@ -75,17 +83,10 @@ void main() {
         .widgetList<RichText>(find.byType(RichText))
         .firstWhere((widget) => widget.text.toPlainText().contains('This is the moment'));
     expect(englishPreview.textDirection, TextDirection.ltr);
-    await tester.scrollUntilVisible(find.text('Karaoke'), 220);
-    await tester.pump(const Duration(milliseconds: 100));
-    await tester.scrollUntilVisible(find.text('Karaoke'), 220);
-    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.text('Karaoke'), findsOneWidget);
     await tester.tap(find.text('Karaoke'));
     await tester.pump(const Duration(milliseconds: 100));
-    await tester.scrollUntilVisible(
-      find.text('حفظ إعدادات الاستوديو في المشروع'),
-      240,
-    );
-    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.text('حفظ إعدادات الاستوديو في المشروع'), findsOneWidget);
     await tester.tap(find.text('حفظ إعدادات الاستوديو في المشروع'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
