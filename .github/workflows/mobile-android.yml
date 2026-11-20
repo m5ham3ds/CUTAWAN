@@ -7,7 +7,7 @@ on:
       - "mobile/flutter_app/**"
       - ".github/workflows/mobile-android.yml"
   pull_request:
-    branches: [android-flutter-port]
+    branches: [main]
     paths:
       - "mobile/flutter_app/**"
       - ".github/workflows/mobile-android.yml"
@@ -38,9 +38,7 @@ jobs:
 
       - name: Generate Android platform files
         run: |
-          if [ ! -d android ]; then
-            flutter create --platforms=android --org com.m5ham3ds --project-name cutawan_mobile .
-          fi
+          bash tooling/generate_android_platform.sh
 
       - name: Resolve dependencies
         run: flutter pub get
