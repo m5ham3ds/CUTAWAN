@@ -75,8 +75,11 @@ void main() {
 
     await tester.tap(find.byKey(const ValueKey('caption-direction-switch')));
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 350));
-    expect(find.text('English'), findsOneWidget);
+    expect(
+      tester.widget<Switch>(find.byKey(const ValueKey('caption-direction-switch'))).value,
+      isFalse,
+    );
+    await tester.pump(const Duration(milliseconds: 250));
     final englishPreview = tester
         .widgetList<RichText>(find.byType(RichText))
         .firstWhere((widget) => widget.text.toPlainText().contains('THIS IS THE MOMENT'));

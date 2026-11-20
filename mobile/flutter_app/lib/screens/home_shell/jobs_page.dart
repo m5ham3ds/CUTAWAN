@@ -189,19 +189,26 @@ class JobsPage extends StatelessWidget {
                         const SizedBox(height: 8),
                         Wrap(
                           spacing: 8,
-                          runSpacing: 4,
+                          runSpacing: 6,
                           crossAxisAlignment: WrapCrossAlignment.center,
                           children: [
                             _StatusBadge(label: _jobStatusLabel(project.job.status), status: project.job.status),
                             Chip(label: Text(project.job.stage)),
+                          ],
+                        ),
+                        const SizedBox(height: 5),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 4,
+                          children: [
                             if (project.job.canCancel)
-                              TextButton.icon(
+                              FilledButton.tonalIcon(
                                 key: ValueKey('cancel-job-${project.id}'),
                                 onPressed: () => _cancel(context, project),
                                 icon: const Icon(Icons.cancel_outlined),
                                 label: const Text('إلغاء السجل'),
                               ),
-                            TextButton.icon(
+                            OutlinedButton.icon(
                               onPressed: () => _deleteProject(context, project),
                               icon: const Icon(Icons.delete_outline),
                               label: const Text('حذف المشروع'),
