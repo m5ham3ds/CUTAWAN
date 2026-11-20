@@ -34,8 +34,15 @@ class VideoAssetMetadata {
     final width = (json['width'] as num?)?.toInt() ?? 0;
     final height = (json['height'] as num?)?.toInt() ?? 0;
     final sizeBytes = (json['sizeBytes'] as num?)?.toInt() ?? 0;
-    if (uri == null || !uri.startsWith('content://')) {
-      throw const FormatException('Video source must be a content:// URI.');
+    final parsedUri = uri == null ? null : Uri.tryParse(uri);
+    final validContentUri = parsedUri?.scheme == 'content' &&
+        (parsedUri?.authority.isNotEmpty ?? false);
+    final validPrivateFileUri = parsedUri?.scheme == 'file' &&
+        (parsedUri?.path.startsWith('/') ?? false);
+    if (!validContentUri && !validPrivateFileUri) {
+      throw const FormatException(
+        'Video source must be a persisted content:// URI or an app-private file:// URI.',
+      );
     }
     if (displayName == null || displayName.trim().isEmpty) {
       throw const FormatException('Video display name is missing.');
