@@ -22,6 +22,7 @@ import '../services/local_editorial_annotation_service.dart';
 import '../services/ai_model_gateway.dart';
 import '../services/android_reframe_analysis_service.dart';
 import '../services/processing_job_service.dart';
+import '../services/processing_pipeline_service.dart';
 
 
 part 'home_shell/create_page.dart';
