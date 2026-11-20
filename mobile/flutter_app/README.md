@@ -1,8 +1,22 @@
-# Cutawan Mobile (Flutter)
+# CUTAWAN Mobile — Native Flutter Android App
 
-This directory contains the native Android app. The desktop Electron app at the repository root remains intact and is not wrapped in a WebView.
+This is the primary CUTAWAN product target: a native Android phone application built with Flutter and Dart. All current product UI work, feature development, redesign, tests, and Android releases must be implemented here.
 
-## Implemented scope
+The Electron desktop application at the repository root is legacy/reference code. It is not the mobile application and must not be used as the implementation target for mobile requests. CUTAWAN Mobile is not a WebView wrapper.
+
+## Product implementation rules
+
+- Flutter/Dart is the application foundation.
+- Native Android integrations use platform channels and Android APIs from `tooling/android/MainActivity.kt`.
+- Keep presentation, domain models, repositories, and processing services separate.
+- Every interactive control must have a real function and corresponding loading/error/cancel/disabled feedback.
+- Preserve project data, local-first storage, privacy and cloud-consent rules.
+- Arabic RTL and English LTR must both work.
+- Layouts must adapt to 320dp phones, larger devices, safe areas, keyboard insets, text scaling, and landscape.
+- Use real motion for navigation, screen entrance, progress, selection, editing and caption preview; motion must remain purposeful and accessible.
+- Use open-source libraries and design references only after checking compatibility and licenses. Record any reused source, license, and modifications.
+
+## Current implemented scope
 
 ### Phase 1 — Flutter application shell
 
@@ -25,31 +39,43 @@ This directory contains the native Android app. The desktop Electron app at the 
 - Jobs and Review read saved projects; Review can re-probe the source URI after app restart.
 - Storage usage for app-managed downloads is displayed in Jobs. Users can remove a downloaded file with its project; removing a SAF project releases its saved read grant when no other project uses that source.
 
-Direct URL import accepts a direct video-file endpoint only. It does not extract media from YouTube, TikTok, Instagram, Facebook, or other platform pages, and does not bypass DRM, authentication barriers, or access controls. An authorized direct CDN/file URL is required.
+Direct URL import accepts a direct video-file endpoint only. It does not extract media from social platform pages or bypass DRM, authentication barriers, or access controls. An authorized direct CDN/file URL is required.
 
-A prepared job is a durable project record, not a claim that AI analysis has started. URL ingestion and source storage are implemented; transcription, candidate discovery, reframing, caption rendering, and export engines are not connected yet.
+## Known limitations — do not describe as completed
 
-## Generate the Android platform folder
+The mobile app has real source import, local project persistence, job records, caption configuration and model-management foundations. However, the following still require implementation and acceptance:
 
-The Flutter SDK creates Gradle/Kotlin boilerplate for its installed version. The generation script then installs the repository's native SAF, storage, and media-probe bridge:
+- Full end-to-end pipeline integration on device for transcription, candidate discovery, reframing, caption render, and export.
+- Complete interactive clip editor with trim handles, crop/focus controls, timeline and preview.
+- Full screen-by-screen production redesign and navigation architecture.
+- Persistent background processing and reliable resume after Android process death.
+- Physical device tests for SAF permission persistence, media metadata and playback, model installation, memory/thermal behavior and export.
+- Full bilingual/RTL, accessibility, text scale, narrow-width, keyboard and landscape golden/widget test matrix.
+
+Never claim these functions are complete until implemented and tested.
+
+## Build and validation
+
+Run from this directory:
 
 ```bash
 bash tooling/generate_android_platform.sh
+dart format --output=none --set-exit-if-changed lib test
 flutter analyze --fatal-infos
 flutter test --reporter expanded
 flutter build apk --debug --target-platform android-arm64
 ```
 
-The CI workflow uses Flutter 3.47.6. The generated android/ directory is not committed; the native MainActivity source of truth is tooling/android/MainActivity.kt.
+CI uses Flutter 3.47.6, generates the Android project, compiles the Kotlin bridge, analyzes and tests Dart code, builds an ARM64 APK and uploads the artifact.
 
-## Automated coverage
+## Physical Android acceptance
 
-Tests cover project JSON round-trip, schema migration/future-version rejection, source metadata validation, persistent repository save/list/load/delete/cancel, download progress, redirects, unsafe redirect blocking, social-platform/private-IP rejection, HTML response rejection, insufficient storage, cancellation and partial-file cleanup, storage accounting/deletion, the Android MethodChannel contract, and the app import/reopen/cancel/re-probe flow.
+Install the generated APK and validate:
+1. Local video selection via Android document picker.
+2. Authorized direct video URL download, progress, cancellation and cleanup.
+3. Close/force-stop/reopen and verify persisted source access and project metadata.
+4. Run each implemented processing stage and validate its output, cancellation and recovery.
+5. Verify Arabic RTL, English LTR, 320dp width, keyboard, safe areas and landscape.
+6. Verify real device memory, thermal and background lifecycle behavior.
 
-GitHub Actions generates the Android project, compiles the Kotlin bridge, formats and analyzes Flutter code, runs tests, builds an ARM64 debug APK, and uploads the artifact.
-
-## Acceptance still requiring a physical Android device
-
-Install the generated APK, test both (1) selecting a local MP4 from the Android document picker and (2) downloading an authorized direct video URL, then force-stop/reopen the app and recheck the media metadata in Review. The SAF grant and MediaMetadataRetriever path are compiled in CI, but a real OEM document-provider and storage round-trip across process death has not been executed on a physical device in this session.
-
-The mobile project does not claim physical-device acceptance, AI inference, actual clip generation, animated caption rendering, or video export until those tests and engines exist.
+A passing CI build alone is not physical-device acceptance.
