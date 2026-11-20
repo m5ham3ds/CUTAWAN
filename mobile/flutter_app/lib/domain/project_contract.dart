@@ -40,7 +40,7 @@ class VideoAssetMetadata {
     final validPrivateFileUri = parsedUri?.scheme == 'file' &&
         (parsedUri?.authority.isEmpty ?? false) &&
         (parsedUri?.path.startsWith('/') ?? false);
-    if (!validContentUri && !validPrivateFileUri) {
+    if (uri == null || (!validContentUri && !validPrivateFileUri)) {
       throw const FormatException(
         'Video source must be a persisted content:// URI or an app-private file:// URI.',
       );
