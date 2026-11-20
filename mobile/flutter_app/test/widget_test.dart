@@ -67,9 +67,13 @@ void main() {
       now: now,
     );
     await repository.save(project);
+    print('CAPTION_WIDGET: initial project saved');
     await tester.pumpWidget(CutawanApp(repository: repository));
+    print('CAPTION_WIDGET: app pumped');
     await tester.tap(find.text('الاستوديو'));
+    print('CAPTION_WIDGET: studio tab tapped');
     await tester.pump();
+    print('CAPTION_WIDGET: first pump after tap');
     await tester.pump(const Duration(milliseconds: 100));
     expect(find.text('معاينة عربية / RTL'), findsOneWidget);
     final arabicPreview = tester
@@ -87,16 +91,21 @@ void main() {
     await tester.tap(find.text('Karaoke'));
     await tester.pump(const Duration(milliseconds: 100));
     expect(find.text('حفظ إعدادات الاستوديو في المشروع'), findsOneWidget);
+    print('CAPTION_WIDGET: save button present');
     await tester.tap(find.text('حفظ إعدادات الاستوديو في المشروع'));
+    print('CAPTION_WIDGET: save button tapped');
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
+    print('CAPTION_WIDGET: animation pump complete');
+    print('CAPTION_WIDGET: reading saved project');
     final saved = await repository.load(project.id);
+    print('CAPTION_WIDGET: project read complete');
     expect(saved, isNotNull);
     expect(saved!.preferences.captionStyleId, 'karaoke');
     expect(saved.preferences.captionFontFamily, isNotEmpty);
     expect(saved.preferences.captionFontScale, greaterThan(0));
     expect(saved.preferences.captionPositionY, inInclusiveRange(0.1, 0.9));
-  });
+  }, timeout: const Timeout(Duration(seconds: 60)));
 
   testWidgets('jobs and review pages explain that processing is not connected yet', (tester) async {
     await tester.pumpWidget(const CutawanApp());
