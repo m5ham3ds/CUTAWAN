@@ -132,7 +132,9 @@ class ProjectJob {
   factory ProjectJob.fromJson(Map<String, dynamic> json) {
     final statusName = json['status'] as String? ?? 'prepared';
     final status = ProjectJobStatus.values.where((item) => item.name == statusName);
-    if (status.isEmpty) throw FormatException('Unknown job status: $statusName');
+    if (status.isEmpty) {
+      throw FormatException('Unknown job status: $statusName');
+    }
     final progress = (json['progress'] as num?)?.toDouble() ?? 0;
     if (progress < 0 || progress > 1) {
       throw const FormatException('Job progress must be between 0 and 1.');
