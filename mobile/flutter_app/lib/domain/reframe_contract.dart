@@ -119,11 +119,15 @@ class FocusTrack {
 
   factory FocusTrack.fromJson(Map<String, dynamic> json) {
     final raw = json['keyframes'];
-    if (raw is! List) throw const FormatException('Focus keyframes must be an array.');
+    if (raw is! List) {
+      throw const FormatException('Focus keyframes must be an array.');
+    }
     return FocusTrack(
       keyframes: raw.map((item) {
-        if (item is! Map<String, dynamic>) throw const FormatException('Focus keyframe must be an object.');
-        return FocusKeyframe.fromJson(item);
+        if (item is! Map) {
+          throw const FormatException('Focus keyframe must be an object.');
+        }
+        return FocusKeyframe.fromJson(Map<String, dynamic>.from(item));
       }).toList(growable: false),
       averageConfidence: (json['averageConfidence'] as num?)?.toDouble() ?? -1,
       coverage: (json['coverage'] as num?)?.toDouble() ?? -1,
@@ -179,14 +183,16 @@ class ReframeShot {
 
   factory ReframeShot.fromJson(Map<String, dynamic> json) {
     final rawRegion = json['region'];
-    if (rawRegion != null && rawRegion is! Map<String, dynamic>) {
+    if (rawRegion != null && rawRegion is! Map) {
       throw const FormatException('Reframe region must be an object.');
     }
     return ReframeShot(
       startMs: (json['startMs'] as num?)?.toInt() ?? -1,
       endMs: (json['endMs'] as num?)?.toInt() ?? -1,
       mode: json['mode'] as String? ?? '',
-      region: rawRegion == null ? null : FrameBox.fromJson(rawRegion),
+      region: rawRegion == null
+          ? null
+          : FrameBox.fromJson(Map<String, dynamic>.from(rawRegion as Map)),
       focusCenterX: (json['focusCenterX'] as num?)?.toDouble(),
       confidence: (json['confidence'] as num?)?.toDouble() ?? -1,
       reviewReason: json['reviewReason'] as String?,
@@ -227,9 +233,11 @@ class ReframePlan {
 
   factory ReframePlan.fromJson(Map<String, dynamic> json) {
     final rawShots = json['shots'];
-    if (rawShots is! List) throw const FormatException('Reframe shots must be an array.');
+    if (rawShots is! List) {
+      throw const FormatException('Reframe shots must be an array.');
+    }
     final rawFocus = json['focusTrack'];
-    if (rawFocus != null && rawFocus is! Map<String, dynamic>) {
+    if (rawFocus != null && rawFocus is! Map) {
       throw const FormatException('Focus track must be an object.');
     }
     final plan = ReframePlan(
@@ -237,10 +245,14 @@ class ReframePlan {
       sourceDurationMs: (json['sourceDurationMs'] as num?)?.toInt() ?? -1,
       aspectRatio: (json['aspectRatio'] as num?)?.toDouble() ?? -1,
       shots: rawShots.map((item) {
-        if (item is! Map<String, dynamic>) throw const FormatException('Reframe shot must be an object.');
-        return ReframeShot.fromJson(item);
+        if (item is! Map) {
+          throw const FormatException('Reframe shot must be an object.');
+        }
+        return ReframeShot.fromJson(Map<String, dynamic>.from(item));
       }).toList(growable: false),
-      focusTrack: rawFocus == null ? null : FocusTrack.fromJson(rawFocus),
+      focusTrack: rawFocus == null
+          ? null
+          : FocusTrack.fromJson(Map<String, dynamic>.from(rawFocus as Map)),
       fallbackReason: json['fallbackReason'] as String?,
       engine: json['engine'] as String? ?? '',
     );

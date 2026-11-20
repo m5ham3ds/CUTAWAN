@@ -728,55 +728,6 @@ class JobsPage extends StatelessWidget {
     }
   }
 
-  Future<void> _analyzeFraming(CutawanProject project) async {
-    if (_busyProjectId != null) { return; }
-    setState(() {
-      _busyProjectId = project.id;
-      _busyStage = 'reframe';
-      _lastError = null;
-      _progress = null;
-    });
-    try {
-      final source = project.source;
-      final rotated = source.rotationDegrees.abs() % 180 != 0;
-      final sourceWidth = rotated ? source.height : source.width;
-      final sourceHeight = rotated ? source.width : source.height;
-      final targetAspectRatio = switch (project.preferences.aspectRatio) {
-        ClipAspectRatio.portrait916 => 9 / 16,
-        ClipAspectRatio.square11 => 1.0,
-        ClipAspectRatio.landscape169 => 16 / 9,
-        ClipAspectRatio.original => sourceWidth / sourceHeight,
-      };
-      final plan = await const AndroidReframeAnalysisService().analyze(
-        sourceUri: source.uri,
-        sourceDurationMs: source.durationMs,
-        sourceWidth: sourceWidth,
-        sourceHeight: sourceHeight,
-        targetAspectRatio: targetAspectRatio,
-      );
-      await widget.repository.saveReframePlan(project.id, plan);
-      if (!mounted) { return; }
-      setState(() => _reframePlans[project.id] = plan);
-      final message = plan.focusTrack == null
-          ? 'لم تتوفر ثقة كافية لتحديد وجه مستمر؛ حُفظت خطة إظهار المشهد كاملاً.'
-          : 'تم تحليل الوجه في ${plan.focusTrack!.keyframes.length} عينة وحُفظت خطة التأطير. هذا ليس تصنيفاً صوتياً مؤكداً للمتحدث النشط.';
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
-    } catch (error) {
-      if (mounted) {
-        setState(() => _lastError = 'فشل تحليل التأطير: $error');
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _busyProjectId = null;
-          _busyStage = null;
-          _progress = null;
-        });
-      }
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -1092,6 +1043,56 @@ class _ReviewPageState extends State<ReviewPage> {
       }
     } catch (error) {
       if (mounted) { setState(() => _lastError = 'فشل اكتشاف المقاطع: $error'); }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _busyProjectId = null;
+          _busyStage = null;
+          _progress = null;
+        });
+      }
+    }
+  }
+
+  Future<void> _analyzeFraming(CutawanProject project) async {
+    if (_busyProjectId != null) { return; }
+    setState(() {
+      _busyProjectId = project.id;
+      _busyStage = 'reframe';
+      _lastError = null;
+      _progress = null;
+    });
+    try {
+      final source = project.source;
+      final rotated = source.rotationDegrees.abs() % 180 != 0;
+      final sourceWidth = rotated ? source.height : source.width;
+      final sourceHeight = rotated ? source.width : source.height;
+      final targetAspectRatio = switch (project.preferences.aspectRatio) {
+        ClipAspectRatio.portrait916 => 9 / 16,
+        ClipAspectRatio.square11 => 1.0,
+        ClipAspectRatio.landscape169 => 16 / 9,
+        ClipAspectRatio.original => sourceWidth / sourceHeight,
+      };
+      final plan = await const AndroidReframeAnalysisService().analyze(
+        sourceUri: source.uri,
+        sourceDurationMs: source.durationMs,
+        sourceWidth: sourceWidth,
+        sourceHeight: sourceHeight,
+        targetAspectRatio: targetAspectRatio,
+      );
+      await widget.repository.saveReframePlan(project.id, plan);
+      if (!mounted) { return; }
+      setState(() => _reframePlans[project.id] = plan);
+      final message = plan.focusTrack == null
+          ? 'لم تتوفر ثقة كافية لتحديد وجه مستمر؛ حُفظت خطة إظهار المشهد كاملاً.'
+          : 'تم تحليل الوجه في ${plan.focusTrack!.keyframes.length} عينة وحُفظت خطة التأطير. هذا ليس تصنيفاً صوتياً مؤكداً للمتحدث النشط.';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+    } catch (error) {
+      if (mounted) {
+        setState(() => _lastError = 'فشل تحليل التأطير: $error');
+      }
     } finally {
       if (mounted) {
         setState(() {
@@ -1538,7 +1539,9 @@ class _CaptionStudioPageState extends State<CaptionStudioPage> with SingleTicker
           initialValue: _animationId,
           isExpanded: true,
           items: captionAnimationPresets.map((item) => DropdownMenuItem(value: item.id, child: Text(item.name))).toList(),
-          onChanged: (value) { if (value != null) setState(() => _animationId = value); },
+          onChanged: (value) { if (value != null) {
+              setState(() => _animationId = value);
+            } },
         ),
         const SizedBox(height: 6),
         Text('${motion.name}: ${motion.description}', style: theme.textTheme.bodySmall),
@@ -1549,7 +1552,9 @@ class _CaptionStudioPageState extends State<CaptionStudioPage> with SingleTicker
           initialValue: _fontFamily,
           decoration: const InputDecoration(labelText: 'عائلة الخط'),
           items: const [DropdownMenuItem(value: 'Anton', child: Text('Anton')), DropdownMenuItem(value: 'Poppins', child: Text('Poppins')), DropdownMenuItem(value: 'Poppins Medium', child: Text('Poppins Medium'))],
-          onChanged: (value) { if (value != null) setState(() => _fontFamily = value); },
+          onChanged: (value) { if (value != null) {
+              setState(() => _fontFamily = value);
+            } },
         ),
         SwitchListTile(contentPadding: EdgeInsets.zero, title: const Text('نص عريض'), value: _bold, onChanged: (value) => setState(() => _bold = value)),
         SwitchListTile(contentPadding: EdgeInsets.zero, title: const Text('أحرف كبيرة للإنجليزية'), value: _uppercase, onChanged: (value) => setState(() => _uppercase = value)),
@@ -1621,12 +1626,14 @@ class _CaptionColorFieldState extends State<_CaptionColorField> {
   @override void initState() { super.initState(); _controller = TextEditingController(text: widget.value); }
   @override void didUpdateWidget(covariant _CaptionColorField oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.value != widget.value) _controller.value = TextEditingValue(text: widget.value, selection: TextSelection.collapsed(offset: widget.value.length));
+    if (oldWidget.value != widget.value) {
+      _controller.value = TextEditingValue(text: widget.value, selection: TextSelection.collapsed(offset: widget.value.length));
+      }
   }
   @override void dispose() { _controller.dispose(); super.dispose(); }
   @override Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.only(bottom: 8),
-    child: TextField(controller: _controller, textCapitalization: TextCapitalization.characters, decoration: InputDecoration(labelText: widget.label, hintText: '#RRGGBB', prefixIcon: Padding(padding: const EdgeInsets.all(12), child: CircleAvatar(backgroundColor: _hexColor(widget.value), radius: 10))), onSubmitted: widget.onChanged),
+    child: TextField(controller: _controller, textCapitalization: TextCapitalization.characters, decoration: InputDecoration(labelText: widget.label, hintText: '#RRGGBB', prefixIcon: Padding(padding: const EdgeInsets.all(12), child: CircleAvatar(backgroundColor: _colorFromHex(widget.value), radius: 10))), onSubmitted: widget.onChanged),
   );
 }
 class _PreviewSafeFramePainter extends CustomPainter {
