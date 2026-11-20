@@ -180,7 +180,7 @@ else:
         '    implementation "androidx.media3:media3-common:1.11.1"',
     ]
 
-match = re.search(r'(?m)^(\s*)dependencies\s*\{\s* llama.cpp exports
+match = re.search(r'(?m)^(\s*)dependencies\s*\{\s*# whisper.cpp defaults BUILD_SHARED_LIBS=ON on Android. llama.cpp exports
 # the same libggml-*.so names, so compile Whisper's private GGML as static
 # archives. Apply only to the pinned package and fail closed if source drifts.
 python3 - <<'PY'
@@ -236,10 +236,10 @@ if not match:
     source += "\n\ndependencies {\n" + "\n".join(dependencies) + "\n}\n"
 else:
     for line in dependencies:
-        coordinate = line.split("androidx.media3:")[1].split(":")[0]
-        if f"androidx.media3:{coordinate}:1.11.1" not in source:
+        artifact = line.split("androidx.media3:")[1].split(":")[0]
+        if f"androidx.media3:{artifact}:1.11.1" not in source:
             source = source[:match.end()] + "\n" + line + source[match.end():]
-            match = re.search(r'(?m)^(\s*)dependencies\s*\{\s* llama.cpp exports
+            match = re.search(r'(?m)^(\s*)dependencies\s*\{\s*# whisper.cpp defaults BUILD_SHARED_LIBS=ON on Android. llama.cpp exports
 # the same libggml-*.so names, so compile Whisper's private GGML as static
 # archives. Apply only to the pinned package and fail closed if source drifts.
 python3 - <<'PY'
