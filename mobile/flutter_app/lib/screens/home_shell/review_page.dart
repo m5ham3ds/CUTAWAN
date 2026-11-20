@@ -570,7 +570,7 @@ class _ReviewPageState extends State<ReviewPage> {
             ],
             if ((_exportRecords[project.id] ?? const []).isNotEmpty) ...[
               const Divider(height: 24),
-              Text('الملفات المصدّرة · ' + _exportRecords[project.id]!.length.toString(),
+              Text('الملفات المصدّرة · ${_exportRecords[project.id]!.length}',
                   style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800)),
               for (final export in _exportRecords[project.id]!)
                 ListTile(

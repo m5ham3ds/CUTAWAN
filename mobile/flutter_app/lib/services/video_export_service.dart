@@ -122,7 +122,7 @@ class VideoExportService {
           <String, Object?>{'renderId': renderId},
         );
         if (snapshot == null) {
-          throw const StateError('Android lost the active video export session.');
+          throw StateError('Android lost the active video export session.');
         }
         final state = snapshot['status'] as String? ?? 'unknown';
         final percentage = (snapshot['progress'] as num?)?.toDouble() ?? 0;

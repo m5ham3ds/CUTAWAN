@@ -113,7 +113,9 @@ class LocalProjectRepository {
       '${root.path}${Platform.pathSeparator}artifacts'
       '${Platform.pathSeparator}$projectId',
     );
-    if (!await directory.exists()) await directory.create(recursive: true);
+    if (!await directory.exists()) {
+      await directory.create(recursive: true);
+    }
     return directory;
   }
 
@@ -313,7 +315,9 @@ class LocalProjectRepository {
           decoded['schemaVersion'] != 1 ||
           decoded['stage'] != stage ||
           decoded['fingerprint'] != fingerprint ||
-          decoded['artifactPaths'] is! List<dynamic>) return false;
+          decoded['artifactPaths'] is! List<dynamic>) {
+        return false;
+      }
       final rootPath = await directory.resolveSymbolicLinks();
       for (final raw in decoded['artifactPaths'] as List<dynamic>) {
         if (raw is! String) return false;
@@ -326,7 +330,9 @@ class LocalProjectRepository {
         final resolved = await file.resolveSymbolicLinks().catchError((_) => '');
         if (resolved.isEmpty ||
             !resolved.startsWith(rootPath + Platform.pathSeparator) ||
-            !await file.exists() || await file.length() <= 0) return false;
+            !await file.exists() || await file.length() <= 0) {
+          return false;
+        }
       }
       return true;
     } on FormatException {
@@ -395,7 +401,9 @@ class LocalProjectRepository {
       if (entity is! File || !entity.path.endsWith('.json') ||
           entity.uri.pathSegments.last == 'manifest.json') continue;
       final decoded = jsonDecode(await entity.readAsString());
-      if (decoded is Map<String, dynamic>) records.add(decoded);
+      if (decoded is Map<String, dynamic>) {
+        records.add(decoded);
+      }
     }
     records.sort((a, b) =>
         (b['createdAtUtc'] as String? ?? '').compareTo(a['createdAtUtc'] as String? ?? ''));

@@ -90,7 +90,7 @@ class CaptionSidecarGenerator {
           final text = _assText(_plainText(word.text, style));
           if (animationId != 'karaoke_fill') return text;
           final duration = math.max(1, ((word.endMs - word.startMs) / 10).round());
-          return r'{\kf' + '$duration}' + text;
+          return r'{\kf' '$duration}' '$text';
         }).join(' ');
       }).join(r'\N');
       ass.writeln(
@@ -136,7 +136,7 @@ class CaptionSidecarGenerator {
   ) {
     final x = width ~/ 2;
     final y = (style.positionY.clamp(0.5, 0.95) * height).round();
-    return r'{\an5\pos(' + '$x,$y)}';
+    return r'{\an5\pos(' '$x,$y)}';
   }
 
   static String _srtTime(int milliseconds) {

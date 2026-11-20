@@ -53,8 +53,11 @@ class ProcessingPipelineService {
     var currentStage = 'inspecting';
     try {
       await _jobs.begin(projectId);
-      var project = await _repository.load(projectId);
-      if (project == null) throw StateError('Project not found: $projectId');
+      final loadedProject = await _repository.load(projectId);
+      if (loadedProject == null) {
+        throw StateError('Project not found: $projectId');
+      }
+      var project = loadedProject;
       final sourceSha = await _jobs.fingerprintSource(project);
       if (!ProcessingJobService.isSha256(sourceSha)) {
         throw const FormatException('Source SHA-256 fingerprint is invalid.');
