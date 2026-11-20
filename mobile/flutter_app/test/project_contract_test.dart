@@ -23,6 +23,11 @@ void main() {
       source: source,
       preferences: const ClipPreferences(
         requestedClipCount: 10,
+        customMinimumSeconds: 20,
+        customMaximumSeconds: 45,
+        resolution: '720p',
+        captionStyleId: 'karaoke',
+        captionAnimationId: 'bounce',
         captionsEnabled: false,
         speakerTrackingEnabled: true,
       ),
@@ -40,6 +45,11 @@ void main() {
     expect(restored.source.durationMs, source.durationMs);
     expect(restored.source.width, 1920);
     expect(restored.preferences.requestedClipCount, 10);
+    expect(restored.preferences.customMinimumSeconds, 20);
+    expect(restored.preferences.customMaximumSeconds, 45);
+    expect(restored.preferences.resolution, '720p');
+    expect(restored.preferences.captionStyleId, 'karaoke');
+    expect(restored.preferences.captionAnimationId, 'bounce');
     expect(restored.preferences.captionsEnabled, isFalse);
     expect(restored.preferences.speakerTrackingEnabled, isTrue);
     expect(restored.job.status, ProjectJobStatus.prepared);
@@ -131,6 +141,13 @@ void main() {
         'importedAtUtc': '2026-11-20T01:00:00.000Z',
       }),
       throwsA(isA<FormatException>()),
+    );
+  });
+
+  test('unsupported export resolution is rejected', () {
+    expect(
+      const ClipPreferences(resolution: '4K').validate(),
+      isNotNull,
     );
   });
 
