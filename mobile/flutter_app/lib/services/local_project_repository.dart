@@ -425,7 +425,9 @@ class LocalProjectRepository {
   Future<Directory> _exportDirectory(String projectId) async {
     final artifacts = await _artifactDirectory(projectId);
     final directory = Directory('${artifacts.path}${Platform.pathSeparator}exports');
-    if (!await directory.exists()) await directory.create(recursive: true);
+    if (!await directory.exists()) {
+      await directory.create(recursive: true);
+    }
     return directory;
   }
 
