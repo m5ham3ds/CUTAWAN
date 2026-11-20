@@ -296,16 +296,19 @@ Choose one primary renderer. A hybrid is allowed only where a measured feature g
 - The post-UI run 44642837372 also passed formatting, static analysis, widget tests, ARM64 debug APK build, and artifact upload from main.
 - **Remaining gate:** install the APK on a physical Android device and verify startup/navigation. Phase 2 adds local media/project persistence, but the real Android document-provider round-trip still needs device verification.
 
-### Phase 2 — Project contract and local media (implementation committed; device gate open)
+### Phase 2 — Project contract and source ingestion (implementation committed; device gate open)
 - Added a versioned project JSON contract (schemaVersion 1), schema-0 migration, unknown-future-version rejection, and strict source/preferences/job validation.
-- Added the native Android Storage Access Framework picker (ACTION_OPEN_DOCUMENT) with a persistable read grant for the selected content URI. This avoids broad storage permission requests and avoids copying the entire source video into app storage.
-- Added Android metadata inspection for display name, MIME type, size when exposed by the provider, duration, width, height, and rotation through MediaMetadataRetriever.
+- Added the native Android Storage Access Framework picker (ACTION_OPEN_DOCUMENT) with a persistable read grant for the selected content URI. This avoids broad storage permission requests and avoids copying a local source video into app storage.
+- Added direct HTTP/HTTPS video-file downloading with progress reporting, cancellation, redirect destination checks, HTTPS downgrade rejection, blocking of social-platform page URLs, MIME/extension validation, an 8 GiB per-download limit, and a 64 MiB storage reserve.
+- Added free-space preflight and periodic checks while large files download. Partial downloads are removed on cancellation/failure and stale partials are cleaned on the next downloader run.
+- Added Android metadata inspection for display name, MIME type, size when exposed by the provider, duration, width, height, and rotation through MediaMetadataRetriever. Both persisted content URIs and downloaded app-private files can be re-probed.
 - Added durable project storage in the application-support directory. Writes use a temporary file followed by rename; saved projects can be listed, reopened, refreshed, and deleted.
-- Persisted the user's clip settings with the source metadata and a prepared job record that can be cancelled. The UI explicitly states that this record is not an active AI-processing task.
-- Connected Create, Jobs, and Review screens to the repository. Review can invoke the native metadata probe again for a previously saved URI.
-- Added contract/migration, repository, MethodChannel, and widget-flow tests for import → persist → reopen → cancel → re-probe.
+- Persisted the user's clip settings with a prepared job record that can be cancelled. The UI explicitly states that this record is not an active AI-processing task.
+- Connected Create, Jobs, and Review screens to the repository. Jobs shows app-managed download usage and supports deleting a downloaded source with its project; the final project using a SAF source releases its persisted read grant.
+- Added contract/migration, repository, downloader, MethodChannel, and widget-flow tests for import/download → persist → reopen → cancel → re-probe → cleanup.
 - CI compiles the generated Android app including the custom Kotlin bridge and runs the Flutter test suite.
-- **Remaining acceptance gate:** run the real Storage Access Framework selection and URI re-probe after force-stopping/reopening the app on a physical Android device. Widget tests use a mocked native channel and do not replace this device-level test.
+- **Scope boundary:** direct file URLs are supported; social-platform page extraction, DRM/authentication bypass, AI analysis, transcription, clip generation, and export are not implemented in these two phases.
+- **Remaining acceptance gate:** perform a real local-file SAF import and a direct-video download, then force-stop/reopen the app and re-probe both sources on a physical Android device. Widget tests mock the native channel and do not replace device-level/OEM document-provider tests.
 
 ### Phase 3 — Transcription and local model management
 - Integrate whisper.cpp on Android ARM64.
@@ -468,3 +471,14 @@ The current widget tests cover the four primary destinations, caption preset/ani
 - Connected the Create, Jobs, and Review screens to persisted source and job data.
 - Added automated tests for contract round-trip, v0 migration, future schema rejection, metadata validation, repository persistence/cancellation/deletion, MethodChannel mapping, and the end-to-end widget flow.
 - Physical Android device verification remains open. The widget test simulates a fresh app shell with the same disk repository and mocks the native channel; it does not claim to prove OEM document-provider behavior after a real process death.
+
+
+## 20. Direct media ingestion extension (2026-11-20)
+
+- Added direct video-file URL ingestion and cancellable HTTP streaming in `mobile/flutter_app/lib/services/direct_video_downloader.dart`.
+- Allowed protocols: HTTP and HTTPS. The downloader validates each redirect, rejects HTTPS-to-HTTP downgrade, platform-page URLs, literal private/local addresses, unsupported MIME types, non-video HTML, and downloads exceeding 8 GiB.
+- Checks device free storage before download and periodically during larger transfers while preserving a 64 MiB reserve. It removes partial files on cancellation/failure and cleans stale partial files on the next run.
+- Downloads are written to app-private support storage, then inspected by the native metadata bridge before a project is saved. A failed project save removes the downloaded media to avoid orphaning a large file.
+- Jobs displays the app-managed download footprint and supports deliberate removal of downloaded media plus its project record. SAF records release their persisted read grant only when no other saved project refers to that same URI.
+- Added download tests for successful transfer/progress, redirects, platform/private URL rejection, non-video responses, insufficient storage, cancellation before/during transfer, interrupted part cleanup, storage accounting/deletion, and unsafe filename/query handling.
+- Physical Android verification is still required for actual URL network access, Android private-path checks, SAF permission persistence across process death, and media probing on the OEM document provider.
