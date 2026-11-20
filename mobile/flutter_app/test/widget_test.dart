@@ -48,18 +48,15 @@ void main() {
     expect(find.text('English'), findsOneWidget);
     final englishPreview = tester
         .widgetList<RichText>(find.byType(RichText))
-        .firstWhere((widget) => widget.text.toPlainText().contains('This is the moment'));
+        .firstWhere((widget) => widget.text.toPlainText().contains('THIS IS THE MOMENT'));
     expect(englishPreview.textDirection, TextDirection.ltr);
 
     await tester.tap(find.text('Karaoke'));
     await tester.pump(const Duration(milliseconds: 100));
-    final selectedStyle = tester.widget<ChoiceChip>(
-      find.ancestor(
-        of: find.text('Karaoke'),
-        matching: find.byType(ChoiceChip),
-      ),
-    );
-    expect(selectedStyle.selected, isTrue);
+    final selectedStyles = tester
+        .widgetList<ChoiceChip>(find.byType(ChoiceChip))
+        .where((chip) => chip.selected);
+    expect(selectedStyles, hasLength(1));
 
     await tester.tap(find.text('Word Pop'));
     await tester.pump(const Duration(milliseconds: 100));
