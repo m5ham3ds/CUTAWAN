@@ -244,14 +244,33 @@ class ProcessingPipelineService {
       for (var index = 0; index < total; index++) {
         final candidate = candidates.candidates[index];
         final stageName = 'render_$candidate.id';
+        final clipReframeShots = reframe.shots
+            .where((shot) =>
+                shot.endMs > candidate.startMs &&
+                shot.startMs < candidate.endMs)
+            .map((shot) {
+          final clippedStart =
+              shot.startMs > candidate.startMs ? shot.startMs : candidate.startMs;
+          final clippedEnd =
+              shot.endMs < candidate.endMs ? shot.endMs : candidate.endMs;
+          return <String, Object?>{
+            'startMs': clippedStart - candidate.startMs,
+            'endMs': clippedEnd - candidate.startMs,
+            'mode': shot.mode,
+            'region': shot.region?.toJson(),
+          };
+        }).toList(growable: false);
+        final sourceAspectRatio = _sourceAspectRatio(project);
         final fingerprint = _jobs.stageFingerprint(
           sourceSha256: sourceSha,
           stage: stageName,
           configuration: {
             'candidate': candidate.toJson(),
             'aspectRatio': _aspectRatio(project),
+            'sourceAspectRatio': sourceAspectRatio,
+            'reframeShots': clipReframeShots,
             'resolution': project.preferences.resolution,
-            'renderer': 'androidx-media3-transformer-1.11.1',
+            'renderer': 'androidx-media3-transformer-1.11.1-reframe-v1',
             'subtitleStyle': project.preferences.captionStyleId,
             'subtitleAnimation': project.preferences.captionAnimationId,
           },
@@ -336,6 +355,8 @@ class ProcessingPipelineService {
           startMs: candidate.startMs,
           endMs: candidate.endMs,
           aspectRatio: _aspectRatio(project),
+          sourceAspectRatio: sourceAspectRatio,
+          reframeShots: clipReframeShots,
           outputPath: outputPath,
           shouldCancel: () => _jobs.isCancellationRequested(projectId),
           onStarted: onRenderStarted,
@@ -469,6 +490,17 @@ class ProcessingPipelineService {
         progress: progress.clamp(0.0, 0.99).toDouble(),
       ).then<void>((_) {}, onError: (Object _) {}),
     );
+  }
+
+  static double _sourceAspectRatio(CutawanProject project) {
+    final source = project.source;
+    final rotated = source.rotationDegrees.abs() % 180 != 0;
+    final width = rotated ? source.height : source.width;
+    final height = rotated ? source.width : source.height;
+    if (width <= 0 || height <= 0) {
+      throw const FormatException('Source dimensions are invalid for reframing.');
+    }
+    return width / height;
   }
 
   static double _aspectRatio(CutawanProject project) {

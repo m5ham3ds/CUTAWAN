@@ -79,6 +79,8 @@ class VideoExportService {
     required int startMs,
     required int endMs,
     required double aspectRatio,
+    double? sourceAspectRatio,
+    List<Map<String, Object?>> reframeShots = const [],
     required String outputPath,
     void Function(double progress)? onProgress,
     void Function(String renderId)? onStarted,
@@ -91,7 +93,10 @@ class VideoExportService {
         endMs <= startMs ||
         !aspectRatio.isFinite ||
         aspectRatio <= 0 ||
-        outputPath.trim().isEmpty) {
+        !(sourceAspectRatio ?? aspectRatio).isFinite ||
+        (sourceAspectRatio ?? aspectRatio) <= 0 ||
+        outputPath.trim().isEmpty ||
+        !_validReframeShots(reframeShots, endMs - startMs)) {
       throw const FormatException('Video export arguments are incomplete or invalid.');
     }
     final start = await _channel.invokeMapMethod<String, dynamic>(
@@ -102,6 +107,8 @@ class VideoExportService {
         'startMs': startMs,
         'endMs': endMs,
         'aspectRatio': aspectRatio,
+        'sourceAspectRatio': sourceAspectRatio ?? aspectRatio,
+        'reframeShots': reframeShots,
         'outputPath': outputPath,
       },
     );
@@ -157,6 +164,56 @@ class VideoExportService {
         // The native Activity may have been recreated while exporting.
       }
     }
+  }
+
+  static bool _validReframeShots(
+    List<Map<String, Object?>> shots,
+    int clipDurationMs,
+  ) {
+    if (shots.isEmpty) return true;
+    var cursor = 0;
+    for (final shot in shots) {
+      final start = shot['startMs'];
+      final end = shot['endMs'];
+      final mode = shot['mode'];
+      if (start is! int ||
+          end is! int ||
+          mode is! String ||
+          start != cursor ||
+          end <= start ||
+          end > clipDurationMs ||
+          (mode != 'fit' && mode != 'crop')) {
+        return false;
+      }
+      final region = shot['region'];
+      if (mode == 'fit') {
+        if (region != null) return false;
+      } else {
+        if (region is! Map) return false;
+        final x = region['x'];
+        final y = region['y'];
+        final width = region['width'];
+        final height = region['height'];
+        if (x is! num ||
+            y is! num ||
+            width is! num ||
+            height is! num ||
+            !x.toDouble().isFinite ||
+            !y.toDouble().isFinite ||
+            !width.toDouble().isFinite ||
+            !height.toDouble().isFinite ||
+            x < 0 ||
+            y < 0 ||
+            width <= 0 ||
+            height <= 0 ||
+            x + width > 1.0001 ||
+            y + height > 1.0001) {
+          return false;
+        }
+      }
+      cursor = end;
+    }
+    return cursor == clipDurationMs;
   }
 
   Future<bool> verifyExport({
