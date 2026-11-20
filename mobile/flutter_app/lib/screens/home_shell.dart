@@ -234,7 +234,12 @@ class _CreatePageState extends State<CreatePage> {
           speakerTrackingEnabled: _speakerTracking,
         ),
       );
-      await widget.repository.save(project);
+      try {
+        await widget.repository.save(project);
+      } catch (_) {
+        await downloader.deleteDownloadedVideo(source.uri);
+        rethrow;
+      }
       await widget.onProjectSaved();
       _urlController.clear();
       _showMessage('اكتمل التنزيل، وفُحص الفيديو، وحُفظ المشروع محليًا.');
@@ -543,6 +548,14 @@ class JobsPage extends StatelessWidget {
     try {
       if (isDownloadedFile) {
         await _downloader().deleteDownloadedVideo(project.source.uri);
+      }
+      if (Uri.tryParse(project.source.uri)?.scheme == 'content') {
+        final sourceIsStillUsed = projects.value.any(
+          (item) => item.id != project.id && item.source.uri == project.source.uri,
+        );
+        if (!sourceIsStillUsed) {
+          await AndroidVideoPicker.releasePersistedPermission(project.source.uri);
+        }
       }
       await repository.delete(project.id);
       await onProjectsChanged();
