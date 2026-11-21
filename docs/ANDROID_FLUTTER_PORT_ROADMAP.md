@@ -1,6 +1,6 @@
 # Android / Flutter Port — Product and Engineering Roadmap
 
-**Status:** Phases 1–2 implementation and automated gates passed on `main`. Flutter analysis and all 31 tests passed; ARM64-only APK built, ABI-inspected, downloaded, and SHA-256 verified. Physical-device installation and source-provider/runtime verification remain open.  
+**Status (2026-11-21):** Phases 1–2 retain their implementation and historical automated gates; re-run the mobile workflow on the current source and record real SAF/process-death device evidence before final acceptance. Phase 3 has an initial implementation, but its audio normalization and chunk-boundary behavior require correction and accuracy testing.  
 **Working repository:** `m5ham3ds/CUTAWAN`  
 **Working branch:** `main` (all implementation updates are committed directly to the default branch).  
 **Baseline:** Cutawan v0.14.0, commit `084d0b2933f64800ee5ca1b22269704f060e65f5`  
