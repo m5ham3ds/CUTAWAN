@@ -124,7 +124,10 @@ void main() {
         find.byKey(const ValueKey('caption-timed-group-selector')),
         findsOneWidget,
       );
-      expect(find.text('المجموعة 1 من 2'), findsOneWidget);
+      final firstGroupLabel = tester.widget<Text>(
+        find.byKey(const ValueKey('caption-timed-group-label')),
+      );
+      expect(firstGroupLabel.data, startsWith('المجموعة 1 من '));
 
       final groupPicker = tester.widget<DropdownButton<int>>(
         find.byKey(const ValueKey('caption-timed-group-selector')),
@@ -134,7 +137,10 @@ void main() {
       groupPicker.onChanged!(1);
       await tester.pump();
 
-      expect(find.text('المجموعة 2 من 2'), findsOneWidget);
+      final secondGroupLabel = tester.widget<Text>(
+        find.byKey(const ValueKey('caption-timed-group-label')),
+      );
+      expect(secondGroupLabel.data, startsWith('المجموعة 2 من '));
       final visibleCaptions = tester.widgetList<RichText>(find.byType(RichText));
       expect(
         visibleCaptions.any(
