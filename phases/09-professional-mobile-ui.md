@@ -74,3 +74,45 @@ A first product-facing redesign slice is delivered in Flutter:
 - Added tests for candidate trim updates, out-of-source range rejection, Dashboard-to-import navigation and Settings navigation.
 
 **Still not complete:** feature-state extraction from the shared `part` library, filmstrip thumbnails, manual crop/focus keyframes and transitions, caption playback synchronized with video, exact preview/export parity, full light/dark + RTL/LTR golden matrix, accessibility audit, keyboard/landscape coverage and physical-device acceptance. The current editor preview is a centered crop; final exports use the saved reframe timeline.
+
+
+## Workflow-page implementation — Create and Review — 2026-11-21
+
+This page-by-page delivery uses Ssemble as a **workflow reference only**. No visual skin, brand assets or layout were copied.
+
+### Create page
+
+- The creation interaction is split into source selection and project configuration.
+- Source selection supports the Android file picker and the existing direct HTTP/HTTPS video downloader. The selected file is inspected and presented before continuing.
+- Project settings are confirmed in a second step: requested clip count, duration mode/custom range, target aspect ratio, output resolution, captions and caption preset/animation.
+- Project persistence occurs only after the explicit final create action. The saved project then opens Review.
+- The implementation retains safe cleanup of uncommitted SAF grants and app-owned downloads; it does not delete a source referenced by another saved project.
+- The former inactive speaker-tracking switch and obsolete “engines not connected” message were removed.
+- Accepted Create commit: `4b91efb9ad587bd839b8ff44667a05fe18f4b189`.
+- Create verification: Mobile Android run [44909044979](https://github.com/m5ham3ds/CUTAWAN/actions/runs/44909044979), 142/142 Flutter tests, strict analysis, ARM64 build and native package checks passed. APK artifact ID: `14709735177`.
+
+### Review page
+
+- The project card is arranged in workflow order: verified source, analysis progress, discovered clips, and exported files.
+- A single primary action starts/resumes the full pipeline. Its current stage and progress are displayed; state belongs to the project being processed.
+- Per-stage reruns are under a collapsed manual-tools section rather than competing with the primary workflow.
+- Transcript and framing evidence are collapsible. Arabic transcript text renders RTL and Latin transcript text renders LTR.
+- Candidate cards show title, score, time range, duration and available rationale, with a direct action to open the existing Clip Editor.
+- Export records remain visible with their full-decode validation result.
+- Existing Whisper, discovery, Qwen annotation, framing, pipeline, checkpoint and Media3 export services were preserved. This was a presentation/orchestration pass, not a reimplementation of processing algorithms.
+- Review status labels are deliberately compact on narrow viewports; detailed task-state copy remains in the Jobs page.
+- A dedicated 320dp widget test verifies the staged workflow, manual-tools expansion and no layout exception. Existing empty-state and import/reopen/verify workflow tests were updated to the new labels/actions.
+- Accepted Review commit: `cb0ca70b3bc6751b3c245ab576ff021593e20c92`.
+- Review verification: Mobile Android run [44923605861](https://github.com/m5ham3ds/CUTAWAN/actions/runs/44923605861), **143/143 Flutter tests passed**, format and `flutter analyze --fatal-infos` passed, ARM64 debug APK built, native package verification passed and APK upload succeeded.
+- APK artifact: `cutawan-mobile-arm64-debug`, ID `14715326297`, size 59,041,250 bytes, archive SHA-256 `9e225ad372fcbdbd4f94456b03104ef2f8cd5a59def43013b1bfcac3dd731fb3`.
+- ABI verification: exactly `arm64-v8a`; 10 unique native libraries, no duplicate basenames; `libggml-cpu.so`, `libggml.so` and `libggml-base.so` are present.
+- Coverage artifact ID: `14715165727`. Root/desktop CI run [44923605965](https://github.com/m5ham3ds/CUTAWAN/actions/runs/44923605965) passed separately.
+
+### Remaining Phase 9 work and exact resume point
+
+- Create and Review are accepted for this workflow slice. Do not repeat them without a regression.
+- Review does not yet implement keep/reject/reorder controls. Candidate selection is via opening the Clip Editor.
+- Export records are presented with validation status; a dedicated export gallery, share/download interaction and delivery management remain separate work.
+- The broader Clip Editor still needs its page-by-page workflow pass (playback/trim, framing/crop, caption edit, save/return) and its narrow-width/accessibility tests.
+- Filmstrip thumbnails, manual focus keyframes, transitions, pixel-exact preview/export parity, larger-text/landscape accessibility and physical-device visual acceptance remain open.
+- **Next page:** Clip Editor only. Keep the current source-time trim/edit persistence and output invalidation contracts. Do not start Jobs or Caption Studio redesign as part of the Clip Editor pass.

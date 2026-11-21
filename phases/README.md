@@ -6,13 +6,13 @@
 
 ## Baseline and latest verified Android state
 
-- Latest Mobile Android run: [44857222277](https://github.com/m5ham3ds/CUTAWAN/actions/runs/44857222277) on SHA `80e182ba840f3dc0b6e9039d39877179cb142a3e` — **success**.
-- It passed format, `flutter analyze --fatal-infos`, **129 Flutter unit/widget tests**, ARM64 debug APK build, and the native-library assertion.
-- The APK check found exactly one packaged ABI (`arm64-v8a`) and 10 unique native libraries, with no duplicate native library basenames. Whisper/llama GGML shared libraries were present.
-- APK artifact: `cutawan-mobile-arm64-debug`, artifact ID `14687879427`, ZIP size 57,695,187 bytes; archive SHA-256 `c7e914e2bd3f6bc6f97acf58b56d7835c4886449963723eac5ff215e70484d47`.
-- Coverage artifact: `cutawan-mobile-flutter-coverage`, artifact ID `14688092967`.
-- Root/desktop CI is separate and does not validate Flutter Android.
-- This CI run validates compilation and automated tests only. It does not prove physical-device inference accuracy, SAF lifecycle, Android Keystore behavior, full MP4 decode, or background render recovery.
+- Latest Mobile Android run: [44923605861](https://github.com/m5ham3ds/CUTAWAN/actions/runs/44923605861), run number 249, SHA `cb0ca70b3bc6751b3c245ab576ff021593e20c92` — **success**.
+- It passed Dart format, `flutter analyze --fatal-infos`, **143/143 Flutter tests**, ARM64 debug APK build, ARM64-only ABI verification, duplicate-native-library verification, and APK upload.
+- APK artifact: `cutawan-mobile-arm64-debug`, artifact ID `14715326297`, size 59,041,250 bytes; archive SHA-256 `9e225ad372fcbdbd4f94456b03104ef2f8cd5a59def43013b1bfcac3dd731fb3`.
+- Native package assertion: exactly `arm64-v8a`, 10 unique native libraries, including `libggml-cpu.so`, `libggml.so`, and `libggml-base.so`; no duplicate native-library basenames.
+- Coverage artifact: `cutawan-mobile-flutter-coverage`, artifact ID `14715165727`, size 14,416 bytes; archive SHA-256 `c8df52b38be214375b420d71cd7baaaf4c0e63f680d3611ddc57378460f58eed`.
+- Root/desktop CI run [44923605965](https://github.com/m5ham3ds/CUTAWAN/actions/runs/44923605965) — **success**. This is independent of Android validation and does not replace physical-device acceptance.
+- The successful CI run confirms formatting, static analysis, widget/unit tests, compilation and packaging only. It does not prove physical-device inference quality, SAF process-death behavior, Android Keystore backup/restore, sustained media decode, thermal limits or background render recovery.
 
 ## Phase matrix
 
@@ -26,7 +26,7 @@
 | 6 | Caption Studio visual presets, motion preview, RTL and preference persistence | Studio preview now loads saved transcript words/timing and groups them using live style/font/scale settings | Not synchronized to actual video playback; Studio and Android overlay are not yet pixel-identical |
 | 7 | Multi-provider model selection, secure user credentials, consented cloud editorial annotations | Provider-scoped model/key storage, consent gates on outbound requests, local fallback on key deletion; latest Android CI passed | Physical Keystore/backup/rotation tests, real provider account/model compatibility, billing and policy acceptance remain open |
 | 8 | End-to-end pipeline, job orchestration and clip export | Media3 Transformer pipeline consumes time-ranged reframe segments and timed caption cues; native overlay burns captions into MP4; metadata/hash verification exists | Full decode validation, physical visual/media fixtures, render recovery after process death, background execution/notifications and per-clip retry remain open |
-| 9 | Professional UI redesign and navigation/component architecture | Dashboard, Settings route, five primary destinations and a functional playback/trim editor slice delivered; still in progress | Feature-state extraction, filmstrip/focus/transition editing, preview/export parity, accessibility/golden/device matrix remain open |
+| 9 | Professional UI redesign and navigation/component architecture | Dashboard, Settings route, five destinations, two-step Create workflow and staged Review workflow delivered; still in progress | Create + Review have passed 143/143 tests and ARM64 packaging in run 44923605861; Clip Editor workflow, Jobs architecture, filmstrip/focus/transition editing, preview/export parity, accessibility/golden/device matrix remain open |
 | 10 | Physical-device quality, security, performance and Arabic/English acceptance | Responsive diagnostic workbench, baseline gate and missing-evidence reporting implemented; physical acceptance incomplete | 142/142 Flutter tests and ARM64-only APK pass in run 44870965616; still needs handset confirmation, real media corpus, WER/timing, full-decode and lifecycle/thermal evidence |
 
 ## Global engineering constraints
@@ -135,3 +135,24 @@ Phases 1–7 have a successful automated Android gate on SHA `80e182b`; physical
 - Coverage artifact: [artifact 14693648956](https://github.com/m5ham3ds/CUTAWAN/actions/runs/44870965616/artifacts/14693648956).
 - Root/desktop CI: [44870965558](https://github.com/m5ham3ds/CUTAWAN/actions/runs/44870965558) — success.
 - Phase 10 physical acceptance remains incomplete. No real handset confirmation/report, reference corpus, WER/timing/candidate score, on-device full MP4 decode, sustained performance/thermal measurements, process-death/SAF/Keystore lifecycle or physical consent-blocking result has been collected. CI/widget results are not substitutes for those gates.
+
+
+## Page-by-page workflow redesign register — 2026-11-21
+
+The page workflow sequence is tracked separately from the broader phase matrix. Do not repeat a page whose implementation and Android gates are recorded below.
+
+### Accepted page work
+
+- **Create — complete for this workflow slice.** Source selection and project creation are explicitly separated: step 1 selects/checks the video; step 2 configures clip count, duration, aspect ratio, resolution and caption options; only the final action persists the project. A saved project navigates to Review. Uncommitted SAF grants and app-owned downloads are cleaned up safely when the page is abandoned. Final Create implementation: commit `4b91efb9ad587bd839b8ff44667a05fe18f4b189`; Mobile Android run [44909044979](https://github.com/m5ham3ds/CUTAWAN/actions/runs/44909044979), 142/142 tests and ARM64-only APK succeeded; artifact `14709735177`.
+- **Review — complete for this workflow slice.** The page now presents source verification, a four-stage source/analysis/clips/export progression, primary full-pipeline/resume action, collapsed manual stage tools, collapsed transcript/framing evidence, candidate cards with timing/score/rationale and Clip Editor entry, and validated MP4 output records. Processing services and algorithms were preserved. Stage/progress state is tied to the active project. The review status badge is compact on narrow phones, and transcript direction follows Arabic/Latin language. Final Review implementation and regression-test result: commit `cb0ca70b3bc6751b3c245ab576ff021593e20c92`; Mobile Android run [44923605861](https://github.com/m5ham3ds/CUTAWAN/actions/runs/44923605861), **143/143 tests**, format, strict analysis, ARM64 APK and native-library checks succeeded; artifact `14715326297`.
+- Detailed record: `phases/PHASE-09-CREATE-REVIEW-WORKFLOW-RECORD-2026-11-21.md`.
+
+### Do not repeat
+
+- Do not rebuild or restyle Create unless a specific regression is reported. Its source/configuration split, deferred save, cleanup behavior and post-save navigation are implemented and tested.
+- Do not rebuild the Review workflow already accepted. Its stages, primary processing control, evidence sections and candidate-to-editor route are implemented and tested.
+- The successful APK/CI checks do not count as physical-device acceptance and do not close the broader Phase 8/10 limitations.
+
+### Next page in the UI sequence
+
+**Clip Editor** is next. Rework that page alone to continue from a selected candidate, organizing playback and trim first, then framing/crop, then caption appearance and motion; preserve existing source-time trim/edit persistence and export fingerprint invalidation. Do not move Caption Studio settings or introduce new editor controls until each control is backed by implemented behavior and tests.
