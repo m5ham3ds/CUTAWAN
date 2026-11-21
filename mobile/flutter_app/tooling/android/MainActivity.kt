@@ -527,10 +527,17 @@ class MainActivity : FlutterActivity() {
                     if (!exists() && !mkdirs()) {
                         throw IllegalStateException("Could not create the audio cache directory.")
                     }
+                    // Do not delete WAV files that may still be read by
+                    // an active Whisper session. Each extraction has a unique
+                    // name; only clean crash leftovers older than 24 hours.
+                    val staleBeforeMillis =
+                        System.currentTimeMillis() - 24L * 60L * 60L * 1000L
                     listFiles()?.forEach { stale ->
                         if (stale.isFile &&
                             (stale.name.endsWith(".wav") ||
-                                stale.name.endsWith(".wav.part"))
+                                stale.name.endsWith(".wav.part")) &&
+                            (stale.lastModified() <= 0L ||
+                                stale.lastModified() < staleBeforeMillis)
                         ) {
                             stale.delete()
                         }
