@@ -49,3 +49,13 @@
 3. Continue Phase 9 by completing screen architecture, Clip Editor, golden/RTL/accessibility/keyboard tests and device review.
 4. Complete Phase 10 with Arabic/English media fixtures and physical ARM64 quality, privacy, thermal and performance evidence.
 5. Do not mark Phases 3–10 fully accepted until their specific device and output evidence is attached.
+
+## Branch and upstream integration audit — 2026-11-21
+
+- Added `docs/BRANCH-FEATURE-AND-SOURCE-INTEGRATION-AUDIT-2026-11-21.md`.
+- Audited representative feature-bearing branches against main; stale snapshots are not merged wholesale. The audit maps branch scope, mobile equivalents, source-project roles and outstanding Flutter gaps.
+- Flutter remains the product implementation target. Desktop root CI success is not mobile acceptance.
+- Phase 8 remains in progress: dynamic reframe, burned-in transcript-timed captions, full decode, process-death rendering recovery, per-clip retry and physical-device gates remain open.
+- Phase 9 remains in progress: production Clip Editor, full screen/navigation architecture, feature boundaries, golden/RTL/accessibility/keyboard matrix and physical UI evidence remain open.
+- Phase 10 remains incomplete: physical ARM64 accuracy, lifecycle, security, thermal, battery and performance evidence is required.
+- No branch merge or algorithm parity claim was made by the audit. Each port must have Dart/Kotlin code, upstream provenance/license and tests.
