@@ -18,6 +18,9 @@ void main() {
         'width': 1080,
         'height': 1920,
         'hasAudio': true,
+        'fullyDecodeValidated': true,
+        'decodedVideoBuffers': 450,
+        'decodedAudioBuffers': 680,
         'validated': true,
       };
 
@@ -46,6 +49,10 @@ void main() {
             'width': 1080,
             'height': 1920,
             'hasVideo': true,
+            'hasAudio': true,
+            'fullyDecodeValidated': true,
+            'decodedVideoBuffers': 450,
+            'decodedAudioBuffers': 680,
           };
         case 'cancelRender':
           return true;
@@ -133,6 +140,9 @@ void main() {
     expect(result.outputUri, startsWith('content://'));
     expect(result.sha256, expectedHash);
     expect(result.validated, isTrue);
+    expect(result.fullyDecodeValidated, isTrue);
+    expect(result.decodedVideoBuffers, 450);
+    expect(result.decodedAudioBuffers, 680);
     expect(calls.map((call) => call.method), [
       'startRender',
       'getRenderProgress',
@@ -290,6 +300,18 @@ void main() {
     expect(valid, isTrue);
     expect(calls.single.method, 'verifyExport');
     expect(calls.single.arguments, containsPair('sha256', expectedHash));
+  });
+
+  test('rejects an export that reports metadata validation without full decode', () {
+    final payload = exportPayload()
+      ..['fullyDecodeValidated'] = false;
+    expect(
+      () => VideoExportResult.fromJson(
+        'render_metadata_only',
+        payload,
+      ),
+      throwsA(isA<FormatException>()),
+    );
   });
 
   test('invalid export fingerprints are rejected before calling Android', () async {

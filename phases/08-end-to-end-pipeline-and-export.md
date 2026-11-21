@@ -62,3 +62,22 @@ No UI may state an export succeeded until a real output file exists and passes v
 - This is compile/unit/packaging evidence. It is not a physical-device render, full-decode or process-death acceptance result.
 
 Do not mark Phase 8 accepted until the remaining full-decode, output-fixture, background/process-death and physical-device gates pass.
+
+
+## Phase 8 implementation update — full decode and deterministic recovery
+
+**Code delivered on main; physical/background acceptance is still open.**
+
+- The native Android output gate now enumerates every audio/video track and decodes each selected track with MediaCodec through its end-of-stream flag before publishing an MP4.
+- Validation counts decoded output buffers/bytes without retaining frame data, rejects a track that produces no decoded output, and enforces a 30-minute safety deadline for each track decode.
+- Both the immediate render path and persisted-export revalidation use the same full-decode routine. A SHA-256/metadata match alone can no longer mark an output as verified.
+- Flutter's `VideoExportResult` rejects payloads without `fullyDecodeValidated=true`, a positive decoded video-buffer count, and decoded audio output where an audio track exists. The pipeline stores the full-decode evidence in each export record and labels the manifest validation contract.
+- A recovered interrupted job now retains the exact prior stage in `interrupted_after_process_death:<stage>`, rather than losing the recovery location. The existing pipeline rechecks its SHA/configuration checkpoints and fully revalidates previously exported MP4s before skipping them; only missing or invalid clip outputs are rendered again.
+- Added Flutter tests that reject metadata-only render results and assert that interrupted-stage context survives recovery.
+
+### Still open before Phase 8 acceptance
+
+- MediaCodec full-decode must be exercised on real ARM64 fixtures and devices, including VFR, long files, no-audio, silent audio, rotated footage and deliberately truncated/corrupt output.
+- Full process-death/background execution and notification behavior are not yet implemented as a durable foreground WorkManager service; the current Activity-owned Transformer session is cancelled when the Activity is destroyed. Reopening Review and invoking its resume action restarts from validated checkpoints, but does not continue the same live native Transformer process in the background.
+- Per-clip retry/export management UI, render cancellation from Android system notifications, and physical subtitle/crop continuity checks remain open.
+- Caption overlay styling still does not match every Flutter preview animation/pixel layout.

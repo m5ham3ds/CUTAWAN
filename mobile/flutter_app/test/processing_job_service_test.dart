@@ -68,7 +68,7 @@ void main() {
     await repository.saveJobState(
       project.id,
       status: ProjectJobStatus.running,
-      stage: 'rendering',
+      stage: 'rendering_clip_42',
       progress: 0.6,
     );
     final jobs = ProcessingJobService(
@@ -78,7 +78,10 @@ void main() {
     await jobs.recoverInterruptedJobs();
     final recovered = await repository.load(project.id);
     expect(recovered!.job.status, ProjectJobStatus.failed);
-    expect(recovered.job.stage, 'interrupted_after_process_death');
+    expect(
+      recovered.job.stage,
+      'interrupted_after_process_death:rendering_clip_42',
+    );
     expect(recovered.job.progress, 0.6);
   });
 }

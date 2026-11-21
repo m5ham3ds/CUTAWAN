@@ -140,10 +140,17 @@ class ProcessingJobService {
     final projects = await _repository.listProjects();
     for (final project in projects) {
       if (project.job.status != ProjectJobStatus.running) continue;
+      final interruptedStage = project.job.stage.trim();
+      final safeStage = interruptedStage.isEmpty
+          ? 'unknown'
+          : interruptedStage.replaceAll(RegExp(r'[^A-Za-z0-9_.:-]'), '_').substring(
+              0,
+              interruptedStage.length > 96 ? 96 : interruptedStage.length,
+            );
       await _repository.saveJobState(
         project.id,
         status: ProjectJobStatus.failed,
-        stage: 'interrupted_after_process_death',
+        stage: 'interrupted_after_process_death:$safeStage',
         cancelRequested: false,
       );
     }

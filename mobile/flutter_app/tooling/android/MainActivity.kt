@@ -1210,6 +1210,9 @@ class MainActivity : FlutterActivity() {
                                 "width" to validated.width,
                                 "height" to validated.height,
                                 "hasAudio" to validated.hasAudio,
+                                "fullyDecodeValidated" to true,
+                                "decodedVideoBuffers" to validated.decodedVideoBuffers,
+                                "decodedAudioBuffers" to validated.decodedAudioBuffers,
                                 "validated" to true
                             )
                             session.progress = 100
@@ -1248,13 +1251,26 @@ class MainActivity : FlutterActivity() {
         }
     }
 
+    private data class TrackDecodeStats(
+        val outputBufferCount: Long,
+        val outputByteCount: Long
+    )
+
+    private data class FullDecodeSummary(
+        val hasAudio: Boolean,
+        val decodedVideoBuffers: Long,
+        val decodedAudioBuffers: Long
+    )
+
     private data class ValidatedRender(
         val sha256: String,
         val sizeBytes: Long,
         val durationMs: Long,
         val width: Int,
         val height: Int,
-        val hasAudio: Boolean
+        val hasAudio: Boolean,
+        val decodedVideoBuffers: Long,
+        val decodedAudioBuffers: Long
     )
 
     private fun parseReframeSegments(
@@ -1672,6 +1688,15 @@ class MainActivity : FlutterActivity() {
             try { extractor.release() } catch (_: Exception) { }
         }
         if (!hasVideo) throw IllegalStateException("Rendered MP4 contains no video track.")
+
+        // Metadata probing alone can accept truncated files. Decode every audio/video
+        // track through its end-of-stream marker before publishing the output.
+        val decode = decodeMediaFully(Uri.fromFile(output))
+        if (decode.hasAudio != hasAudio || decode.decodedVideoBuffers <= 0L ||
+            (hasAudio && decode.decodedAudioBuffers <= 0L)
+        ) {
+            throw IllegalStateException("Rendered MP4 did not fully decode all media tracks.")
+        }
         val digest = MessageDigest.getInstance("SHA-256")
         FileInputStream(output).use { input ->
             val buffer = ByteArray(1024 * 1024)
@@ -1687,8 +1712,149 @@ class MainActivity : FlutterActivity() {
             durationMs = durationMs,
             width = width,
             height = height,
-            hasAudio = hasAudio
+            hasAudio = hasAudio,
+            decodedVideoBuffers = decode.decodedVideoBuffers,
+            decodedAudioBuffers = decode.decodedAudioBuffers
         )
+    }
+
+    /**
+     * Decode every audio/video track to BUFFER_FLAG_END_OF_STREAM. No media
+     * payload is retained; decoded output is counted and discarded to bound memory.
+     */
+    private fun decodeMediaFully(uri: Uri): FullDecodeSummary {
+        val metadataExtractor = MediaExtractor()
+        val videoTracks = mutableListOf<Int>()
+        val audioTracks = mutableListOf<Int>()
+        try {
+            when (uri.scheme) {
+                "content" -> metadataExtractor.setDataSource(this, uri, null)
+                "file" -> metadataExtractor.setDataSource(
+                    File(uri.path ?: throw IllegalArgumentException("Media URI has no path.")).absolutePath
+                )
+                else -> throw IllegalArgumentException("Unsupported media URI scheme for full decode.")
+            }
+            for (index in 0 until metadataExtractor.trackCount) {
+                val mime = metadataExtractor.getTrackFormat(index)
+                    .getString(MediaFormat.KEY_MIME) ?: continue
+                when {
+                    mime.startsWith("video/") -> videoTracks.add(index)
+                    mime.startsWith("audio/") -> audioTracks.add(index)
+                }
+            }
+        } finally {
+            try { metadataExtractor.release() } catch (_: Exception) { }
+        }
+        if (videoTracks.isEmpty()) {
+            throw IllegalStateException("Media contains no decodable video track.")
+        }
+
+        var decodedVideoBuffers = 0L
+        var decodedAudioBuffers = 0L
+        for (trackIndex in videoTracks) {
+            decodedVideoBuffers += decodeTrackFully(uri, trackIndex).outputBufferCount
+        }
+        for (trackIndex in audioTracks) {
+            decodedAudioBuffers += decodeTrackFully(uri, trackIndex).outputBufferCount
+        }
+        return FullDecodeSummary(
+            hasAudio = audioTracks.isNotEmpty(),
+            decodedVideoBuffers = decodedVideoBuffers,
+            decodedAudioBuffers = decodedAudioBuffers
+        )
+    }
+
+    private fun decodeTrackFully(uri: Uri, trackIndex: Int): TrackDecodeStats {
+        val extractor = MediaExtractor()
+        var decoder: MediaCodec? = null
+        try {
+            when (uri.scheme) {
+                "content" -> extractor.setDataSource(this, uri, null)
+                "file" -> extractor.setDataSource(
+                    File(uri.path ?: throw IllegalArgumentException("Media URI has no path.")).absolutePath
+                )
+                else -> throw IllegalArgumentException("Unsupported media URI scheme for decode.")
+            }
+            if (trackIndex !in 0 until extractor.trackCount) {
+                throw IllegalArgumentException("Media track index is no longer available.")
+            }
+            val format = extractor.getTrackFormat(trackIndex)
+            val mime = format.getString(MediaFormat.KEY_MIME)
+                ?: throw IllegalStateException("Media track has no codec MIME type.")
+            extractor.selectTrack(trackIndex)
+            val codec = MediaCodec.createDecoderByType(mime)
+            decoder = codec
+            codec.configure(format, null, null, 0)
+            codec.start()
+
+            val info = MediaCodec.BufferInfo()
+            var inputEnded = false
+            var outputEnded = false
+            var outputBufferCount = 0L
+            var outputByteCount = 0L
+            val deadline = SystemClock.elapsedRealtime() + 30L * 60L * 1000L
+
+            while (!outputEnded) {
+                if (SystemClock.elapsedRealtime() > deadline) {
+                    throw IllegalStateException("Full media decode exceeded the 30-minute safety limit.")
+                }
+
+                if (!inputEnded) {
+                    val inputIndex = codec.dequeueInputBuffer(10_000)
+                    if (inputIndex >= 0) {
+                        val inputBuffer = codec.getInputBuffer(inputIndex)
+                            ?: throw IllegalStateException("Media decoder input buffer is unavailable.")
+                        inputBuffer.clear()
+                        val sampleSize = extractor.readSampleData(inputBuffer, 0)
+                        if (sampleSize < 0) {
+                            codec.queueInputBuffer(
+                                inputIndex,
+                                0,
+                                0,
+                                0L,
+                                MediaCodec.BUFFER_FLAG_END_OF_STREAM
+                            )
+                            inputEnded = true
+                        } else {
+                            codec.queueInputBuffer(
+                                inputIndex,
+                                0,
+                                sampleSize,
+                                extractor.sampleTime.coerceAtLeast(0L),
+                                extractor.sampleFlags
+                            )
+                            extractor.advance()
+                        }
+                    }
+                }
+
+                when (val outputIndex = codec.dequeueOutputBuffer(info, 10_000)) {
+                    MediaCodec.INFO_TRY_AGAIN_LATER -> Unit
+                    MediaCodec.INFO_OUTPUT_FORMAT_CHANGED -> Unit
+                    else -> if (outputIndex >= 0) {
+                        if (info.size > 0) {
+                            outputBufferCount++
+                            outputByteCount += info.size.toLong()
+                        }
+                        val endOfStream =
+                            (info.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0
+                        codec.releaseOutputBuffer(outputIndex, false)
+                        if (endOfStream) outputEnded = true
+                    }
+                }
+            }
+
+            if (outputBufferCount <= 0L || outputByteCount <= 0L) {
+                throw IllegalStateException("Media decoder reached EOS without decoded output.")
+            }
+            return TrackDecodeStats(outputBufferCount, outputByteCount)
+        } finally {
+            decoder?.let { codec ->
+                try { codec.stop() } catch (_: Exception) { }
+                try { codec.release() } catch (_: Exception) { }
+            }
+            try { extractor.release() } catch (_: Exception) { }
+        }
     }
 
     private fun publishRenderedVideo(source: File, clipId: String): Pair<Uri, String> {
@@ -1826,23 +1992,29 @@ class MainActivity : FlutterActivity() {
                 }
                 val extractor = MediaExtractor()
                 var hasVideo = false
+                var hasAudio = false
                 try {
                     if (uri.scheme == "content") extractor.setDataSource(this, uri, null)
                     else extractor.setDataSource(File(uri.path!!).absolutePath)
                     for (index in 0 until extractor.trackCount) {
                         val mime = extractor.getTrackFormat(index).getString(MediaFormat.KEY_MIME) ?: continue
                         if (mime.startsWith("video/")) hasVideo = true
+                        if (mime.startsWith("audio/")) hasAudio = true
                     }
                 } finally {
                     try { extractor.release() } catch (_: Exception) { }
                 }
+                val decode = decodeMediaFully(uri)
                 val valid = actualHash == expectedHash &&
                     sizeBytes == expectedSize &&
                     duration == expectedDuration &&
                     width == expectedWidth &&
                     height == expectedHeight &&
                     sizeBytes >= 2048L &&
-                    hasVideo
+                    hasVideo &&
+                    decode.hasAudio == hasAudio &&
+                    decode.decodedVideoBuffers > 0L &&
+                    (!hasAudio || decode.decodedAudioBuffers > 0L)
                 mainHandler.post {
                     reply.success(
                         mapOf(
@@ -1852,7 +2024,10 @@ class MainActivity : FlutterActivity() {
                             "durationMs" to duration,
                             "width" to width,
                             "height" to height,
-                            "hasVideo" to hasVideo
+                            "hasVideo" to hasVideo,
+                            "fullyDecodeValidated" to valid,
+                            "decodedVideoBuffers" to decode.decodedVideoBuffers,
+                            "decodedAudioBuffers" to decode.decodedAudioBuffers
                         )
                     )
                 }

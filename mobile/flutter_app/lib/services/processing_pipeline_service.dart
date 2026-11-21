@@ -414,7 +414,10 @@ class ProcessingPipelineService {
             rendered.durationMs <= 0 ||
             rendered.width <= 0 ||
             rendered.height <= 0 ||
-            !ProcessingJobService.isSha256(rendered.sha256)) {
+            !ProcessingJobService.isSha256(rendered.sha256) ||
+            !rendered.fullyDecodeValidated ||
+            rendered.decodedVideoBuffers <= 0 ||
+            (rendered.hasAudio && rendered.decodedAudioBuffers <= 0)) {
           throw StateError('Rendered MP4 failed the output validation gate.');
         }
 
@@ -430,6 +433,9 @@ class ProcessingPipelineService {
           'width': rendered.width,
           'height': rendered.height,
           'hasAudio': rendered.hasAudio,
+          'fullyDecodeValidated': rendered.fullyDecodeValidated,
+          'decodedVideoBuffers': rendered.decodedVideoBuffers,
+          'decodedAudioBuffers': rendered.decodedAudioBuffers,
           'validated': true,
           'startMs': candidate.startMs,
           'endMs': candidate.endMs,

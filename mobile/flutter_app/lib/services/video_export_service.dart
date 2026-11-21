@@ -22,6 +22,9 @@ class VideoExportResult {
     required this.width,
     required this.height,
     required this.hasAudio,
+    required this.fullyDecodeValidated,
+    required this.decodedVideoBuffers,
+    required this.decodedAudioBuffers,
     required this.validated,
   });
 
@@ -34,6 +37,9 @@ class VideoExportResult {
   final int width;
   final int height;
   final bool hasAudio;
+  final bool fullyDecodeValidated;
+  final int decodedVideoBuffers;
+  final int decodedAudioBuffers;
   final bool validated;
 
   factory VideoExportResult.fromJson(
@@ -50,6 +56,9 @@ class VideoExportResult {
       width: (json['width'] as num?)?.toInt() ?? 0,
       height: (json['height'] as num?)?.toInt() ?? 0,
       hasAudio: json['hasAudio'] as bool? ?? false,
+      fullyDecodeValidated: json['fullyDecodeValidated'] as bool? ?? false,
+      decodedVideoBuffers: (json['decodedVideoBuffers'] as num?)?.toInt() ?? 0,
+      decodedAudioBuffers: (json['decodedAudioBuffers'] as num?)?.toInt() ?? 0,
       validated: json['validated'] as bool? ?? false,
     );
     if (value.outputUri.isEmpty ||
@@ -58,6 +67,9 @@ class VideoExportResult {
         value.durationMs <= 0 ||
         value.width <= 0 ||
         value.height <= 0 ||
+        !value.fullyDecodeValidated ||
+        value.decodedVideoBuffers <= 0 ||
+        (value.hasAudio && value.decodedAudioBuffers <= 0) ||
         !value.validated) {
       throw const FormatException(
         'Android returned an export that did not pass output validation.',
@@ -377,7 +389,11 @@ class VideoExportService {
           (result?['durationMs'] as num?)?.toInt() == durationMs &&
           (result?['width'] as num?)?.toInt() == width &&
           (result?['height'] as num?)?.toInt() == height &&
-          result?['hasVideo'] == true;
+          result?['hasVideo'] == true &&
+          result?['fullyDecodeValidated'] == true &&
+          ((result?['decodedVideoBuffers'] as num?)?.toInt() ?? 0) > 0 &&
+          (!(result?['hasAudio'] == true) ||
+              ((result?['decodedAudioBuffers'] as num?)?.toInt() ?? 0) > 0);
     } on PlatformException {
       return false;
     }
