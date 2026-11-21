@@ -97,3 +97,23 @@ Allow the user to keep local inference or explicitly choose an external provider
 - ARM64 debug APK built, then the workflow verified `arm64-v8a` as the only packaged ABI, all 10 native library basenames unique, and the Whisper + llama required shared libraries present.
 - Extracted APK: 95,279,731 bytes. SHA-256: `47b205348a5731aced8bfd50c56ebb46cbd08e2c6b8b2f8e6e14f9a5e86d31da`.
 - Model Center uses `flutter_secure_storage` for credentials and provider preferences. Android backup is disabled by the generation script. Unit tests use a mock secret-store interface; a physical Android Keystore verification is still required.
+
+
+
+## Follow-up implementation and latest Android verification — 2026-11-21
+
+The provider and caption follow-up work is now present on `main`:
+
+- `AiCredentialStore.saveExecutionMode('remote')` rejects remote execution unless explicit cloud consent is persisted.
+- `readExecutionMode()` repairs a stale persisted remote mode to local if consent is missing (including an interrupted consent-revocation case).
+- `AiModelGateway` checks cloud consent before model discovery or completion calls to external providers. The emulator/local loopback compatible endpoint remains available for development without external-cloud consent.
+- Deleting a provider key also removes that provider's selected model. When it was the active remote provider, Model Center returns execution to local mode.
+- Caption Studio now loads the saved project's transcript word timings, groups the words using the live caption style/font/scale settings and allows selecting a timed group. Without a transcript, it shows an explicit sample-preview notice instead of pretending the sample is synchronized.
+
+Automated evidence:
+- Mobile Android run [44857222277](https://github.com/m5ham3ds/CUTAWAN/actions/runs/44857222277) on SHA `80e182ba840f3dc0b6e9039d39877179cb142a3e` — success.
+- **129 Flutter tests** passed; Format and `flutter analyze --fatal-infos` passed.
+- ARM64 debug APK built; the APK contained only `arm64-v8a`, with 10 unique native library basenames and no duplicate native libraries.
+- APK artifact ID `14687879427`, size 57,695,187 bytes, archive SHA-256 `c7e914e2bd3f6bc6f97acf58b56d7835c4886449963723eac5ff215e70484d47`.
+
+Still required before Phase 7 device acceptance: verify real Android Keystore encryption, backup behavior, key rotation/deletion and remote-consent interaction on an Android device. Mock-store unit tests and CI compilation are not substitutes for those checks.
