@@ -99,7 +99,7 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('caption-direction-switch')));
     await tester.pump();
     expect(
-      tester.widget<Switch>(find.byKey(const ValueKey('caption-direction-switch'))).value,
+      tester.widget<SwitchListTile>(find.byKey(const ValueKey('caption-direction-switch'))).value,
       isFalse,
     );
     await tester.pump(const Duration(milliseconds: 250));

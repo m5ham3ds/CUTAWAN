@@ -494,7 +494,7 @@ class _CaptionStudioPageState extends State<CaptionStudioPage>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const _Eyebrow(
-            'إعدادات مرتبطة بالمشروع',
+            'المشروع المستهدف',
             icon: Icons.folder_open_rounded,
           ),
           const SizedBox(height: 10),
@@ -977,7 +977,7 @@ class _CaptionStudioPageState extends State<CaptionStudioPage>
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 120),
       children: [
         const _Eyebrow(
-          'مساحة العمل  /  Caption Studio',
+          'CAPTION STUDIO',
           icon: Icons.closed_caption_rounded,
         ),
         const SizedBox(height: 12),

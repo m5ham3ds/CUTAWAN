@@ -101,6 +101,11 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 50));
 
+      await tester.scrollUntilVisible(
+        find.byKey(const ValueKey('caption-style-neon')),
+        320,
+        scrollable: find.byType(Scrollable).first,
+      );
       final selectedNeon = tester.widget<ChoiceChip>(
         find.byKey(const ValueKey('caption-style-neon')),
       );
@@ -112,8 +117,10 @@ void main() {
         contains('+125 ms'),
       );
 
-      await tester.ensureVisible(
+      await tester.scrollUntilVisible(
         find.byKey(const ValueKey('caption-animation-fade')),
+        320,
+        scrollable: find.byType(Scrollable).first,
       );
       await tester.tap(find.byKey(const ValueKey('caption-animation-fade')));
       await tester.pump(const Duration(milliseconds: 50));
