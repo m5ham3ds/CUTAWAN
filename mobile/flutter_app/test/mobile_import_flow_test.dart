@@ -186,7 +186,16 @@ void main() {
 
       await tester.tap(find.text('المراجعة'));
       await pumpUi(tester);
-      await tester.tap(find.text('فحص توفر الفيديو'));
+      final verifyButton =
+          find.byKey(ValueKey('review-verify-${savedProjects.single.id}'));
+      await tester.ensureVisible(verifyButton);
+      await tester.pump();
+      expect(
+        tester.widget<OutlinedButton>(verifyButton).onPressed,
+        isNotNull,
+        reason: 'The source verification action must remain enabled for a cancelled, resumable project.',
+      );
+      await tester.tap(verifyButton);
       await pumpUi(tester);
 
       expect(methods, contains('inspectVideo'));
