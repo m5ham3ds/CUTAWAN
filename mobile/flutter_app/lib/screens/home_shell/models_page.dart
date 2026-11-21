@@ -267,13 +267,24 @@ class _ModelsPageState extends State<ModelsPage> {
       _error = null;
     });
     try {
+      final activeProvider = await _credentials.readActiveProvider();
+      final executionMode = await _credentials.readExecutionMode();
       await _credentials.deleteApiKey(_provider);
+      await _credentials.deleteSelectedModel(_provider);
+      final switchedToLocal =
+          executionMode == 'remote' && activeProvider == _provider;
+      if (switchedToLocal) {
+        await _credentials.saveExecutionMode('local');
+      }
       if (mounted) {
         setState(() {
           _keySaved = false;
           _remoteModels = [];
           _selectedRemoteModel = null;
-          _providerMessage = 'تم حذف مفتاح هذا المزوّد من التخزين الآمن.';
+          if (switchedToLocal) _executionMode = 'local';
+          _providerMessage = switchedToLocal
+              ? 'حُذف مفتاح المزوّد والنموذج المحدد؛ عاد التنفيذ إلى المحلي.'
+              : 'تم حذف مفتاح هذا المزوّد ونموذجه المحدد من التخزين الآمن.';
         });
       }
     } catch (error) {
