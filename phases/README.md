@@ -108,3 +108,16 @@ Phases 1–7 have a successful automated Android gate on SHA `80e182b`; physical
 - Build.FINGERPRINT classification is explicitly a heuristic. A physical-candidate result is not human-confirmed physical evidence.
 - No real audio/video fixtures or handset diagnostic report exist in the repository. Speech/candidate quality, full media decode, thermal/performance, process-death, SAF lifecycle, Keystore restore/reinstall and end-to-end consent evidence remain open.
 - Phase 10 remains incomplete; CI and an ARM64 APK cannot substitute for physical-device acceptance.
+
+
+## Phase 10 automated CI result — 2026-11-21
+
+- Latest Mobile Android run: [44868851973](https://github.com/m5ham3ds/CUTAWAN/actions/runs/44868851973), SHA `bad891491288e67324932f81c261b6953916055c` — **success**.
+- Format and `flutter analyze --fatal-infos`: passed.
+- Full Flutter unit/widget suite: **139/139 passed**.
+- ARM64 debug APK build, ARM64-only ABI assertion, unique native library assertion and artifact upload: passed.
+- APK artifact: `cutawan-mobile-arm64-debug`, artifact ID `14693675362`, size 59,016,463 bytes; archive SHA-256 `56cf57b2c79b83ee5533b1897e212f607c11f200f854a80cb79c21069a101ae4`.
+- Native package assertion: exactly `arm64-v8a`, 10 unique native libraries, including `libggml-cpu.so`, `libggml.so` and `libggml-base.so`; no duplicate native-library basenames.
+- Coverage artifact: `cutawan-mobile-flutter-coverage`, artifact ID `14692079659`.
+- Root/desktop CI run [44868851978](https://github.com/m5ham3ds/CUTAWAN/actions/runs/44868851978) also passed; this does not replace Android physical-device acceptance.
+- Phase 10 is **not physically accepted**. No Android handset report, media corpus, WER/timing reference set, sustained thermal/battery test, SAF force-stop/relaunch result, Keystore restore/reinstall test or end-to-end consent test has been collected.

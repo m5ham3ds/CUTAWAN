@@ -81,3 +81,13 @@ Do not mark Phase 8 accepted until the remaining full-decode, output-fixture, ba
 - Full process-death/background execution and notification behavior are not yet implemented as a durable foreground WorkManager service; the current Activity-owned Transformer session is cancelled when the Activity is destroyed. Reopening Review and invoking its resume action restarts from validated checkpoints, but does not continue the same live native Transformer process in the background.
 - Per-clip retry/export management UI, render cancellation from Android system notifications, and physical subtitle/crop continuity checks remain open.
 - Caption overlay styling still does not match every Flutter preview animation/pixel layout.
+
+
+## Full media decode implementation status — 2026-11-21
+
+- Android output validation now decodes every selected video and audio track through MediaCodec to its end-of-stream marker before publishing an export.
+- Resume verification performs the same full decode; metadata and SHA equality alone no longer accept an export.
+- Flutter validates the native full-decode evidence and the pipeline persists decoded buffer counts in export records/manifests.
+- Automated gate passed on Mobile Android workflow 44865751038 (Phase 8 full-decode patch), and the subsequent Stage 9/10 ARM64 build workflows also passed.
+- Physical codec/format acceptance is still open: VFR, long duration, rotated input, silent/no-audio, AAC/other audio tracks and corrupt/truncated MP4 fixtures must be tested on actual ARM64 devices.
+- Background WorkManager execution, notification cancellation and process-death reconstruction of a live render are still not implemented; a destroyed Activity still cancels the in-memory Media3 session. Resume relies on persisted checkpoints and revalidation when the app is reopened.
