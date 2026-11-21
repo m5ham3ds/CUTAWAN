@@ -22,6 +22,7 @@ import '../services/ai_model_gateway.dart';
 import '../services/android_reframe_analysis_service.dart';
 import '../services/processing_job_service.dart';
 import '../services/processing_pipeline_service.dart';
+import 'device_acceptance_page.dart';
 
 part 'home_shell/create_page.dart';
 part 'home_shell/jobs_page.dart';
@@ -82,6 +83,14 @@ class _HomeShellState extends State<HomeShell> with SingleTickerProviderStateMix
     _navigationGlow.forward(from: 0);
   }
 
+  void _openDeviceDiagnostics() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => const DeviceAcceptancePage(),
+      ),
+    );
+  }
+
   void _openModels() {
     Navigator.of(context).push(PageRouteBuilder<void>(
       transitionDuration: const Duration(milliseconds: 360),
@@ -135,7 +144,7 @@ class _HomeShellState extends State<HomeShell> with SingleTickerProviderStateMix
       child: Scaffold(
         extendBody: true,
         body: SafeArea(bottom: false, child: Column(children: [
-          _CutawanTopBar(onModels: _openModels, onRefresh: _reloadProjects),
+          _CutawanTopBar(onModels: _openModels, onRefresh: _reloadProjects, onDiagnostics: _openDeviceDiagnostics),
           Expanded(child: AnimatedSwitcher(
             duration: const Duration(milliseconds: 280),
             reverseDuration: const Duration(milliseconds: 210),
@@ -155,9 +164,10 @@ class _HomeShellState extends State<HomeShell> with SingleTickerProviderStateMix
 }
 
 class _CutawanTopBar extends StatelessWidget {
-  const _CutawanTopBar({required this.onModels, required this.onRefresh});
+  const _CutawanTopBar({required this.onModels, required this.onRefresh, required this.onDiagnostics});
   final VoidCallback onModels;
   final Future<void> Function() onRefresh;
+  final VoidCallback onDiagnostics;
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -178,6 +188,7 @@ class _CutawanTopBar extends StatelessWidget {
           _TopBarAction(icon: Icons.refresh_rounded, tooltip: 'تحديث المشاريع', onTap: onRefresh),
           const SizedBox(width: 8),
         ],
+        _TopBarAction(icon: Icons.monitor_heart_outlined, tooltip: 'تشخيص الجهاز', onTap: onDiagnostics),
         _TopBarAction(icon: Icons.memory_rounded, tooltip: 'مركز النماذج', onTap: onModels, accent: true),
       ]),
     );
