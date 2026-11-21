@@ -6,6 +6,8 @@ import 'package:whisper_cpp_flutter_plus/whisper_cpp_flutter_plus.dart';
 
 import '../domain/transcript_contract.dart';
 import 'android_audio_extractor.dart';
+import 'wav_audio_normalizer.dart';
+import 'whisper_chunk_overlap_policy.dart';
 
 class WhisperTranscriptionService {
   WhisperTranscriptionService({
@@ -40,7 +42,9 @@ class WhisperTranscriptionService {
       onStage?.call('extracting', null);
       extracted = await _audioExtractor.extract(sourceUri);
       onStage?.call('transcribing', 0);
-      final pcm = await WhisperAudio.readWav(extracted.wavFile);
+      final normalizedAudio =
+          await WavAudioNormalizer.readAsMono16k(extracted.wavFile);
+      final pcm = normalizedAudio.samples;
       if (pcm.isEmpty) {
         throw const FormatException(
           'The source video contains no decodable audio.',
@@ -108,11 +112,15 @@ class WhisperTranscriptionService {
               .toInt();
           if (startMs >= sourceDurationMs || endMs <= startMs) continue;
 
-          // Each subsequent chunk repeats the previous two seconds. Keep the
-          // previous chunk's overlap and discard duplicated early segments.
-          if (offset > 0) {
-            final midpoint = (startMs + endMs) / 2;
-            if (midpoint < offsetMs + _overlapSeconds * 1000) continue;
+          // Split shared audio at the overlap midpoint. The earlier chunk
+          // owns the first half; this chunk owns the second half.
+          if (!WhisperChunkOverlapPolicy.keepSegment(
+            chunkOffsetMs: offsetMs,
+            overlapMs: _overlapSeconds * 1000,
+            localStartMs: localStart,
+            localEndMs: localEnd,
+          )) {
+            continue;
           }
 
           final words = _tokensToWords(segment.tokens)
