@@ -121,3 +121,15 @@ Phases 1–7 have a successful automated Android gate on SHA `80e182b`; physical
 - Coverage artifact: `cutawan-mobile-flutter-coverage`, artifact ID `14692079659`.
 - Root/desktop CI run [44868851978](https://github.com/m5ham3ds/CUTAWAN/actions/runs/44868851978) also passed; this does not replace Android physical-device acceptance.
 - Phase 10 is **not physically accepted**. No Android handset report, media corpus, WER/timing reference set, sustained thermal/battery test, SAF force-stop/relaunch result, Keystore restore/reinstall test or end-to-end consent test has been collected.
+
+## Phase 10 responsive acceptance workbench — 2026-11-21
+
+- Reworked تشخيص الجهاز into a phone-first evidence workbench: compact device overview, adaptive memory/storage metrics, concise device details, and distinct media-quality, stability, and privacy evidence groups.
+- Removed repeated per-value cards and redundant explanation blocks. Raw service states now use short Arabic descriptions; colors come from the current theme and distinguish success, pending and failure only.
+- Long SHA/build identifiers remain selectable and can wrap. Metric cards adapt to narrow viewports; advanced technical readings are collapsed by default.
+- Diagnostic schema v2 adds explicit buildIdentityStatus and flags impossible memory readings rather than accepting a value larger than total RAM.
+- Added widget coverage for a 320dp RTL viewport with increased text scale, lazy-list scrolling, long build identifiers and dark theme. Added service coverage for invalid memory ranges.
+- UI commit: 45ba1c6274bd45d7252c861af05b8695f5805a1d; lazy-scroll test correction: de632a7bdb44987a6af5c538223e3c1b8b8bb50a.
+- Latest Mobile Android workflow: [44870965616](https://github.com/m5ham3ds/CUTAWAN/actions/runs/44870965616). Format, strict analysis, Flutter tests and coverage upload have passed on SHA de632a7. ARM64 APK build and package verification were still running at the time of this record; do not treat them as accepted until the workflow completes.
+- Root/desktop CI: [44870965558](https://github.com/m5ham3ds/CUTAWAN/actions/runs/44870965558) — success.
+- Phase 10 physical acceptance remains incomplete. No real handset confirmation/report, reference corpus, WER/timing/candidate score, on-device full MP4 decode, sustained performance/thermal measurements, process-death/SAF/Keystore lifecycle or physical consent-blocking result has been collected. CI/widget results are not substitutes for those gates.
