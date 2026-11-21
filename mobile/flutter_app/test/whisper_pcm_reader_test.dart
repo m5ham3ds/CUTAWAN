@@ -134,7 +134,7 @@ void main() {
       sampleRate: 48000,
       channels: 2,
       frameCount: 4800,
-      sample: (_, __) => 0,
+      sample: (_, _) => 0,
     );
 
     final reader = await WhisperPcmReader.open(file);
@@ -171,7 +171,7 @@ void main() {
       sampleRate: 16000,
       channels: 1,
       frameCount: 1600,
-      sample: (_, __) => 0.1,
+      sample: (_, _) => 0.1,
     );
 
     final reader = await WhisperPcmReader.open(file);
