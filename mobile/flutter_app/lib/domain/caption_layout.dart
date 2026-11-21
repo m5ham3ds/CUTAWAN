@@ -48,9 +48,18 @@ class CaptionLayoutEngine {
   static const holdMs = 1500;
   static const pauseGroupMs = 900;
 
-  CaptionLayoutBudget budget(CaptionStylePreset style, double aspectRatio) {
+  CaptionLayoutBudget budget(
+    CaptionStylePreset style,
+    double aspectRatio, {
+    double? fontScaleOverride,
+    String? fontFamilyOverride,
+    bool? uppercaseOverride,
+  }) {
+    final fontScale = fontScaleOverride ?? style.fontScale;
+    final fontFamily = fontFamilyOverride ?? style.fontFamily;
+    final uppercase = uppercaseOverride ?? style.uppercase;
     if (!aspectRatio.isFinite || aspectRatio <= 0 ||
-        !style.fontScale.isFinite || style.fontScale <= 0) {
+        !fontScale.isFinite || fontScale <= 0) {
       throw const FormatException('Caption style or aspect ratio is invalid.');
     }
     const glyphWidths = <String, (double, double)>{
@@ -58,11 +67,11 @@ class CaptionLayoutEngine {
       'Poppins': (0.58, 0.65),
       'Poppins Medium': (0.56, 0.63),
     };
-    final widths = glyphWidths[style.fontFamily] ?? (0.62, 0.7);
+    final widths = glyphWidths[fontFamily] ?? (0.62, 0.7);
     return CaptionLayoutBudget(
       maxWords: style.wordsPerGroup,
-      lineWidthEm: (aspectRatio.clamp(0.1, 4).toDouble() * safeWidth) / style.fontScale - 0.5,
-      glyphWidthEm: style.uppercase ? widths.$2 : widths.$1,
+      lineWidthEm: (aspectRatio.clamp(0.1, 4).toDouble() * safeWidth) / fontScale - 0.5,
+      glyphWidthEm: uppercase ? widths.$2 : widths.$1,
     );
   }
 
