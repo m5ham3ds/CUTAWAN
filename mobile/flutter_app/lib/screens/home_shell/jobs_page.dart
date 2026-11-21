@@ -519,7 +519,7 @@ class _JobsPageState extends State<JobsPage> {
                 IconButton.outlined(
                   key: ValueKey('delete-project-${project.id}'),
                   tooltip: 'حذف المشروع',
-                  onPressed: busy ? null : () => _deleteProject(context, project),
+                  onPressed: busy || running ? null : () => _deleteProject(context, project),
                   icon: const Icon(Icons.delete_outline_rounded),
                 ),
               ],

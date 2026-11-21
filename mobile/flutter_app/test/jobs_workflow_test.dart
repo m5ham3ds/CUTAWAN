@@ -105,7 +105,7 @@ void main() {
   testWidgets('job filters and search isolate the requested project states', (
     tester,
   ) async {
-    tester.view.physicalSize = const Size(390, 900);
+    tester.view.physicalSize = const Size(390, 4000);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
@@ -251,6 +251,11 @@ void main() {
       onOpenCreate: () => createOpens++,
     );
 
+    await tester.drag(
+      find.byKey(const ValueKey('jobs-workspace-list')),
+      const Offset(0, -1200),
+    );
+    await tester.pumpAndSettle();
     expect(find.text('لا توجد مهام بعد'), findsOneWidget);
     await tester.tap(find.text('إنشاء مشروع'));
     expect(createOpens, 1);

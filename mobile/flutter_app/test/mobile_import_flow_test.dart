@@ -159,8 +159,11 @@ void main() {
       await tester.tap(find.text('المهام'));
       await pumpUi(tester);
       expect(find.text('interview'), findsOneWidget);
+      expect(find.text('جاهز للبدء'), findsOneWidget);
+      expect(find.text('المصدر مستورد'), findsOneWidget);
+      expect(find.text('لم تبدأ المعالجة بعد'), findsOneWidget);
       expect(
-        find.text('المصدر محفوظ — جاهز للتحليل (لم يبدأ المحرك)'),
+        find.text('المشروع محفوظ وجاهز لبدء خط المعالجة من صفحة المراجعة.'),
         findsOneWidget,
       );
 
