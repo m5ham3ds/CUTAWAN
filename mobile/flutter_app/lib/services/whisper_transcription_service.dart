@@ -6,8 +6,8 @@ import 'package:whisper_cpp_flutter_plus/whisper_cpp_flutter_plus.dart';
 
 import '../domain/transcript_contract.dart';
 import 'android_audio_extractor.dart';
-import 'wav_audio_normalizer.dart';
-import 'whisper_chunk_overlap_policy.dart';
+import 'whisper_chunk_planner.dart';
+import 'whisper_pcm_reader.dart';
 
 class WhisperTranscriptionService {
   WhisperTranscriptionService({
@@ -20,9 +20,9 @@ class WhisperTranscriptionService {
   final WhisperModelManager _modelManager;
 
   static const model = WhisperModelCatalog.base;
-  static const _sampleRate = 16000;
-  static const _chunkSeconds = 30;
-  static const _overlapSeconds = 2;
+  static const _sampleRate = WhisperChunkPlanner.sampleRate;
+  static const _energyWindowSamples = _sampleRate;
+  static const _energyProgressWeight = 10;
 
   Future<CutawanTranscript> transcribeVideo({
     required String sourceUri,
@@ -30,7 +30,12 @@ class WhisperTranscriptionService {
     void Function(int percent)? onProgress,
     void Function(String stage, int? percent)? onStage,
   }) async {
+    if (sourceDurationMs <= 0) {
+      throw const FormatException('Source video duration must be positive.');
+    }
+
     AudioExtractionResult? extracted;
+    WhisperPcmReader? pcmReader;
     WhisperEngine? engine;
     try {
       final verifiedModel = await _modelManager.findCatalogModel(model);
@@ -39,42 +44,58 @@ class WhisperTranscriptionService {
           'ثبّت نموذج Whisper Base متعدد اللغات من مركز النماذج أولاً.',
         );
       }
+
       onStage?.call('extracting', null);
       extracted = await _audioExtractor.extract(sourceUri);
-      onStage?.call('transcribing', 0);
-      final normalizedAudio =
-          await WavAudioNormalizer.readAsMono16k(extracted.wavFile);
-      final pcm = normalizedAudio.samples;
-      if (pcm.isEmpty) {
+      pcmReader = await WhisperPcmReader.open(extracted.wavFile);
+      final totalSamples = pcmReader.outputSampleCount;
+      if (totalSamples <= 0) {
         throw const FormatException(
           'The source video contains no decodable audio.',
         );
       }
 
-      final audioEnergy = _measureEnergy(pcm, sourceDurationMs);
+      // Measure one-second RMS windows on the normalized 16 kHz mono timeline.
+      // Read the WAV incrementally so long sources do not require a full PCM
+      // copy in memory.
+      onStage?.call('transcribing', 0);
+      final audioEnergy = <AudioEnergyWindow>[];
+      final energyChunkSamples =
+          WhisperChunkPlanner.chunkSamples;
+      final energyChunkCount =
+          (totalSamples + energyChunkSamples - 1) ~/ energyChunkSamples;
+      var energyChunkIndex = 0;
+      for (var offset = 0; offset < totalSamples; offset += energyChunkSamples) {
+        final count = min(energyChunkSamples, totalSamples - offset).toInt();
+        final samples = await pcmReader.readSamples(offset, count);
+        audioEnergy.addAll(_measureEnergy(
+          samples,
+          offsetSample: offset,
+          durationMs: sourceDurationMs,
+        ));
+        energyChunkIndex++;
+        onProgress?.call(
+          (energyChunkIndex / energyChunkCount * _energyProgressWeight).round(),
+        );
+      }
+
+      final chunks = WhisperChunkPlanner.plan(totalSamples);
       final activeEngine = await WhisperEngine.load(
         verifiedModel.path,
         config: const WhisperConfig(backend: WhisperBackend.cpu),
       );
       engine = activeEngine;
 
-      final chunkSamples = _chunkSeconds * _sampleRate;
-      final overlapSamples = _overlapSeconds * _sampleRate;
-      final stepSamples = chunkSamples - overlapSamples;
       final segments = <TranscriptSegment>[];
       String? detectedLanguage;
-      final totalChunks = max(
-        1,
-        (pcm.length <= chunkSamples)
-            ? 1
-            : ((pcm.length - overlapSamples + stepSamples - 1) ~/ stepSamples),
-      );
-
       var chunkIndex = 0;
-      for (var offset = 0; offset < pcm.length; offset += stepSamples) {
-        final end = min(pcm.length, offset + chunkSamples).toInt();
-        final samples = Float32List.fromList(pcm.sublist(offset, end));
-        final offsetMs = (offset * 1000 / _sampleRate).round();
+      for (final chunk in chunks) {
+        final chunkLength = chunk.endSample - chunk.startSample;
+        final samples = await pcmReader.readSamples(
+          chunk.startSample,
+          chunkLength,
+        );
+        final offsetMs = (chunk.startSample * 1000 / _sampleRate).round();
         final task = activeEngine.transcribe(
           samples,
           options: const TranscribeOptions(
@@ -87,11 +108,15 @@ class WhisperTranscriptionService {
           ),
         );
         final progressSubscription = task.progress.listen((value) {
-          final normalized = ((chunkIndex + value / 100) / totalChunks * 100)
+          final normalized = (_energyProgressWeight +
+                  (chunkIndex + value / 100) /
+                      chunks.length *
+                      (100 - _energyProgressWeight))
               .clamp(0, 100)
               .round();
           onProgress?.call(normalized);
         });
+
         late final WhisperResult result;
         try {
           result = await task.result;
@@ -104,24 +129,21 @@ class WhisperTranscriptionService {
           final localStart = segment.start.inMilliseconds;
           final localEnd = segment.end.inMilliseconds;
           if (localEnd <= localStart) continue;
+
           final startMs = (offsetMs + localStart)
               .clamp(0, max(0, sourceDurationMs - 1))
               .toInt();
-          var endMs = (offsetMs + localEnd)
+          final endMs = (offsetMs + localEnd)
               .clamp(startMs + 1, sourceDurationMs)
               .toInt();
           if (startMs >= sourceDurationMs || endMs <= startMs) continue;
 
-          // Split shared audio at the overlap midpoint. The earlier chunk
-          // owns the first half; this chunk owns the second half.
-          if (!WhisperChunkOverlapPolicy.keepSegment(
-            chunkOffsetMs: offsetMs,
-            overlapMs: _overlapSeconds * 1000,
-            localStartMs: localStart,
-            localEndMs: localEnd,
-          )) {
-            continue;
-          }
+          // A two-second context overlap is split at its midpoint. Each
+          // utterance midpoint belongs to exactly one chunk, avoiding the
+          // previous behavior that discarded the entire first two seconds of
+          // every later chunk even when the earlier chunk missed a word.
+          final midpointMs = (startMs + endMs) / 2;
+          if (!chunk.ownsMidpointMs(midpointMs)) continue;
 
           final words = _tokensToWords(segment.tokens)
               .where((word) =>
@@ -144,7 +166,7 @@ class WhisperTranscriptionService {
               .toList(growable: false);
 
           final text = segment.text.trim();
-          if (text.isEmpty || endMs <= startMs) continue;
+          if (text.isEmpty) continue;
           final candidate = TranscriptSegment(
             text: text,
             startMs: startMs,
@@ -161,9 +183,7 @@ class WhisperTranscriptionService {
               candidate.endMs - candidate.startMs,
             );
             final sameText = _normalize(existing.text) == _normalize(text);
-            return shorter > 0 &&
-                overlapMs / shorter >= 0.25 &&
-                sameText;
+            return shorter > 0 && overlapMs / shorter >= 0.25 && sameText;
           });
           if (duplicateIndex < 0) {
             segments.add(candidate);
@@ -172,9 +192,14 @@ class WhisperTranscriptionService {
             segments[duplicateIndex] = candidate;
           }
         }
+
         chunkIndex++;
-        onProgress?.call((chunkIndex / totalChunks * 100).round());
-        if (end >= pcm.length) break;
+        onProgress?.call(
+          (_energyProgressWeight +
+                  chunkIndex / chunks.length *
+                      (100 - _energyProgressWeight))
+              .round(),
+        );
       }
 
       segments.sort((a, b) => a.startMs.compareTo(b.startMs));
@@ -194,9 +219,15 @@ class WhisperTranscriptionService {
         whisperModelId: model.id,
       );
       transcript.validate();
+      onProgress?.call(100);
       return transcript;
     } finally {
       engine?.dispose();
+      try {
+        await pcmReader?.close();
+      } catch (_) {
+        // Continue cleanup of the temporary native WAV even if close fails.
+      }
       final wav = extracted?.wavFile;
       if (wav != null && await wav.exists()) {
         await wav.delete();
@@ -255,13 +286,15 @@ class WhisperTranscriptionService {
   }
 
   static List<AudioEnergyWindow> _measureEnergy(
-    Float32List samples,
-    int durationMs,
-  ) {
-    const windowSamples = _sampleRate;
+    Float32List samples, {
+    required int offsetSample,
+    required int durationMs,
+  }) {
     final windows = <AudioEnergyWindow>[];
-    for (var start = 0; start < samples.length; start += windowSamples) {
-      final end = min(samples.length, start + windowSamples).toInt();
+    for (var start = 0;
+        start < samples.length;
+        start += _energyWindowSamples) {
+      final end = min(samples.length, start + _energyWindowSamples).toInt();
       var sumSquares = 0.0;
       for (var index = start; index < end; index++) {
         final value = samples[index];
@@ -270,8 +303,13 @@ class WhisperTranscriptionService {
       final rms = sqrt(sumSquares / (end - start))
           .clamp(0.0, 1.0)
           .toDouble();
-      final startMs = (start * 1000 / _sampleRate).round();
-      final endMs = min(durationMs, (end * 1000 / _sampleRate).round()).toInt();
+      final globalStart = offsetSample + start;
+      final globalEnd = offsetSample + end;
+      final startMs = (globalStart * 1000 / _sampleRate).round();
+      final endMs = min(
+        durationMs,
+        (globalEnd * 1000 / _sampleRate).round(),
+      ).toInt();
       if (endMs > startMs) {
         windows.add(AudioEnergyWindow(
           startMs: startMs,
