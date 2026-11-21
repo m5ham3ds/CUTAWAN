@@ -206,15 +206,31 @@ class AiCredentialStore {
   Future<String?> readSelectedModel(AiProviderId provider) =>
       _storage.read(_model(provider));
 
+  Future<void> deleteSelectedModel(AiProviderId provider) =>
+      _storage.delete(_model(provider));
+
   Future<void> saveExecutionMode(String mode) async {
     if (mode != 'local' && mode != 'remote') {
       throw const FormatException('Execution mode must be local or remote.');
     }
+    if (mode == 'remote' && !await hasCloudConsent()) {
+      throw StateError('Cloud execution requires explicit persisted consent.');
+    }
     await _storage.write(_executionModeKey, mode);
   }
 
-  Future<String> readExecutionMode() async =>
-      await _storage.read(_executionModeKey) ?? 'local';
+  Future<String> readExecutionMode() async {
+    final saved = await _storage.read(_executionModeKey) ?? 'local';
+    if (saved != 'remote' && saved != 'local') {
+      await _storage.write(_executionModeKey, 'local');
+      return 'local';
+    }
+    if (saved == 'remote' && !await hasCloudConsent()) {
+      await _storage.write(_executionModeKey, 'local');
+      return 'local';
+    }
+    return saved;
+  }
 
   Future<void> saveActiveProvider(AiProviderId provider) =>
       _storage.write(_activeProviderKey, provider.name);
