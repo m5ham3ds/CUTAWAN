@@ -209,8 +209,8 @@ class _CreatePageState extends State<CreatePage> {
     try {
       await widget.repository.save(CutawanProject.create(source: source, preferences: prefs));
       _projectSaved = true;
-      _source = null;
-      _sourceIsDownloaded = false;
+      // Retain the selected source until this page is disposed. During the
+      // navigation transition Flutter can rebuild the outgoing page.
       await widget.onProjectSaved();
     } on PlatformException catch (error) {
       _message(error.message ?? 'تعذّر حفظ المشروع على Android.');
