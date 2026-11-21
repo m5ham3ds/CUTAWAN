@@ -25,6 +25,10 @@ class _CaptionStudioPageState extends State<CaptionStudioPage> with SingleTicker
   String? _error;
   String? _savingProjectId;
   bool _loaded = false;
+  List<CaptionWordTiming> _previewWords = const [];
+  List<CaptionWordGroup> _previewGroups = const [];
+  double _previewAspectRatio = 9 / 16;
+  int _previewGroupIndex = 0;
   static const _arabicSample = 'هذه لحظة تستحق أن تتحول إلى مقطع قصير';
   static const _englishSample = 'This is the moment worth sharing with everyone';
 
@@ -53,6 +57,91 @@ class _CaptionStudioPageState extends State<CaptionStudioPage> with SingleTicker
   }
   CaptionStylePreset get _preset => captionStylePresets.firstWhere((item) => item.id == _styleId);
   CaptionAnimationPreset get _motion => captionAnimationPresets.firstWhere((item) => item.id == _animationId);
+  CaptionWordGroup? get _previewGroup =>
+      _previewGroups.isEmpty ? null : _previewGroups[_previewGroupIndex];
+
+  String get _previewText {
+    final group = _previewGroup;
+    if (group == null) {
+      final sample = _rtl ? _arabicSample : _englishSample;
+      return !_rtl && _uppercase ? sample.toUpperCase() : sample;
+    }
+    final text = group.lines
+        .map((line) => line.map((word) => word.text).join(' '))
+        .join('\n');
+    return !_rtl && _uppercase ? text.toUpperCase() : text;
+  }
+
+  double _aspectRatioFor(CutawanProject project) {
+    switch (project.preferences.aspectRatio) {
+      case ClipAspectRatio.portrait916:
+        return 9 / 16;
+      case ClipAspectRatio.square11:
+        return 1;
+      case ClipAspectRatio.landscape169:
+        return 16 / 9;
+      case ClipAspectRatio.original:
+        final rotated = project.source.rotationDegrees.abs() % 180 == 90;
+        final width = rotated ? project.source.height : project.source.width;
+        final height = rotated ? project.source.width : project.source.height;
+        return width / height;
+    }
+  }
+
+  String _formatPreviewTime(int milliseconds) {
+    final totalSeconds = milliseconds ~/ 1000;
+    final minutes = totalSeconds ~/ 60;
+    final seconds = totalSeconds % 60;
+    return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+  }
+
+  void _rebuildPreviewGroups({bool restartAnimation = true}) {
+    if (_previewWords.isEmpty) {
+      _previewGroups = const [];
+      _previewGroupIndex = 0;
+      _animation.duration = const Duration(milliseconds: 1200);
+    } else {
+      try {
+        _previewGroups = const CaptionLayoutEngine().group(
+          _previewWords,
+          const CaptionLayoutEngine().budget(
+            _preset,
+            _previewAspectRatio,
+            fontScaleOverride: _fontScale,
+            fontFamilyOverride: _fontFamily,
+            uppercaseOverride: _uppercase,
+          ),
+        );
+        if (_previewGroups.isEmpty) {
+          _previewGroupIndex = 0;
+          _animation.duration = const Duration(milliseconds: 1200);
+        } else {
+          _previewGroupIndex =
+              _previewGroupIndex.clamp(0, _previewGroups.length - 1).toInt();
+          final group = _previewGroup!;
+          final duration =
+              (group.endMs - group.startMs).clamp(650, 12000).toInt();
+          _animation.duration = Duration(milliseconds: duration);
+        }
+      } on FormatException catch (error) {
+        _previewGroups = const [];
+        _previewGroupIndex = 0;
+        _error = 'تعذّر تجهيز معاينة التفريغ: ${error.message}';
+        _animation.duration = const Duration(milliseconds: 1200);
+      }
+    }
+    if (restartAnimation) _animation.repeat();
+  }
+
+  void _selectPreviewGroup(int? index) {
+    if (index == null || index < 0 || index >= _previewGroups.length) return;
+    setState(() => _previewGroupIndex = index);
+    final group = _previewGroup!;
+    _animation.duration = Duration(
+      milliseconds: (group.endMs - group.startMs).clamp(650, 12000).toInt(),
+    );
+    _animation.repeat();
+  }
 
   void _handleProjectChange() {
     _loaded = false;
@@ -60,34 +149,75 @@ class _CaptionStudioPageState extends State<CaptionStudioPage> with SingleTicker
   }
 
   Future<void> _loadLatestPreferences() async {
-    if (_loaded) {
-      return;
-    }
+    if (_loaded) return;
     final projects = widget.projects.value;
     if (projects.isEmpty) {
-      if (mounted) {
-        setState(() => _loaded = true);
-      }
+      if (!mounted) return;
+      setState(() {
+        _previewWords = const [];
+        _previewGroups = const [];
+        _previewAspectRatio = 9 / 16;
+        _previewGroupIndex = 0;
+        _loaded = true;
+        _rebuildPreviewGroups();
+      });
       return;
     }
-    final prefs = projects.first.preferences;
-    final matches = captionStylePresets.where((item) => item.id == prefs.captionStyleId);
+
+    final project = projects.first;
+    final prefs = project.preferences;
+    final matches =
+        captionStylePresets.where((item) => item.id == prefs.captionStyleId);
     final style = matches.isEmpty ? captionStylePresets.first : matches.first;
-    if (!mounted) {
+    CutawanTranscript? transcript;
+    String? transcriptError;
+    try {
+      transcript = await widget.repository.loadTranscript(project.id);
+    } catch (error) {
+      transcriptError = 'تعذّر قراءة التفريغ المحفوظ: $error';
+    }
+    if (!mounted ||
+        widget.projects.value.isEmpty ||
+        widget.projects.value.first.id != project.id) {
       return;
     }
+
     setState(() {
       _styleId = style.id;
-      _animationId = captionAnimationPresets.any((item) => item.id == prefs.captionAnimationId) ? prefs.captionAnimationId : 'static';
+      _animationId = captionAnimationPresets
+              .any((item) => item.id == prefs.captionAnimationId)
+          ? prefs.captionAnimationId
+          : 'static';
       _textColor = prefs.mainTextColor;
       _highlightColor = prefs.highlightColor;
       _backgroundColor = prefs.captionBackgroundColor;
       _fontFamily = prefs.captionFontFamily ?? style.fontFamily;
-      _fontScale = prefs.captionFontScale > 0 ? prefs.captionFontScale : style.fontScale;
-      _positionY = prefs.captionPositionY >= 0 ? prefs.captionPositionY : style.positionY;
+      _fontScale =
+          prefs.captionFontScale > 0 ? prefs.captionFontScale : style.fontScale;
+      _positionY =
+          prefs.captionPositionY >= 0 ? prefs.captionPositionY : style.positionY;
       _uppercase = prefs.captionUppercase ?? style.uppercase;
       _bold = prefs.captionBold ?? style.bold;
+      if (transcript != null) {
+        final language = transcript.language.toLowerCase();
+        _rtl = language.startsWith('ar') ||
+            language.startsWith('fa') ||
+            language.startsWith('ur');
+      }
+      _previewWords = transcript == null
+          ? const []
+          : transcript.words
+              .map((word) => CaptionWordTiming(
+                    text: word.text,
+                    startMs: word.startMs,
+                    endMs: word.endMs,
+                  ))
+              .toList(growable: false);
+      _previewAspectRatio = _aspectRatioFor(project);
+      _previewGroupIndex = 0;
+      _error = transcriptError;
       _loaded = true;
+      _rebuildPreviewGroups();
     });
   }
   void _selectStyle(CaptionStylePreset style) {
@@ -103,6 +233,7 @@ class _CaptionStudioPageState extends State<CaptionStudioPage> with SingleTicker
       _bold = style.bold;
       _error = null;
     });
+    _rebuildPreviewGroups();
   }
   void _setColor(String field, String value) {
     final validColor = RegExp(r'^#[0-9A-Fa-f]{6}$').hasMatch(value);
@@ -125,7 +256,27 @@ class _CaptionStudioPageState extends State<CaptionStudioPage> with SingleTicker
       _error = null;
     });
   }
-  CaptionAnimationFrame _frameFor(double progress) => const CaptionAnimationEngine().evaluate(animationId: _animationId, progress: progress, wordCount: 7, activeWord: 3, characterCount: (_rtl ? _arabicSample : _englishSample).runes.length);
+  CaptionAnimationFrame _frameFor(double progress) {
+    final group = _previewGroup;
+    final preview = _previewText;
+    final sampleWords =
+        (_rtl ? _arabicSample : _englishSample).split(RegExp(r'\s+'));
+    final wordCount = group?.words.length ?? sampleWords.length;
+    final activeWord = group == null
+        ? (progress * wordCount).floor().clamp(0, wordCount - 1).toInt()
+        : group.words.indexWhere((word) {
+            final time = group.startMs +
+                ((group.endMs - group.startMs) * progress).round();
+            return time >= word.startMs && time < word.endMs;
+          });
+    return const CaptionAnimationEngine().evaluate(
+      animationId: _animationId,
+      progress: progress,
+      wordCount: wordCount,
+      activeWord: activeWord,
+      characterCount: preview.runes.length,
+    );
+  }
   Future<void> _savePreferences() async {
     if (_savingProjectId != null) {
       return;
@@ -174,9 +325,7 @@ class _CaptionStudioPageState extends State<CaptionStudioPage> with SingleTicker
     final theme = Theme.of(context);
     final style = _preset;
     final motion = _motion;
-    final preview = _rtl
-        ? _arabicSample
-        : (_uppercase ? _englishSample.toUpperCase() : _englishSample);
+    final preview = _previewText;
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
       children: [
@@ -187,6 +336,39 @@ class _CaptionStudioPageState extends State<CaptionStudioPage> with SingleTicker
         Text('ابنِ بصمة بصرية متناسقة للكلمات: النمط، الخط، لوحة الألوان، موضع العرض وحركة التوقيت.', style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
         const SizedBox(height: 18),
         _Panel(padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8), child: Row(children: [const Expanded(child: Text('معاينة اتجاه النص')), Switch(key: const ValueKey('caption-direction-switch'), value: _rtl, onChanged: (value) => setState(() => _rtl = value)), Text(_rtl ? 'العربية' : 'English')])),
+        const SizedBox(height: 8),
+        if (_previewGroups.isNotEmpty) ...[
+          Text('معاينة من التفريغ المحفوظ', style: theme.textTheme.labelLarge),
+          const SizedBox(height: 4),
+          Row(children: [
+            Expanded(
+              child: Text(
+                'المجموعة ${_previewGroupIndex + 1} من ${_previewGroups.length} · ${_formatPreviewTime(_previewGroup!.startMs)}–${_formatPreviewTime(_previewGroup!.endMs)}',
+                key: const ValueKey('caption-timed-group-label'),
+                style: theme.textTheme.bodySmall,
+              ),
+            ),
+            DropdownButton<int>(
+              key: const ValueKey('caption-timed-group-selector'),
+              value: _previewGroupIndex,
+              items: List.generate(
+                _previewGroups.length,
+                (index) => DropdownMenuItem<int>(
+                  value: index,
+                  child: Text('مجموعة ${index + 1}'),
+                ),
+              ),
+              onChanged: _selectPreviewGroup,
+            ),
+          ]),
+        ] else
+          Text(
+            widget.projects.value.isEmpty
+                ? 'معاينة تجريبية · أنشئ مشروعاً وأجرِ التفريغ لرؤية توقيت كلماتك.'
+                : 'لا يوجد تفريغ محفوظ لهذا المشروع؛ تُعرض معاينة تجريبية حتى إكمال التفريغ.',
+            key: const ValueKey('caption-sample-preview-notice'),
+            style: theme.textTheme.bodySmall,
+          ),
         const SizedBox(height: 8),
         AnimatedBuilder(
           animation: _animation,
@@ -256,6 +438,7 @@ class _CaptionStudioPageState extends State<CaptionStudioPage> with SingleTicker
           items: const [DropdownMenuItem(value: 'Anton', child: Text('Anton')), DropdownMenuItem(value: 'Poppins', child: Text('Poppins')), DropdownMenuItem(value: 'Poppins Medium', child: Text('Poppins Medium'))],
           onChanged: (value) { if (value != null) {
               setState(() => _fontFamily = value);
+              _rebuildPreviewGroups();
             } },
         ),
         Material(
@@ -264,10 +447,16 @@ class _CaptionStudioPageState extends State<CaptionStudioPage> with SingleTicker
         ),
         Material(
           color: Colors.transparent,
-          child: SwitchListTile(contentPadding: EdgeInsets.zero, title: const Text('أحرف كبيرة للإنجليزية'), value: _uppercase, onChanged: (value) => setState(() => _uppercase = value)),
+          child: SwitchListTile(contentPadding: EdgeInsets.zero, title: const Text('أحرف كبيرة للإنجليزية'), value: _uppercase, onChanged: (value) {
+            setState(() => _uppercase = value);
+            _rebuildPreviewGroups();
+          }),
         ),
         Text('حجم الخط · ${(_fontScale * 100).toStringAsFixed(1)}%'),
-        Slider(value: _fontScale, min: 0.025, max: 0.075, divisions: 50, onChanged: (value) => setState(() => _fontScale = value)),
+        Slider(value: _fontScale, min: 0.025, max: 0.075, divisions: 50, onChanged: (value) {
+          setState(() => _fontScale = value);
+          _rebuildPreviewGroups();
+        }),
         Text('موضع النص · ${(_positionY * 100).round()}% من أعلى الإطار'),
         Slider(value: _positionY, min: 0.1, max: 0.9, divisions: 80, onChanged: (value) => setState(() => _positionY = value)),
         Material(
