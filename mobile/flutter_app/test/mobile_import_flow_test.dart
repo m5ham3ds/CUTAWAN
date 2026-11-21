@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:cutawan_mobile/app.dart';
+import 'package:cutawan_mobile/domain/clip_preferences.dart';
 import 'package:cutawan_mobile/domain/project_contract.dart';
 import 'package:cutawan_mobile/services/local_project_repository.dart';
 import 'package:flutter/services.dart';
@@ -204,7 +205,7 @@ void main() {
   testWidgets('failed duplicate import preserves a SAF grant used by an existing project', (tester) async {
     final failingRepository = _FailingSaveRepository();
     final existingProject = CutawanProject.create(
-      source: VideoAssetMetadata.fromJson(metadata),
+      source: VideoAssetMetadata.fromJson(Map<String, dynamic>.from(metadata)),
       preferences: const ClipPreferences(),
       now: DateTime.utc(2026, 11, 20),
     );
