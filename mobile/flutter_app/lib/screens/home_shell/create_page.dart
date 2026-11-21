@@ -215,7 +215,9 @@ class _CreatePageState extends State<CreatePage> {
     } catch (error) {
       _message('تعذّر إنشاء المشروع: $error');
     } finally {
-      if (mounted) setState(() => _busy = false);
+      if (mounted) {
+        setState(() => _busy = false);
+      }
     }
   }
 
