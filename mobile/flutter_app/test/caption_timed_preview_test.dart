@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:cutawan_mobile/domain/clip_preferences.dart';
 import 'package:cutawan_mobile/domain/project_contract.dart';
 import 'package:cutawan_mobile/domain/transcript_contract.dart';
@@ -8,19 +6,18 @@ import 'package:cutawan_mobile/services/local_project_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+class _TranscriptPreviewRepository extends LocalProjectRepository {
+  _TranscriptPreviewRepository(this.transcript);
+
+  final CutawanTranscript transcript;
+
+  @override
+  Future<CutawanTranscript?> loadTranscript(String projectId) async =>
+      transcript;
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-  late Directory root;
-  late LocalProjectRepository repository;
-
-  setUp(() async {
-    root = await Directory.systemTemp.createTemp('cutawan-caption-timed-');
-    repository = LocalProjectRepository(rootDirectory: root);
-  });
-
-  tearDown(() async {
-    if (await root.exists()) await root.delete(recursive: true);
-  });
 
   testWidgets(
     'Caption Studio previews saved transcript groups using word timing',
@@ -30,28 +27,7 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
 
-      final projects = ValueNotifier<List<CutawanProject>>([]);
-      addTearDown(projects.dispose);
       final now = DateTime.utc(2026, 11, 21);
-      final project = CutawanProject.create(
-        source: VideoAssetMetadata(
-          uri: 'content://media/external/video/media/caption-preview',
-          displayName: 'caption-preview.mp4',
-          mimeType: 'video/mp4',
-          sizeBytes: 1000000,
-          durationMs: 5000,
-          width: 1080,
-          height: 1920,
-          rotationDegrees: 0,
-          importedAtUtc: now,
-        ),
-        preferences: const ClipPreferences(
-          aspectRatio: ClipAspectRatio.portrait916,
-        ),
-        now: now,
-      );
-      await repository.save(project);
-
       const words = [
         TranscriptWord(
           text: 'مرحباً',
@@ -85,29 +61,46 @@ void main() {
         ),
       ];
       final transcriptText = words.map((word) => word.text).join(' ');
-      await repository.saveTranscript(
-        project.id,
-        CutawanTranscript(
-          schemaVersion: CutawanTranscript.currentSchemaVersion,
-          language: 'ar',
-          text: transcriptText,
-          sourceDurationMs: 5000,
-          createdAtUtc: now,
-          segments: [
-            TranscriptSegment(
-              text: transcriptText,
-              startMs: 0,
-              endMs: 3000,
-              words: words,
-            ),
-          ],
-          audioEnergy: const [],
-          visualSamples: const [],
-          wordTimingReliable: true,
-          whisperModelId: 'base',
-        ),
+      final transcript = CutawanTranscript(
+        schemaVersion: CutawanTranscript.currentSchemaVersion,
+        language: 'ar',
+        text: transcriptText,
+        sourceDurationMs: 5000,
+        createdAtUtc: now,
+        segments: [
+          TranscriptSegment(
+            text: transcriptText,
+            startMs: 0,
+            endMs: 3000,
+            words: words,
+          ),
+        ],
+        audioEnergy: const [],
+        visualSamples: const [],
+        wordTimingReliable: true,
+        whisperModelId: 'base',
       );
-      projects.value = [project];
+      final repository = _TranscriptPreviewRepository(transcript);
+      final projects = ValueNotifier<List<CutawanProject>>([
+        CutawanProject.create(
+          source: VideoAssetMetadata(
+            uri: 'content://media/external/video/media/caption-preview',
+            displayName: 'caption-preview.mp4',
+            mimeType: 'video/mp4',
+            sizeBytes: 1000000,
+            durationMs: 5000,
+            width: 1080,
+            height: 1920,
+            rotationDegrees: 0,
+            importedAtUtc: now,
+          ),
+          preferences: const ClipPreferences(
+            aspectRatio: ClipAspectRatio.portrait916,
+          ),
+          now: now,
+        ),
+      ]);
+      addTearDown(projects.dispose);
 
       await tester.pumpWidget(
         MaterialApp(
@@ -124,7 +117,7 @@ void main() {
         ),
       );
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 350));
+      await tester.pump(const Duration(milliseconds: 50));
 
       expect(find.text('معاينة من التفريغ المحفوظ'), findsOneWidget);
       expect(
@@ -140,8 +133,8 @@ void main() {
       expect(groupPicker.onChanged, isNotNull);
       groupPicker.onChanged!(1);
       await tester.pump();
-      expect(find.text('المجموعة 2 من 2'), findsOneWidget);
 
+      expect(find.text('المجموعة 2 من 2'), findsOneWidget);
       final visibleCaptions = tester.widgetList<RichText>(find.byType(RichText));
       expect(
         visibleCaptions.any(
