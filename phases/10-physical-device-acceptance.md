@@ -70,3 +70,17 @@ Widget tests cover a 320dp viewport with enlarged text, RTL, long build identifi
 - Extended diagnostic metadata with an explicit build-identity status and schema version 2.
 - Added a baseline test for impossible available-memory values and widget tests for 320dp + enlarged text and dark theme.
 - No physical acceptance claim is made by these code and widget tests.
+
+## Latest automated gate — responsive workbench — 2026-11-21
+
+Mobile Android workflow [44870965616](https://github.com/m5ham3ds/CUTAWAN/actions/runs/44870965616) on SHA de632a7bdb44987a6af5c538223e3c1b8b8bb50a completed successfully.
+
+- Format: passed.
+- flutter analyze --fatal-infos: passed.
+- Flutter test suite: **142/142 passed**, including 320dp RTL with enlarged text, lazy section scrolling, long build SHA rendering, dark theme and invalid-memory-range handling.
+- ARM64 debug APK build: passed.
+- Packaging: exactly arm64-v8a; 10 unique native libraries; no duplicate native library basenames. GGML libraries verified: libggml-cpu.so, libggml.so and libggml-base.so.
+- APK artifact: [cutawan-mobile-arm64-debug, artifact 14694345556](https://github.com/m5ham3ds/CUTAWAN/actions/runs/44870965616/artifacts/14694345556), 59,012,693 bytes; ZIP SHA-256 d5bdbf27f5239f0833b8ca3ccc615174f7cf7ca89c6ca104589f0f0266714b42.
+- Coverage artifact: [14693648956](https://github.com/m5ham3ds/CUTAWAN/actions/runs/44870965616/artifacts/14693648956).
+
+This is an accepted automated implementation/build gate only. Phase 10 is still not physically accepted: the device needs a human-confirmed handset report and actual hashed Arabic/English audio/video fixtures, manually reviewed word references, WER/timing/candidate/crop results, on-device full decode, sustained performance/thermal/battery measurements and lifecycle/security/consent tests. Mocked and widget tests do not count toward those field gates.
