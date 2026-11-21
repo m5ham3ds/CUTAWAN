@@ -104,13 +104,7 @@ class _JobsPageState extends State<JobsPage> {
         _JobsFilter.attention => 'تحتاج متابعة',
       };
 
-  String _statusLabel(ProjectJobStatus status) => switch (status) {
-        ProjectJobStatus.prepared => 'جاهز للبدء',
-        ProjectJobStatus.running => 'قيد التنفيذ',
-        ProjectJobStatus.completed => 'مكتمل',
-        ProjectJobStatus.cancelled => 'متوقف',
-        ProjectJobStatus.failed => 'فشل',
-      };
+  String _statusLabel(ProjectJobStatus status) => _jobStatusLabel(status);
 
   String _stageLabel(String stage) {
     if (stage.startsWith('interrupted_after_process_death:')) {

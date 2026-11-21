@@ -1,10 +1,10 @@
 part of '../home_shell.dart';
 
 String _jobStatusLabel(ProjectJobStatus status) => switch (status) {
-  ProjectJobStatus.prepared => 'المصدر محفوظ — جاهز للتحليل (لم يبدأ المحرك)',
+  ProjectJobStatus.prepared => 'جاهز للبدء',
   ProjectJobStatus.running => 'قيد التنفيذ',
   ProjectJobStatus.completed => 'مكتمل',
-  ProjectJobStatus.cancelled => 'أُلغي سجل المهمة',
+  ProjectJobStatus.cancelled => 'متوقف',
   ProjectJobStatus.failed => 'فشل',
 };
 
