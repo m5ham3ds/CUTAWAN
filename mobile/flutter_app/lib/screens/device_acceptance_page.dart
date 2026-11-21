@@ -165,6 +165,7 @@ class _DeviceAcceptancePageState extends State<DeviceAcceptancePage> {
               '${data['appVersionName'] ?? '—'} (${data['appVersionCode'] ?? '—'})',
             ),
             _metric(context, 'أنوية المعالج', _number(data['cpuCoreCount'])),
+            _metric(context, 'بصمة البناء', _number(data['buildSha'])),
             const SizedBox(height: 12),
             _section(context, 'الذاكرة والتخزين'),
             _metric(context, 'إجمالي RAM', _memory(data['totalMemoryBytes'])),
