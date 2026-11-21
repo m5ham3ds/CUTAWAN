@@ -63,7 +63,7 @@ void main() {
       sampleRate: 16000,
       channels: 1,
       frames: 16000,
-      sample: (_, __) => 8192,
+      sample: (_, _) => 8192,
     ));
 
     expect(audio.samples.length, 16000);
@@ -105,7 +105,7 @@ void main() {
       sampleRate: 44100,
       channels: 2,
       frames: 44100,
-      sample: (_, __) => 0,
+      sample: (_, _) => 0,
     ));
 
     expect(audio.samples.length, 16000);
@@ -117,7 +117,7 @@ void main() {
       sampleRate: 16000,
       channels: 1,
       frames: 160,
-      sample: (_, __) => 1,
+      sample: (_, _) => 1,
     );
     await expectLater(
       normalizeBytes(valid.sublist(0, 32)),
