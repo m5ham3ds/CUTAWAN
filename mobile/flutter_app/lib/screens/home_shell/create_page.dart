@@ -461,13 +461,34 @@ class _CreatePageState extends State<CreatePage> {
       ])),
       const SizedBox(height: 12),
       _Panel(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        SwitchListTile(
-          key: const ValueKey('create-captions-enabled'),
-          contentPadding: EdgeInsets.zero,
-          title: const Text('إنشاء الترجمة النصية'),
-          subtitle: const Text('تفريغ الكلام وتوليد توقيت الكلمات وتركيب الترجمة على المقاطع.'),
-          value: _captions,
-          onChanged: _busy ? null : (value) => setState(() => _captions = value),
+        Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'إنشاء الترجمة النصية',
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'تفريغ الكلام وتوليد توقيت الكلمات وتركيب الترجمة على المقاطع.',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: scheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Switch(
+              key: const ValueKey('create-captions-enabled'),
+              value: _captions,
+              onChanged: _busy ? null : (value) => setState(() => _captions = value),
+            ),
+          ],
         ),
         if (_captions) ...[
           const Divider(height: 20),
