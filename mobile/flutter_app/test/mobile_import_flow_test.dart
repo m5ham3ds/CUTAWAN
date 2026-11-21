@@ -8,6 +8,10 @@ import 'package:flutter/services.dart';
 class _MemoryProjectRepository extends LocalProjectRepository {
   final Map<String, CutawanProject> _items = {};
 
+  void seedProject(CutawanProject project) {
+    _items[project.id] = project;
+  }
+
   List<CutawanProject> get storedProjects => _items.values.toList();
 
   @override
@@ -61,6 +65,13 @@ class _MemoryProjectRepository extends LocalProjectRepository {
   @override
   Future<void> delete(String projectId) async {
     _items.remove(projectId);
+  }
+}
+
+class _FailingSaveRepository extends _MemoryProjectRepository {
+  @override
+  Future<void> save(CutawanProject project) async {
+    throw StateError('simulated disk write failure');
   }
 }
 
@@ -170,4 +181,50 @@ void main() {
       );
     },
   );
+
+  testWidgets('failed import releases a new SAF grant only when no project references it', (tester) async {
+    final failingRepository = _FailingSaveRepository();
+    repository = failingRepository;
+    await tester.pumpWidget(
+      CutawanApp(
+        repository: repository,
+        storageUsageBytes: () async => 0,
+      ),
+    );
+    await pumpUi(tester);
+
+    await tester.tap(find.text('اختيار فيديو'));
+    await pumpUi(tester);
+
+    expect(methods, contains('pickVideo'));
+    expect(methods, contains('releasePersistedPermission'));
+    expect(failingRepository.storedProjects, isEmpty);
+  });
+
+  testWidgets('failed duplicate import preserves a SAF grant used by an existing project', (tester) async {
+    final failingRepository = _FailingSaveRepository();
+    final existingProject = CutawanProject.create(
+      source: VideoAssetMetadata.fromJson(metadata),
+      preferences: const ClipPreferences(),
+      now: DateTime.utc(2026, 11, 20),
+    );
+    failingRepository.seedProject(existingProject);
+    repository = failingRepository;
+
+    await tester.pumpWidget(
+      CutawanApp(
+        repository: repository,
+        storageUsageBytes: () async => 0,
+      ),
+    );
+    await pumpUi(tester);
+
+    await tester.tap(find.text('اختيار فيديو'));
+    await pumpUi(tester);
+
+    expect(methods, contains('pickVideo'));
+    expect(methods, isNot(contains('releasePersistedPermission')));
+    expect(failingRepository.storedProjects, hasLength(1));
+  });
+
 }
