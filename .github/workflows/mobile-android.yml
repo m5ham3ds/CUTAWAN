@@ -82,7 +82,7 @@ jobs:
       - name: Build ARM64 debug APK
         env:
           CMAKE_BUILD_PARALLEL_LEVEL: "2"
-        run: flutter build apk --debug --target-platform android-arm64
+        run: flutter build apk --debug --target-platform android-arm64 --dart-define=BUILD_SHA=${{ github.sha }}
 
       - name: Verify APK contains ARM64 libraries only and no duplicated native libraries
         run: |
