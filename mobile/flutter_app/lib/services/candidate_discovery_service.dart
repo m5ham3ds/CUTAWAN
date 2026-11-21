@@ -5,9 +5,13 @@ import '../domain/clip_preferences.dart';
 import '../domain/transcript_contract.dart';
 
 class _Sentence {
-  const _Sentence(this.words);
+  const _Sentence(
+    this.words, {
+    this.usedWordBoundaryFallback = false,
+  });
 
   final List<TranscriptWord> words;
+  final bool usedWordBoundaryFallback;
 
   int get startMs => words.first.startMs;
   int get endMs => words.last.endMs;
@@ -36,7 +40,10 @@ class CandidateDiscoveryService {
     final minimumMs = minimumSeconds * 1000;
     final maximumMs = maximumSeconds * 1000;
     final targetMs = ((minimumMs + maximumMs) / 2).round();
-    final sentences = _sentences(transcript.words);
+    final sentences = _sentences(
+      transcript.words,
+      maximumDurationMs: maximumMs,
+    );
     final proposals = <ClipCandidate>[];
 
     for (var startIndex = 0; startIndex < sentences.length; startIndex++) {
@@ -80,12 +87,17 @@ class CandidateDiscoveryService {
         final score = (weighted / totalWeight * 100)
             .clamp(0.0, 100.0)
             .toDouble();
+        final usedWordBoundaryFallback = sentences
+            .sublist(startIndex, endIndex + 1)
+            .any((item) => item.usedWordBoundaryFallback);
         final explanations = <String>[
           'كثافة الكلام: ${(density * 100).round()}%',
           if (audio != null)
             'طاقة الصوت المتوسطة: ${(audio * 100).round()}%',
           if (visual != null)
             'أعلى تغير بصري مرصود: ${(visual * 100).round()}%',
+          if (usedWordBoundaryFallback)
+            'حدود احتياطية عند الكلمات لضمان عدم تجاوز مدة المقطع',
           'الحدود مأخوذة من بدايات/نهايات الجمل المكتشفة بالتفريغ',
         ];
         final firstSentence = sentences[startIndex].text;
@@ -146,20 +158,47 @@ class CandidateDiscoveryService {
     }
   }
 
-  static List<_Sentence> _sentences(List<TranscriptWord> words) {
-    final sorted = [...words]..sort((a, b) => a.startMs.compareTo(b.startMs));
+  static List<_Sentence> _sentences(
+    List<TranscriptWord> words, {
+    required int maximumDurationMs,
+  }) {
+    if (maximumDurationMs <= 0) {
+      throw const FormatException('Maximum sentence duration must be positive.');
+    }
+    final sorted = [...words]
+      ..sort((a, b) {
+        final byStart = a.startMs.compareTo(b.startMs);
+        return byStart != 0 ? byStart : a.endMs.compareTo(b.endMs);
+      });
     final result = <_Sentence>[];
     var current = <TranscriptWord>[];
+    var beginsAfterFallbackBoundary = false;
+
+    void flush({bool forcedWordBoundary = false}) {
+      if (current.isNotEmpty) {
+        result.add(_Sentence(
+          List.unmodifiable(current),
+          usedWordBoundaryFallback:
+              beginsAfterFallbackBoundary || forcedWordBoundary,
+        ));
+      }
+      current = <TranscriptWord>[];
+      beginsAfterFallbackBoundary = forcedWordBoundary;
+    }
+
     for (var index = 0; index < sorted.length; index++) {
       final word = sorted[index];
+      if (current.isNotEmpty &&
+          word.endMs - current.first.startMs > maximumDurationMs) {
+        // Whisper can return a long continuous stream without punctuation.
+        // Split only between timed words so no word is truncated.
+        flush(forcedWordBoundary: true);
+      }
       current.add(word);
       final next = index + 1 < sorted.length ? sorted[index + 1] : null;
       final gap = next == null ? 0 : next.startMs - word.endMs;
       if (_endsSentence(word.text) || next == null || gap > 1800) {
-        if (current.isNotEmpty) {
-          result.add(_Sentence(List.unmodifiable(current)));
-        }
-        current = <TranscriptWord>[];
+        flush();
       }
     }
     return result;

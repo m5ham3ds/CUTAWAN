@@ -129,6 +129,99 @@ void main() {
     );
   });
 
+  test('unpunctuated long transcripts are split at timed word boundaries', () {
+    const durationMs = 60000;
+    final words = List.generate(
+      65,
+      (index) => TranscriptWord(
+        text: 'word$index',
+        startMs: index * 900,
+        endMs: index * 900 + 500,
+        probability: 0.94,
+      ),
+    );
+    final text = words.map((word) => word.text).join(' ');
+    final transcript = CutawanTranscript(
+      schemaVersion: CutawanTranscript.currentSchemaVersion,
+      language: 'en',
+      text: text,
+      sourceDurationMs: durationMs,
+      createdAtUtc: DateTime.utc(2026, 11, 21),
+      segments: [
+        TranscriptSegment(
+          text: text,
+          startMs: 0,
+          endMs: words.last.endMs,
+          words: words,
+        ),
+      ],
+      audioEnergy: List.generate(
+        60,
+        (index) => AudioEnergyWindow(
+          startMs: index * 1000,
+          endMs: (index + 1) * 1000,
+          rms: 0.35,
+        ),
+      ),
+      visualSamples: List.generate(
+        12,
+        (index) => VisualSceneSample(
+          timestampMs: index * 5000,
+          changeScore: 0.25 + (index % 3) * 0.1,
+        ),
+      ),
+      wordTimingReliable: true,
+      whisperModelId: 'base',
+    );
+
+    final result = const CandidateDiscoveryService().discover(
+      transcript,
+      preferences,
+      now: DateTime.utc(2026, 11, 21),
+    );
+
+    expect(result.candidates, isNotEmpty);
+    expect(result.candidates.length, greaterThanOrEqualTo(2));
+    expect(
+      result.candidates.every((candidate) =>
+          candidate.durationMs >= 15000 &&
+          candidate.durationMs <= 30000),
+      isTrue,
+    );
+    expect(
+      result.candidates.any((candidate) => candidate.explanations.any(
+            (item) => item.contains('حدود احتياطية عند الكلمات'),
+          )),
+      isTrue,
+    );
+  });
+
+  test('candidate set rejects non-finite deterministic scores and evidence', () {
+    final result = const CandidateDiscoveryService().discover(
+      makeTranscript(),
+      preferences,
+    );
+    final invalidScore = result.toJson();
+    final scoreItems = invalidScore['candidates'] as List<dynamic>;
+    final firstScore = Map<String, dynamic>.from(scoreItems.first as Map)
+      ..['score'] = double.nan;
+    invalidScore['candidates'] = [firstScore];
+    expect(
+      () => CandidateSet.fromJson(Map<String, dynamic>.from(invalidScore)),
+      throwsA(isA<FormatException>()),
+    );
+
+    final invalidEnergy = result.toJson();
+    final energyItems = invalidEnergy['candidates'] as List<dynamic>;
+    final firstEnergy = Map<String, dynamic>.from(energyItems.first as Map)
+      ..['averageAudioEnergy'] = double.infinity;
+    invalidEnergy['candidates'] = [firstEnergy];
+    expect(
+      () => CandidateSet.fromJson(Map<String, dynamic>.from(invalidEnergy)),
+      throwsA(isA<FormatException>()),
+    );
+  });
+
   test('candidate set JSON validates source bounds and scores', () {
     final result = const CandidateDiscoveryService().discover(
       makeTranscript(),

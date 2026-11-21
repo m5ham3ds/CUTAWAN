@@ -39,12 +39,14 @@ class FocusKeyframe {
   const FocusKeyframe({
     required this.timestampMs,
     required this.centerX,
+    this.centerY = 0.5,
     this.cut = false,
     this.confidence = 0,
   });
 
   final int timestampMs;
   final double centerX;
+  final double centerY;
   final bool cut;
   final double confidence;
 
@@ -53,6 +55,9 @@ class FocusKeyframe {
         !centerX.isFinite ||
         centerX < 0 ||
         centerX > 1 ||
+        !centerY.isFinite ||
+        centerY < 0 ||
+        centerY > 1 ||
         !confidence.isFinite ||
         confidence < 0 ||
         confidence > 1) {
@@ -64,6 +69,7 @@ class FocusKeyframe {
   factory FocusKeyframe.fromJson(Map<String, dynamic> json) => FocusKeyframe(
         timestampMs: (json['timestampMs'] as num?)?.toInt() ?? -1,
         centerX: (json['centerX'] as num?)?.toDouble() ?? -1,
+        centerY: (json['centerY'] as num?)?.toDouble() ?? 0.5,
         cut: json['cut'] as bool? ?? false,
         confidence: (json['confidence'] as num?)?.toDouble() ?? -1,
       );
@@ -71,6 +77,7 @@ class FocusKeyframe {
   Map<String, Object?> toJson() => {
         'timestampMs': timestampMs,
         'centerX': centerX,
+        'centerY': centerY,
         'cut': cut,
         'confidence': confidence,
       };
@@ -303,6 +310,20 @@ class ReframePlan {
       };
 }
 
+class _ReframeSample {
+  const _ReframeSample({
+    required this.timestampMs,
+    required this.box,
+    required this.confidence,
+    required this.cropEligible,
+  });
+
+  final int timestampMs;
+  final FrameBox? box;
+  final double confidence;
+  final bool cropEligible;
+}
+
 class ReframePlanner {
   const ReframePlanner();
 
@@ -324,52 +345,69 @@ class ReframePlanner {
         minimumCropWidthPx <= 0) {
       throw const FormatException('Reframe inputs are incomplete or mismatched.');
     }
-    final eligible = <FocusKeyframe>[];
+    final samplesByTimestamp = <int, _ReframeSample>{};
     for (var i = 0; i < detections.length; i++) {
-      final box = detections[i];
-      final confidence = confidenceScores[i];
       final timestamp = timestampsMs[i];
-      if (box.validate() != null ||
-          !confidence.isFinite || confidence < 0.65 || confidence > 1 ||
-          timestamp < 0 || timestamp >= sourceDurationMs) {
-        continue;
-      }
-      final widthPx = box.width * sourceWidth;
-      final heightPx = box.height * sourceHeight;
-      if (widthPx < minimumCropWidthPx || heightPx < minimumCropWidthPx) {
-        continue;
-      }
-      eligible.add(FocusKeyframe(
+      if (timestamp < 0 || timestamp >= sourceDurationMs) continue;
+      final box = detections[i];
+      final rawConfidence = confidenceScores[i];
+      final confidence = rawConfidence.isFinite
+          ? rawConfidence.clamp(0.0, 1.0).toDouble()
+          : 0.0;
+      final cropEligible = box.validate() == null &&
+          rawConfidence.isFinite &&
+          rawConfidence >= 0.65 &&
+          rawConfidence <= 1 &&
+          box.width * sourceWidth >= minimumCropWidthPx &&
+          box.height * sourceHeight >= minimumCropWidthPx;
+      final candidate = _ReframeSample(
         timestampMs: timestamp,
-        centerX: (box.x + box.width / 2).clamp(0.0, 1.0).toDouble(),
+        box: cropEligible ? box : null,
         confidence: confidence,
-        cut: eligible.isNotEmpty &&
-            (eligible.last.centerX - (box.x + box.width / 2)).abs() > 0.18,
+        cropEligible: cropEligible,
+      );
+      final existing = samplesByTimestamp[timestamp];
+      if (existing == null ||
+          (candidate.cropEligible && !existing.cropEligible) ||
+          (candidate.cropEligible == existing.cropEligible &&
+              candidate.confidence > existing.confidence)) {
+        samplesByTimestamp[timestamp] = candidate;
+      }
+    }
+
+    final samples = samplesByTimestamp.values.toList()
+      ..sort((a, b) => a.timestampMs.compareTo(b.timestampMs));
+    final eligibleSamples =
+        samples.where((sample) => sample.cropEligible).toList(growable: false);
+    final keyframes = <FocusKeyframe>[];
+    for (final sample in eligibleSamples) {
+      final box = sample.box!;
+      final centerX =
+          (box.x + box.width / 2).clamp(0.0, 1.0).toDouble();
+      keyframes.add(FocusKeyframe(
+        timestampMs: sample.timestampMs,
+        centerX: centerX,
+        centerY: (box.y + box.height / 2).clamp(0.0, 1.0).toDouble(),
+        confidence: sample.confidence,
+        cut: keyframes.isNotEmpty &&
+            (keyframes.last.centerX - centerX).abs() > 0.18,
       ));
     }
 
-    eligible.sort((a, b) => a.timestampMs.compareTo(b.timestampMs));
-    final deduplicated = <FocusKeyframe>[];
-    for (final frame in eligible) {
-      if (deduplicated.isNotEmpty &&
-          frame.timestampMs <= deduplicated.last.timestampMs) {
-        continue;
-      }
-      deduplicated.add(frame);
-    }
-
-    final coverage = detections.isEmpty ? 0.0 : deduplicated.length / detections.length;
-    final confidenceSum = deduplicated.fold<double>(
+    // Preserve the historical denominator (all native samples, including
+    // duplicate timestamps) so duplicate frames cannot inflate coverage.
+    final coverage =
+        detections.isEmpty ? 0.0 : eligibleSamples.length / detections.length;
+    final confidenceSum = keyframes.fold<double>(
       0,
       (sum, frame) => sum + frame.confidence,
     );
-    final averageConfidence = deduplicated.isEmpty
-        ? 0.0
-        : confidenceSum / deduplicated.length;
-    final focus = deduplicated.isEmpty
+    final averageConfidence =
+        keyframes.isEmpty ? 0.0 : confidenceSum / keyframes.length;
+    final focus = keyframes.isEmpty
         ? null
         : FocusTrack(
-            keyframes: deduplicated,
+            keyframes: keyframes,
             averageConfidence: averageConfidence,
             coverage: coverage,
             source: 'android-frame-analysis',
@@ -380,64 +418,147 @@ class ReframePlanner {
 
     final targetWidth = (sourceHeight * targetAspectRatio).round();
     final cropWidth = targetWidth.clamp(1, sourceWidth).toInt();
-    final cropHeight = (cropWidth / targetAspectRatio).round().clamp(1, sourceHeight).toInt();
+    final cropHeight =
+        (cropWidth / targetAspectRatio).round().clamp(1, sourceHeight).toInt();
     final normalizedW = cropWidth / sourceWidth;
     final normalizedH = cropHeight / sourceHeight;
     final shots = <ReframeShot>[];
 
-    if (!validTrack) {
-      shots.add(ReframeShot(
-        startMs: 0,
-        endMs: sourceDurationMs,
-        mode: 'fit',
-        confidence: averageConfidence,
-        reviewReason: preferContext
-            ? 'Context-preserving layout requested.'
-            : 'No sufficiently confident and continuous subject track; preserve the full scene.',
-      ));
-    } else {
-      for (var index = 0; index < deduplicated.length; index++) {
-        final frame = deduplicated[index];
-        final start = frame.timestampMs;
-        final end = index + 1 < deduplicated.length
-            ? deduplicated[index + 1].timestampMs
-            : sourceDurationMs;
-        if (end <= start) continue;
-        final left = (frame.centerX - normalizedW / 2)
-            .clamp(0.0, 1.0 - normalizedW).toDouble();
-        final region = FrameBox(
-          x: left,
-          y: (1 - normalizedH) / 2,
-          width: normalizedW,
-          height: normalizedH,
-        );
+    void appendFit(int startMs, int endMs, String reason) {
+      if (endMs <= startMs) return;
+      if (shots.isNotEmpty &&
+          shots.last.mode == 'fit' &&
+          shots.last.endMs == startMs) {
+        final previous = shots.removeLast();
         shots.add(ReframeShot(
-          startMs: start,
-          endMs: end,
-          mode: 'crop',
-          region: region,
-          focusCenterX: frame.centerX,
-          confidence: frame.confidence,
-        ));
-      }
-      if (shots.isNotEmpty && shots.first.startMs > 0) {
-        shots.insert(0, ReframeShot(
-          startMs: 0,
-          endMs: shots.first.startMs,
+          startMs: previous.startMs,
+          endMs: endMs,
           mode: 'fit',
           confidence: averageConfidence,
-          reviewReason: 'No preceding detection; preserve context.',
+          reviewReason: reason,
         ));
-      }
-      if (shots.isEmpty) {
+      } else {
         shots.add(ReframeShot(
-          startMs: 0,
-          endMs: sourceDurationMs,
+          startMs: startMs,
+          endMs: endMs,
           mode: 'fit',
-          confidence: 0,
-          reviewReason: 'No valid focus intervals were produced.',
+          confidence: averageConfidence,
+          reviewReason: reason,
         ));
       }
+    }
+
+    void appendCrop(_ReframeSample sample, int startMs, int endMs) {
+      if (endMs <= startMs) return;
+      final box = sample.box!;
+      final centerX =
+          (box.x + box.width / 2).clamp(0.0, 1.0).toDouble();
+      final centerY =
+          (box.y + box.height / 2).clamp(0.0, 1.0).toDouble();
+      final left = (centerX - normalizedW / 2)
+          .clamp(0.0, 1.0 - normalizedW)
+          .toDouble();
+      final top = (centerY - normalizedH / 2)
+          .clamp(0.0, 1.0 - normalizedH)
+          .toDouble();
+      shots.add(ReframeShot(
+        startMs: startMs,
+        endMs: endMs,
+        mode: 'crop',
+        region: FrameBox(
+          x: left,
+          y: top,
+          width: normalizedW,
+          height: normalizedH,
+        ),
+        focusCenterX: centerX,
+        confidence: sample.confidence,
+      ));
+    }
+
+    if (!validTrack) {
+      appendFit(
+        0,
+        sourceDurationMs,
+        preferContext
+            ? 'Context-preserving layout requested.'
+            : 'No sufficiently confident face coverage; preserve the full scene.',
+      );
+    } else if (samples.isNotEmpty) {
+      final intervals = <int>[];
+      for (var index = 1; index < samples.length; index++) {
+        final interval =
+            samples[index].timestampMs - samples[index - 1].timestampMs;
+        if (interval > 0) intervals.add(interval);
+      }
+      intervals.sort();
+      final medianInterval = intervals.isEmpty
+          ? 1200
+          : intervals[intervals.length ~/ 2];
+      final maximumTrackedGapMs = max(1600, medianInterval * 2).toInt();
+      final halfSupportMs = max(1, maximumTrackedGapMs ~/ 2).toInt();
+      var cursor = 0;
+
+      for (var index = 0; index < samples.length; index++) {
+        final sample = samples[index];
+        final previous = index > 0 ? samples[index - 1] : null;
+        final next = index + 1 < samples.length ? samples[index + 1] : null;
+
+        final start = previous == null
+            ? max(0, sample.timestampMs - halfSupportMs).toInt()
+            : sample.timestampMs - previous.timestampMs <=
+                    maximumTrackedGapMs
+                ? (previous.timestampMs + sample.timestampMs) ~/ 2
+                : max(
+                    previous.timestampMs + halfSupportMs,
+                    sample.timestampMs - halfSupportMs,
+                  ).toInt();
+        final end = next == null
+            ? min(sourceDurationMs, sample.timestampMs + halfSupportMs)
+                .toInt()
+            : next.timestampMs - sample.timestampMs <= maximumTrackedGapMs
+                ? (sample.timestampMs + next.timestampMs) ~/ 2
+                : min(
+                    sample.timestampMs + halfSupportMs,
+                    next.timestampMs - halfSupportMs,
+                  ).toInt();
+
+        final safeStart = start.clamp(cursor, sourceDurationMs).toInt();
+        final safeEnd = end.clamp(safeStart, sourceDurationMs).toInt();
+        if (safeStart > cursor) {
+          appendFit(
+            cursor,
+            safeStart,
+            'No nearby confident face sample; preserve the full scene.',
+          );
+        }
+        if (sample.cropEligible) {
+          appendCrop(sample, safeStart, safeEnd);
+        } else {
+          appendFit(
+            safeStart,
+            safeEnd,
+            'Face not confidently detected in this interval; preserve the full scene.',
+          );
+        }
+        cursor = safeEnd;
+      }
+
+      if (cursor < sourceDurationMs) {
+        appendFit(
+          cursor,
+          sourceDurationMs,
+          'No recent confident face sample; preserve the full scene.',
+        );
+      }
+    }
+
+    if (shots.isEmpty) {
+      appendFit(
+        0,
+        sourceDurationMs,
+        'No valid focus intervals were produced; preserve the full scene.',
+      );
     }
 
     final plan = ReframePlan(
@@ -446,9 +567,13 @@ class ReframePlanner {
       aspectRatio: targetAspectRatio,
       shots: shots,
       focusTrack: validTrack ? focus : null,
-      fallbackReason: validTrack ? null : (preferContext
-          ? 'context-preserving layout'
-          : 'insufficient face/speaker confidence or temporal coverage'),
+      fallbackReason: validTrack
+          ? (shots.any((shot) => shot.mode == 'fit')
+              ? 'Untracked intervals preserve the full scene.'
+              : null)
+          : (preferContext
+              ? 'context-preserving layout'
+              : 'insufficient face confidence or temporal coverage'),
       engine: 'conservative-frame-reframe-v1',
     );
     plan.validate();

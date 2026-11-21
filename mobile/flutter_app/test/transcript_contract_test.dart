@@ -86,6 +86,41 @@ void main() {
     );
   });
 
+  test('non-finite word confidence and audio/visual evidence are rejected', () {
+    final wordJson = sampleTranscript().toJson();
+    final segments = wordJson['segments'] as List<dynamic>;
+    final segment = Map<String, dynamic>.from(segments.single as Map);
+    final words = segment['words'] as List<dynamic>;
+    final invalidWord = Map<String, dynamic>.from(words.first as Map)
+      ..['probability'] = double.nan;
+    segment['words'] = [invalidWord, words.last];
+    wordJson['segments'] = [segment];
+    expect(
+      () => CutawanTranscript.fromJson(Map<String, dynamic>.from(wordJson)),
+      throwsA(isA<FormatException>()),
+    );
+
+    final energyJson = sampleTranscript().toJson();
+    final energy = Map<String, dynamic>.from(
+      (energyJson['audioEnergy'] as List<dynamic>).single as Map,
+    )..['rms'] = double.infinity;
+    energyJson['audioEnergy'] = [energy];
+    expect(
+      () => CutawanTranscript.fromJson(Map<String, dynamic>.from(energyJson)),
+      throwsA(isA<FormatException>()),
+    );
+
+    final visualJson = sampleTranscript().toJson();
+    final visual = Map<String, dynamic>.from(
+      (visualJson['visualSamples'] as List<dynamic>).single as Map,
+    )..['changeScore'] = double.nan;
+    visualJson['visualSamples'] = [visual];
+    expect(
+      () => CutawanTranscript.fromJson(Map<String, dynamic>.from(visualJson)),
+      throwsA(isA<FormatException>()),
+    );
+  });
+
   test('unsupported transcript schema is rejected', () {
     final json = sampleTranscript().toJson()..['schemaVersion'] = 22;
     expect(

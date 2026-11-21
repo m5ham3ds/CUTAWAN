@@ -59,6 +59,63 @@ void main() {
     expect(value.shots.every((shot) => shot.validate(sourceDurationMs: 10000) == null), isTrue);
   });
 
+  test('vertical reframing follows a lower face position when the crop allows it', () {
+    final value = planner.create(
+      sourceDurationMs: 10000,
+      sourceWidth: 1080,
+      sourceHeight: 1920,
+      targetAspectRatio: 16 / 9,
+      detections: List.generate(
+        5,
+        (_) => const FrameBox(
+          x: 0.35,
+          y: 0.65,
+          width: 0.3,
+          height: 0.2,
+        ),
+      ),
+      confidenceScores: List.filled(5, 0.92),
+      timestampsMs: [0, 2000, 4000, 6000, 8000],
+    );
+    value.validate();
+    final crop = value.shots.firstWhere((shot) => shot.mode == 'crop');
+    expect(crop.region, isNotNull);
+    expect(crop.region!.y, greaterThan(0.5));
+    expect(value.focusTrack!.keyframes.first.centerY, closeTo(0.75, 0.0001));
+  });
+
+  test('long intervals without a confident face return to full-scene fit', () {
+    final times = List.generate(10, (index) => index * 1000);
+    final boxes = List.generate(
+      10,
+      (index) => const {0, 1, 2, 7, 8, 9}.contains(index)
+          ? const FrameBox(x: 0.35, y: 0.2, width: 0.22, height: 0.32)
+          : const FrameBox(x: -1, y: -1, width: 0, height: 0),
+    );
+    final scores = List.generate(
+      10,
+      (index) => const {0, 1, 2, 7, 8, 9}.contains(index) ? 0.92 : 0.0,
+    );
+    final value = plan(boxes: boxes, scores: scores, times: times);
+    value.validate();
+    expect(value.focusTrack, isNotNull);
+    final missed = value.shots.where(
+      (shot) => shot.mode == 'fit' && shot.startMs < 7000 && shot.endMs > 2000,
+    );
+    expect(missed, isNotEmpty);
+    expect(missed.first.endMs, greaterThan(missed.first.startMs));
+  });
+
+  test('legacy focus keyframes default missing vertical center safely', () {
+    final restored = FocusKeyframe.fromJson({
+      'timestampMs': 1200,
+      'centerX': 0.4,
+      'confidence': 0.8,
+    });
+    expect(restored.centerY, 0.5);
+    expect(FocusKeyframe.fromJson(restored.toJson()).centerY, 0.5);
+  });
+
   test('context preference overrides detections and forces full-frame fit', () {
     final value = plan(
       boxes: List.generate(8, (index) => const FrameBox(

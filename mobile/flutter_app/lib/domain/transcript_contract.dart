@@ -17,7 +17,7 @@ class TranscriptWord {
     final end = (json['endMs'] as num?)?.toInt() ?? -1;
     final probability = (json['probability'] as num?)?.toDouble() ?? 0;
     if (text.trim().isEmpty || start < 0 || end <= start ||
-        probability < 0 || probability > 1) {
+        !probability.isFinite || probability < 0 || probability > 1) {
       throw const FormatException('Transcript word timing or confidence is invalid.');
     }
     return TranscriptWord(
@@ -94,7 +94,7 @@ class AudioEnergyWindow {
     final start = (json['startMs'] as num?)?.toInt() ?? -1;
     final end = (json['endMs'] as num?)?.toInt() ?? -1;
     final rms = (json['rms'] as num?)?.toDouble() ?? -1;
-    if (start < 0 || end <= start || rms < 0 || rms > 1) {
+    if (start < 0 || end <= start || !rms.isFinite || rms < 0 || rms > 1) {
       throw const FormatException('Audio energy window is invalid.');
     }
     return AudioEnergyWindow(startMs: start, endMs: end, rms: rms);
@@ -119,7 +119,7 @@ class VisualSceneSample {
   factory VisualSceneSample.fromJson(Map<String, dynamic> json) {
     final timestamp = (json['timestampMs'] as num?)?.toInt() ?? -1;
     final score = (json['changeScore'] as num?)?.toDouble() ?? -1;
-    if (timestamp < 0 || score < 0 || score > 1) {
+    if (timestamp < 0 || !score.isFinite || score < 0 || score > 1) {
       throw const FormatException('Visual scene sample is invalid.');
     }
     return VisualSceneSample(timestampMs: timestamp, changeScore: score);
@@ -226,7 +226,12 @@ class CutawanTranscript {
       previousStart = segment.startMs;
       var wordStart = segment.startMs;
       for (final word in segment.words) {
-        if (word.startMs < segment.startMs ||
+        if (word.text.trim().isEmpty ||
+            !word.probability.isFinite ||
+            word.probability < 0 ||
+            word.probability > 1 ||
+            word.startMs < segment.startMs ||
+            word.endMs <= word.startMs ||
             word.endMs > segment.endMs + 500 ||
             word.startMs < wordStart) {
           throw const FormatException('Transcript words are outside their segment or not time ordered.');
@@ -235,12 +240,21 @@ class CutawanTranscript {
       }
     }
     for (final window in audioEnergy) {
-      if (window.endMs > sourceDurationMs + 1000) {
+      if (window.startMs < 0 ||
+          window.endMs <= window.startMs ||
+          !window.rms.isFinite ||
+          window.rms < 0 ||
+          window.rms > 1 ||
+          window.endMs > sourceDurationMs + 1000) {
         throw const FormatException('Audio evidence exceeds source duration.');
       }
     }
     for (final sample in visualSamples) {
-      if (sample.timestampMs > sourceDurationMs + 1000) {
+      if (sample.timestampMs < 0 ||
+          !sample.changeScore.isFinite ||
+          sample.changeScore < 0 ||
+          sample.changeScore > 1 ||
+          sample.timestampMs > sourceDurationMs + 1000) {
         throw const FormatException('Visual evidence exceeds source duration.');
       }
     }

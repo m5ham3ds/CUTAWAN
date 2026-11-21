@@ -59,9 +59,11 @@ class ClipCandidate {
     final energy = (json['averageAudioEnergy'] as num?)?.toDouble() ?? -1;
     final visual = (json['peakVisualChange'] as num?)?.toDouble() ?? -1;
     final explanations = json['explanations'];
-    if (id.isEmpty || start < 0 || end <= start || score < 0 ||
-        score > 100 || energy < 0 || energy > 1 ||
-        visual < 0 || visual > 1 || explanations is! List<dynamic>) {
+    if (id.trim().isEmpty || start < 0 || end <= start ||
+        !score.isFinite || score < 0 || score > 100 ||
+        !energy.isFinite || energy < 0 || energy > 1 ||
+        !visual.isFinite || visual < 0 || visual > 1 ||
+        explanations is! List<dynamic>) {
       throw const FormatException('Clip candidate is invalid.');
     }
     return ClipCandidate(
@@ -169,10 +171,20 @@ class CandidateSet {
     }
     final ids = <String>{};
     for (final candidate in candidates) {
-      if (!ids.add(candidate.id) ||
+      if (candidate.id.trim().isEmpty ||
+          !ids.add(candidate.id) ||
           candidate.startMs < 0 ||
           candidate.endMs <= candidate.startMs ||
-          candidate.endMs > sourceDurationMs) {
+          candidate.endMs > sourceDurationMs ||
+          !candidate.score.isFinite ||
+          candidate.score < 0 ||
+          candidate.score > 100 ||
+          !candidate.averageAudioEnergy.isFinite ||
+          candidate.averageAudioEnergy < 0 ||
+          candidate.averageAudioEnergy > 1 ||
+          !candidate.peakVisualChange.isFinite ||
+          candidate.peakVisualChange < 0 ||
+          candidate.peakVisualChange > 1) {
         throw const FormatException('Candidate IDs must be unique and times must stay inside the source.');
       }
     }
