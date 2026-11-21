@@ -17,6 +17,11 @@ class DeviceAcceptanceService {
   final MethodChannel _channel;
   final AiSecretStorage _secretStorage;
 
+  static const buildSha = String.fromEnvironment(
+    'BUILD_SHA',
+    defaultValue: 'local-or-untracked',
+  );
+
   Future<Map<String, Object?>> collect() async {
     final native = await _channel.invokeMapMethod<String, dynamic>(
       'getDeviceAcceptanceDiagnostics',
@@ -48,6 +53,8 @@ class DeviceAcceptanceService {
     return <String, Object?>{
       ...native.map((key, value) => MapEntry(key, value)),
       'collectedAtUtc': DateTime.now().toUtc().toIso8601String(),
+      'buildSha': buildSha,
+      'fixtureEvidenceStatus': 'not-collected-by-device-baseline',
       'secureStorageRoundTrip': 'passed',
       'secureStorageCanaryDeleted': true,
       'phase10Acceptance': 'incomplete-device-and-media-evidence-required',
