@@ -215,7 +215,10 @@ void main() {
     expect(deleteButton.onPressed, isNull);
     expect(find.text('إيقاف المعالجة'), findsOneWidget);
 
-    await tester.tap(find.byKey(ValueKey('cancel-job-${running.id}')));
+    final cancelButton = find.byKey(ValueKey('cancel-job-${running.id}'));
+    await tester.ensureVisible(cancelButton);
+    await tester.pump();
+    await tester.tap(cancelButton);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 30));
 
