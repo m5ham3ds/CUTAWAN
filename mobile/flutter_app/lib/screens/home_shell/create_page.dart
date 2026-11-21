@@ -76,13 +76,15 @@ class _CreatePageState extends State<CreatePage> {
 
   Future<void> _importVideo() async {
     if (_isImporting) { return; }
+    VideoAssetMetadata? selectedSource;
+    var projectSaved = false;
     setState(() => _isImporting = true);
     try {
       final preferences = _currentPreferences();
       final source = await AndroidVideoPicker.pickVideo();
       if (!mounted) {
         if (source != null) {
-          await AndroidVideoPicker.releasePersistedPermission(source.uri);
+          await _releasePersistedGrantIfUnreferenced(source);
         }
         return;
       }
@@ -91,11 +93,13 @@ class _CreatePageState extends State<CreatePage> {
         return;
       }
 
+      selectedSource = source;
       final project = CutawanProject.create(
         source: source,
         preferences: preferences,
       );
       await widget.repository.save(project);
+      projectSaved = true;
       await widget.onProjectSaved();
       _showMessage('تم استيراد الفيديو وحفظ المشروع محليًا.');
     } on PlatformException catch (error) {
@@ -105,7 +109,27 @@ class _CreatePageState extends State<CreatePage> {
     } catch (error) {
       _showMessage('فشل حفظ المشروع: $error');
     } finally {
+      if (selectedSource != null && !projectSaved) {
+        await _releasePersistedGrantIfUnreferenced(selectedSource);
+      }
       if (mounted) { setState(() => _isImporting = false); }
+    }
+  }
+
+  Future<void> _releasePersistedGrantIfUnreferenced(
+    VideoAssetMetadata source,
+  ) async {
+    if (Uri.tryParse(source.uri)?.scheme != 'content') return;
+    try {
+      final projects = await widget.repository.listProjects();
+      final isReferenced = projects.any(
+        (project) => project.source.uri == source.uri,
+      );
+      if (!isReferenced) {
+        await AndroidVideoPicker.releasePersistedPermission(source.uri);
+      }
+    } catch (_) {
+      // Preserve access when repository state cannot be read safely.
     }
   }
 
