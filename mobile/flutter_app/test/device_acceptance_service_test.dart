@@ -60,6 +60,8 @@ void main() {
 
     expect(report['manufacturer'], 'Example');
     expect(report['model'], 'Physical Test Device');
+    expect(report['buildSha'], DeviceAcceptanceService.buildSha);
+    expect(report['fixtureEvidenceStatus'], 'not-collected-by-device-baseline');
     expect(report['secureStorageRoundTrip'], 'passed');
     expect(report['secureStorageCanaryDeleted'], isTrue);
     expect(
