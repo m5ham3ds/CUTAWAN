@@ -27,7 +27,8 @@ void main() {
         customMaximumSeconds: 45,
         resolution: '720p',
         captionStyleId: 'karaoke',
-        captionAnimationId: 'bounce',
+        captionAnimationId: 'static',
+        captionPreviewAnimationId: 'bounce',
         captionsEnabled: false,
         speakerTrackingEnabled: true,
         captionFontFamily: 'Poppins',
@@ -54,7 +55,8 @@ void main() {
     expect(restored.preferences.customMaximumSeconds, 45);
     expect(restored.preferences.resolution, '720p');
     expect(restored.preferences.captionStyleId, 'karaoke');
-    expect(restored.preferences.captionAnimationId, 'bounce');
+    expect(restored.preferences.captionAnimationId, 'static');
+    expect(restored.preferences.captionPreviewAnimationId, 'bounce');
     expect(restored.preferences.captionsEnabled, isFalse);
     expect(restored.preferences.speakerTrackingEnabled, isTrue);
     expect(restored.preferences.captionFontFamily, 'Poppins');
@@ -155,6 +157,17 @@ void main() {
       }),
       throwsA(isA<FormatException>()),
     );
+  });
+
+
+  test('legacy preferences infer the preview animation from the export animation', () {
+    final legacy = const ClipPreferences(
+      captionAnimationId: 'karaoke_fill',
+    ).toJson()
+      ..remove('captionPreviewAnimationId');
+    final restored = ClipPreferences.fromJson(legacy);
+    expect(restored.captionAnimationId, 'karaoke_fill');
+    expect(restored.captionPreviewAnimationId, isNull);
   });
 
   test('unsupported export resolution is rejected', () {

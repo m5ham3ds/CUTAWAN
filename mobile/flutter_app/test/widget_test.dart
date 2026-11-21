@@ -86,8 +86,10 @@ void main() {
     expect(find.descendant(of: find.byKey(const ValueKey('caption-style-presets')), matching: find.byType(ChoiceChip)), findsNWidgets(12));
     expect(find.text('Beast'), findsOneWidget);
     expect(find.byKey(const ValueKey('caption-style-karaoke')), findsOneWidget);
-    expect(find.text('معاينة اتجاه النص'), findsOneWidget);
-    expect(find.text('حفظ إعدادات الاستوديو في المشروع'), findsOneWidget);
+    expect(find.text('اتجاه معاينة النص'), findsOneWidget);
+    expect(find.byKey(const ValueKey('caption-project-selector')), findsOneWidget);
+    expect(find.byKey(const ValueKey('caption-timing-offset')), findsOneWidget);
+    expect(find.byKey(const ValueKey('caption-studio-save')), findsOneWidget);
 
     final arabicPreview = tester
         .widgetList<RichText>(find.byType(RichText))
@@ -113,9 +115,23 @@ void main() {
         .where((chip) => chip.selected);
     expect(selectedStyles, hasLength(1));
 
-    await tester.tap(find.text('Word Pop').last);
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('caption-animation-karaoke_fill')),
+    );
+    await tester.tap(
+      find.byKey(const ValueKey('caption-animation-karaoke_fill')),
+    );
     await tester.pump(const Duration(milliseconds: 100));
-    expect(find.text('Karaoke Fill'), findsOneWidget);
+    expect(
+      tester.widget<ChoiceChip>(
+        find.byKey(const ValueKey('caption-animation-karaoke_fill')),
+      ).selected,
+      isTrue,
+    );
+    expect(
+      find.textContaining('مدعومة في معاينة الاستوديو وتصدير MP4'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('jobs and review show clear empty states when no project exists', (tester) async {

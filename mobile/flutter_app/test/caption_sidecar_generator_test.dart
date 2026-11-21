@@ -75,6 +75,33 @@ void main() {
     expect(generated.ass, contains('لحظة'));
   });
 
+  test('custom caption background color is included in the ASS style', () {
+    final base = captionStylePresets.first;
+    final custom = CaptionStylePreset(
+      id: base.id,
+      name: base.name,
+      fontFamily: base.fontFamily,
+      fontScale: base.fontScale,
+      uppercase: base.uppercase,
+      textColor: base.textColor,
+      highlightColor: base.highlightColor,
+      highlightBoxColor: '#2563EB',
+      outlineColor: base.outlineColor,
+      outlineWidth: base.outlineWidth,
+      shadow: base.shadow,
+      bold: base.bold,
+      positionY: base.positionY,
+      wordsPerGroup: base.wordsPerGroup,
+    );
+    final generated = const CaptionSidecarGenerator().generate(
+      transcript: transcript,
+      candidate: candidate,
+      style: custom,
+      aspectRatio: 9 / 16,
+    );
+    expect(generated.ass, contains('&H00EB6325'));
+  });
+
   test('returns empty sidecars when no timed word overlaps the clip', () {
     const noOverlap = ClipCandidate(
       id: 'clip_7000_9000',

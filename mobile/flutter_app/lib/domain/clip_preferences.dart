@@ -26,6 +26,7 @@ class ClipPreferences {
     this.speakerTrackingEnabled = true,
     this.captionStyleId = 'beast',
     this.captionAnimationId = 'word_pop',
+    this.captionPreviewAnimationId,
     this.mainTextColor = '#FFFFFF',
     this.highlightColor = '#FFD400',
     this.captionBackgroundColor = '#000000',
@@ -47,6 +48,7 @@ class ClipPreferences {
   final bool speakerTrackingEnabled;
   final String captionStyleId;
   final String captionAnimationId;
+  final String? captionPreviewAnimationId;
   final String mainTextColor;
   final String highlightColor;
   final String captionBackgroundColor;
@@ -62,6 +64,7 @@ class ClipPreferences {
     bool? captionsEnabled,
     String? captionStyleId,
     String? captionAnimationId,
+    String? captionPreviewAnimationId,
     String? mainTextColor,
     String? highlightColor,
     String? captionBackgroundColor,
@@ -83,6 +86,7 @@ class ClipPreferences {
         speakerTrackingEnabled: speakerTrackingEnabled,
         captionStyleId: captionStyleId ?? this.captionStyleId,
         captionAnimationId: captionAnimationId ?? this.captionAnimationId,
+        captionPreviewAnimationId: captionPreviewAnimationId ?? this.captionPreviewAnimationId,
         mainTextColor: mainTextColor ?? this.mainTextColor,
         highlightColor: highlightColor ?? this.highlightColor,
         captionBackgroundColor: captionBackgroundColor ?? this.captionBackgroundColor,
@@ -123,7 +127,9 @@ class ClipPreferences {
     if (captionTimingOffsetMs < -5000 || captionTimingOffsetMs > 5000) {
       return 'Caption timing offset must be between -5000 and 5000 milliseconds.';
     }
-    if (captionStyleId.isEmpty || captionAnimationId.isEmpty) {
+    if (captionStyleId.isEmpty ||
+        captionAnimationId.isEmpty ||
+        (captionPreviewAnimationId != null && captionPreviewAnimationId!.isEmpty)) {
       return 'Caption style and animation IDs must not be empty.';
     }
     return null;
@@ -140,6 +146,7 @@ class ClipPreferences {
         'speakerTrackingEnabled': speakerTrackingEnabled,
         'captionStyleId': captionStyleId,
         'captionAnimationId': captionAnimationId,
+        'captionPreviewAnimationId': captionPreviewAnimationId,
         'mainTextColor': mainTextColor,
         'highlightColor': highlightColor,
         'captionBackgroundColor': captionBackgroundColor,
@@ -182,6 +189,8 @@ class ClipPreferences {
           json['speakerTrackingEnabled'] as bool? ?? true,
       captionStyleId: json['captionStyleId'] as String? ?? 'beast',
       captionAnimationId: json['captionAnimationId'] as String? ?? 'word_pop',
+      captionPreviewAnimationId:
+          json['captionPreviewAnimationId'] as String?,
       mainTextColor: json['mainTextColor'] as String? ?? '#FFFFFF',
       highlightColor: json['highlightColor'] as String? ?? '#FFD400',
       captionBackgroundColor:

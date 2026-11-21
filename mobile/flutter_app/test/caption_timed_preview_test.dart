@@ -119,7 +119,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 50));
 
-      expect(find.text('معاينة من التفريغ المحفوظ'), findsOneWidget);
+      expect(find.text('معاينة متزامنة مع الكلمات'), findsOneWidget);
       expect(
         find.byKey(const ValueKey('caption-timed-group-selector')),
         findsOneWidget,

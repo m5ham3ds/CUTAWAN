@@ -187,7 +187,9 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
       uppercase: _draftPreferences.captionUppercase ?? base.uppercase,
       textColor: _draftPreferences.mainTextColor,
       highlightColor: _draftPreferences.highlightColor,
-      highlightBoxColor: base.highlightBoxColor,
+      highlightBoxColor: _draftPreferences.captionBackgroundColor.toUpperCase() == '#000000'
+          ? base.highlightBoxColor
+          : _draftPreferences.captionBackgroundColor,
       outlineColor: base.outlineColor,
       outlineWidth: base.outlineWidth,
       shadow: base.shadow,

@@ -179,6 +179,7 @@ class ProcessingPipelineService {
           'positionY': project.preferences.captionPositionY,
           'textColor': project.preferences.mainTextColor,
           'highlightColor': project.preferences.highlightColor,
+          'backgroundColor': project.preferences.captionBackgroundColor,
           'uppercase': project.preferences.captionUppercase,
           'bold': project.preferences.captionBold,
           'timingOffsetMs': project.preferences.captionTimingOffsetMs,
@@ -584,7 +585,9 @@ class ProcessingPipelineService {
       uppercase: preferences.captionUppercase ?? base.uppercase,
       textColor: preferences.mainTextColor,
       highlightColor: preferences.highlightColor,
-      highlightBoxColor: base.highlightBoxColor,
+      highlightBoxColor: preferences.captionBackgroundColor.toUpperCase() == '#000000'
+          ? base.highlightBoxColor
+          : preferences.captionBackgroundColor,
       outlineColor: base.outlineColor,
       outlineWidth: base.outlineWidth,
       shadow: base.shadow,
