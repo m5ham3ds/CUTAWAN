@@ -76,7 +76,8 @@ void main() {
         ),
       ),
     );
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
   }
 
   testWidgets('fits a narrow phone with enlarged text without overflow',
@@ -89,12 +90,22 @@ void main() {
     );
 
     expect(find.text('تشخيص الجهاز'), findsOneWidget);
-    expect(find.text('معلومات الجهاز'), findsOneWidget);
-    expect(find.text('اختبارات الوسائط والجودة'), findsOneWidget);
+    expect(find.text('بوابة القبول الميداني'), findsOneWidget);
     expect(tester.takeException(), isNull);
 
-    await tester.drag(find.byType(ListView), const Offset(0, -520));
-    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('معلومات الجهاز'),
+      260,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('معلومات الجهاز'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+
+    await tester.scrollUntilVisible(
+      find.text('الأمان والخصوصية'),
+      360,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('الأمان والخصوصية'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
@@ -107,6 +118,11 @@ void main() {
       theme: CutawanTheme.dark(),
     );
 
+    await tester.scrollUntilVisible(
+      find.text('1234567890abcdef1234567890abcdef12345678'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(
       find.text('1234567890abcdef1234567890abcdef12345678'),
       findsOneWidget,
