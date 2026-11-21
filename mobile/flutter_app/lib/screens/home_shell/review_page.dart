@@ -136,7 +136,9 @@ class _ReviewPageState extends State<ReviewPage> {
           setState(() => _progress = percent / 100);
         },
         onStage: (stage, percent) {
-          if (!_pipelineRunning) return;
+          if (!_pipelineRunning) {
+            return;
+          }
           if (mounted) setState(() => _pipelineStage = stage);
           unawaited(
             widget.repository.saveJobState(
@@ -164,7 +166,9 @@ class _ReviewPageState extends State<ReviewPage> {
         );
       }
     } catch (error) {
-      if (_pipelineRunning) rethrow;
+      if (_pipelineRunning) {
+        rethrow;
+      }
       if (mounted) { setState(() => _lastError = 'فشل التفريغ المحلي: $error'); }
     } finally {
       if (mounted) {
@@ -352,7 +356,9 @@ class _ReviewPageState extends State<ReviewPage> {
   }
 
   Future<void> _runFullPipeline(CutawanProject project) async {
-    if (_pipelineRunning || _busyProjectId != null) return;
+    if (_pipelineRunning || _busyProjectId != null) {
+      return;
+    }
     setState(() {
       _pipelineRunning = true;
       _pipelineProjectId = project.id;
@@ -369,7 +375,9 @@ class _ReviewPageState extends State<ReviewPage> {
         discover: _discover,
         analyzeFraming: _analyzeFraming,
         onProgress: (stage, progress) {
-          if (!mounted) return;
+          if (!mounted) {
+            return;
+          }
           setState(() {
             _pipelineStage = stage;
             _pipelineProgress = progress;
@@ -407,6 +415,15 @@ class _ReviewPageState extends State<ReviewPage> {
     }
   }
   String _workflowStageLabel(CutawanProject project) {
+    if (_busyProjectId == project.id && _busyStage != null && !_pipelineRunning) {
+      return switch (_busyStage) {
+        'whisper' => 'تفريغ الكلام',
+        'candidates' => 'اكتشاف المقاطع',
+        'reframe' => 'تحليل التأطير',
+        'inspecting' => 'فحص مصدر الفيديو',
+        _ => 'تنفيذ مرحلة يدوية',
+      };
+    }
     if (_pipelineRunning && _pipelineProjectId == project.id) {
       return switch (_pipelineStage) {
         'queued' => 'تجهيز المعالجة',
@@ -421,10 +438,18 @@ class _ReviewPageState extends State<ReviewPage> {
         _ => 'المعالجة قيد التنفيذ',
       };
     }
-    if (project.job.status == ProjectJobStatus.completed) return 'اكتملت المعالجة';
-    if (project.job.status == ProjectJobStatus.failed) return 'توقفت المعالجة';
-    if (project.job.status == ProjectJobStatus.cancelled) return 'المعالجة ملغاة';
-    if (project.job.stage.startsWith('render')) return 'تصدير المقاطع';
+    if (project.job.status == ProjectJobStatus.completed) {
+      return 'اكتملت المعالجة';
+    }
+    if (project.job.status == ProjectJobStatus.failed) {
+      return 'توقفت المعالجة';
+    }
+    if (project.job.status == ProjectJobStatus.cancelled) {
+      return 'المعالجة ملغاة';
+    }
+    if (project.job.stage.startsWith('render')) {
+      return 'تصدير المقاطع';
+    }
     return switch (project.job.stage) {
       'source_imported' || 'prepared' => 'جاهز لبدء المعالجة',
       'inspecting' => 'فحص مصدر الفيديو',
@@ -514,9 +539,11 @@ class _ReviewPageState extends State<ReviewPage> {
                     : 0;
     final progress = pipelineActive
         ? _pipelineProgress
-        : project.job.status == ProjectJobStatus.running
-            ? project.job.progress
-            : null;
+        : _busyProjectId == project.id && _progress != null
+            ? _progress
+            : project.job.status == ProjectJobStatus.running
+                ? project.job.progress
+                : null;
     final transcriptDetail = transcript == null
         ? 'بانتظار التفريغ الصوتي'
         : transcript.wordTimingReliable
@@ -763,7 +790,9 @@ class _ReviewPageState extends State<ReviewPage> {
                       alignment: AlignmentDirectional.centerStart,
                       child: Text(
                         transcript.text.isEmpty ? 'لم ينتج المحرك نصًا قابلًا للعرض.' : transcript.text,
-                        textDirection: TextDirection.auto,
+                        textDirection: transcript.language.toLowerCase().startsWith('ar')
+                            ? TextDirection.rtl
+                            : TextDirection.ltr,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -993,8 +1022,8 @@ class _ReviewPageState extends State<ReviewPage> {
                     runSpacing: gap,
                     children: [
                       SizedBox(width: width, child: _MetricCard(label: 'المشاريع', value: '${items.length}', icon: Icons.video_library_outlined)),
-                      SizedBox(width: width, child: _MetricCard(label: 'للمراجعة', value: '${reviewable}', icon: Icons.movie_filter_outlined)),
-                      SizedBox(width: width, child: _MetricCard(label: 'مكتملة', value: '${completed}', icon: Icons.check_circle_outline_rounded)),
+                      SizedBox(width: width, child: _MetricCard(label: 'للمراجعة', value: '$reviewable', icon: Icons.movie_filter_outlined)),
+                      SizedBox(width: width, child: _MetricCard(label: 'مكتملة', value: '$completed', icon: Icons.check_circle_outline_rounded)),
                     ],
                   );
                 },
