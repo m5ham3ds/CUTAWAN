@@ -41,6 +41,14 @@ The Electron desktop application at the repository root is legacy/reference code
 
 Direct URL import accepts a direct video-file endpoint only. It does not extract media from social platform pages or bypass DRM, authentication barriers, or access controls. An authorized direct CDN/file URL is required.
 
+### Phase 3 — local Whisper transcription
+
+- Android decodes the source audio track to a temporary WAV using MediaExtractor and MediaCodec.
+- `WhisperPcmReader` reads bounded WAV ranges, downmixes channels, converts supported PCM/float formats and resamples with a windowed-sinc low-pass filter to mono 16 kHz Float32 samples.
+- `WhisperChunkPlanner` uses 30-second windows with two seconds of context overlap and contiguous midpoint ownership; RMS evidence and Whisper input use the same normalized sample timeline.
+- The multilingual Whisper Base model remains user-installed and checksum-verified.
+- VAD, certified Arabic/English WER and timing accuracy, and physical-device memory/thermal acceptance remain open.
+
 ## Known limitations — do not describe as completed
 
 The mobile app has real source import, local project persistence, job records, caption configuration and model-management foundations. However, the following still require implementation and acceptance:

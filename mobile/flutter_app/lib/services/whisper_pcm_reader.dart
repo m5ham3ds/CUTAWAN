@@ -259,7 +259,7 @@ class WhisperPcmReader {
         var value = data.getUint8(offset) |
             (data.getUint8(offset + 1) << 8) |
             (data.getUint8(offset + 2) << 16);
-        if ((value & 0x800000) != 0) value |= 0xff000000;
+        if ((value & 0x800000) != 0) value -= 0x1000000;
         return value / 8388608.0;
       case 32:
         return data.getInt32(offset, Endian.little) / 2147483648.0;

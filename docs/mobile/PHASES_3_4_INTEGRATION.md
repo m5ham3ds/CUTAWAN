@@ -23,11 +23,13 @@ No web UI, desktop process, PRoot environment, remote inference API, or addition
 Implemented in the Flutter Android target:
 
 - Android `MediaExtractor` + `MediaCodec` decode the first audio track from a SAF-persisted `content://` URI or a validated app-private `file://` path. They create an app-cache WAV file and clean partial output on failure.
-- `WhisperTranscriptionService` reads decoded audio as mono 16 kHz PCM, measures one-second RMS audio-energy windows, uses the multilingual Whisper Base model in CPU mode, requests token timestamps, and maps output into a versioned transcript contract.
+- `WhisperPcmReader` parses native WAV files and reads bounded source ranges, downmixes PCM/float channel layouts to mono, and resamples actual samples to 16 kHz with a windowed-sinc low-pass filter. It does not load the entire long-form source into memory.
+- `WhisperTranscriptionService` uses the reader for one-second RMS windows and 30-second Whisper input chunks, then maps timestamps back onto the source-video timeline.
+- `WhisperChunkPlanner` assigns two-second context overlaps to contiguous, non-overlapping ownership windows. Each segment midpoint is committed to one chunk.
 - Model Center exposes explicit user-triggered download, integrity checking, installed status, and removal. Model files are not embedded in the APK.
 - The selected Whisper model descriptor is `base` (multilingual), pinned by the upstream package's immutable URL and SHA-256 catalog entry.
 
-**Known limitation:** the current service processes decoded audio in 30-second Whisper tasks with two-second overlap, maps word and segment times back to source-video time, and rejects duplicate segment text in overlaps. This is an initial deterministic stitcher, not yet an accuracy-certified chunking pipeline. VAD-backed silence rejection remains unimplemented. Arabic/English fixture accuracy, physical-device memory/thermal measurements, and real provider URI behavior remain required acceptance checks.
+**Known limitations:** chunk ownership and timestamp mapping are deterministic, but Arabic/English speech accuracy is not certified. VAD-backed silence rejection remains unimplemented. Long-source latency, physical-device memory/thermal behavior, and real provider URI behavior remain required acceptance checks.
 
 ## Phase 4 — candidate discovery and evidence ranking
 
@@ -58,6 +60,8 @@ The model URL is revision-pinned. Download uses HTTPS only, checks redirects, ex
 ## Automated gates added
 
 - Transcript contract serialization, timestamp, empty-timing and schema-version tests.
+- `WhisperPcmReader` tests for 16 kHz mono passthrough, 44.1 kHz stereo downmix/resampling, 48 kHz stereo range reads, signed 24-bit PCM, silence, malformed/truncated WAV and out-of-range reads.
+- Chunk planner tests for contiguous midpoint ownership and range-invariant streamed reads across chunk boundaries.
 - Candidate duration/source bounds, no-fabricated-results, unreliable-timing rejection and serialization tests.
 - Project artifact persistence, source-duration mismatch and recursive deletion tests.
 - Qwen manifest and invalid-installed-file tests; multilingual Whisper catalog verification.

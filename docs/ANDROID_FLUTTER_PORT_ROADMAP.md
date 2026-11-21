@@ -1,6 +1,6 @@
 # Android / Flutter Port — Product and Engineering Roadmap
 
-**Status (2026-11-21):** Phases 1–2 retain their implementation and historical automated gates; re-run the mobile workflow on the current source and record real SAF/process-death device evidence before final acceptance. Phase 3 has an initial implementation, but its audio normalization and chunk-boundary behavior require correction and accuracy testing.  
+**Status (2026-11-21):** Phases 1–2 retain their implementation and historical automated gates; current-source Mobile Android and physical SAF/process-death evidence are still required. Phase 3 now has a bounded WAV reader that downmixes and resamples source audio to mono 16 kHz with a windowed-sinc low-pass filter, plus contiguous two-second-overlap chunk ownership. The latest implementation still requires a green Mobile Android run and physical Arabic/English WER, timing, memory and thermal acceptance.  
 **Working repository:** `m5ham3ds/CUTAWAN`  
 **Working branch:** `main` (all implementation updates are committed directly to the default branch).  
 **Baseline:** Cutawan v0.14.0, commit `084d0b2933f64800ee5ca1b22269704f060e65f5`  

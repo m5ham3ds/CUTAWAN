@@ -39,24 +39,20 @@ Acceptance:
 
 Existing implementation includes Kotlin MediaExtractor/MediaCodec WAV extraction, a pinned multilingual Whisper model, integrity-checked model download/management, and Dart word-timed transcript artifacts.
 
-### Confirmed correctness issue
+### Correction now implemented; acceptance still pending
 
-The Kotlin decoder currently emits WAV at the decoded source sample rate and channel count. The Dart transcription path assumes 16kHz sample data for chunk size, timestamps and one-second RMS windows. Consequently, a common 44.1/48kHz or multichannel source can be interpreted at the wrong rate, producing incorrect transcription timing and input audio.
+The original mismatch was real: Android emits WAV at the decoded source sample rate and channel count, while the earlier Whisper service assumed 16kHz mono. `WhisperPcmReader` now reads bounded source ranges, downmixes channels, and resamples actual samples to 16kHz mono with a windowed-sinc low-pass filter. RMS and Whisper chunks use that same normalized sample timeline. `WhisperChunkPlanner` assigns overlapped segment midpoints to contiguous, non-overlapping ownership windows.
 
-Before acceptance:
-- Convert actual PCM samples to mono 16kHz before Whisper input; do not only change WAV header metadata.
-- Generate RMS windows from the normalized samples on the same 16kHz timeline.
-- Preserve mapping from normalized sample positions to source-video milliseconds.
-- Correct overlap deduplication so an overlap is assigned once without losing valid words at the chunk boundary.
-- Add deterministic generated audio fixtures for 16kHz mono, 44.1kHz stereo, 48kHz stereo, silence and malformed/truncated WAV.
-- Verify resource cleanup on success and exceptions, and make no-audio/invalid WAV errors clear.
-- Add long-file memory/progress tests where practical.
+Automated fixtures now cover 16kHz mono, 44.1kHz stereo, 48kHz stereo, signed 24-bit PCM, silence, malformed/truncated WAV, range bounds, streamed-read boundary equivalence and chunk-ownership continuity. The latest Mobile Android workflow must still pass on the current source. Before acceptance:
+- Verify resource cleanup on success and exceptions and clear no-audio/invalid-WAV errors.
+- Measure normalization and transcription on long files, including peak memory and progress monotonicity.
+- Score Arabic and English reference clips for WER and word-time alignment; unit tests do not certify ASR accuracy.
 
 Physical Arabic and English clips must still be scored against reference transcripts for WER and word timing. Those device/accuracy checks cannot be claimed from unit tests or compilation.
 
 ## Current automation snapshot
 
-The root CI run on `1e864887efbc2b58fdbbd1e7c94c1ac664122a88` passed, but it is the desktop workflow and does not validate Flutter. The mobile workflow must be triggered and inspected separately for the current Flutter source.
+The root CI run on `1e864887efbc2b58fdbbd1e7c94c1ac664122a88` passed, but it is the desktop workflow and does not validate Flutter. A prior Mobile Android run [44842722337](https://github.com/m5ham3ds/CUTAWAN/actions/runs/44842722337) passed all 95 then-existing tests and built the ARM64 APK on SHA `377fe3a`; it predates the streaming PCM reader and does not validate the latest implementation. Inspect the Mobile Android run for the current source SHA before passing this gate.
 
 ## Gate
 

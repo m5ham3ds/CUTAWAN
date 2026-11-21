@@ -61,6 +61,46 @@ void main() {
     return file;
   }
 
+
+  Future<File> create24BitWav() async {
+    const sampleRate = 16000;
+    const dataLength = 6;
+    final bytes = Uint8List(44 + dataLength);
+    final data = ByteData.sublistView(bytes);
+    _writeFourCc(data, 0, 'RIFF');
+    data.setUint32(4, 36 + dataLength, Endian.little);
+    _writeFourCc(data, 8, 'WAVE');
+    _writeFourCc(data, 12, 'fmt ');
+    data.setUint32(16, 16, Endian.little);
+    data.setUint16(20, 1, Endian.little);
+    data.setUint16(22, 1, Endian.little);
+    data.setUint32(24, sampleRate, Endian.little);
+    data.setUint32(28, sampleRate * 3, Endian.little);
+    data.setUint16(32, 3, Endian.little);
+    data.setUint16(34, 24, Endian.little);
+    _writeFourCc(data, 36, 'data');
+    data.setUint32(40, dataLength, Endian.little);
+    // 0x400000 = +0.5 and 0xC00000 = -0.5 as signed PCM24.
+    bytes.setRange(44, 47, const [0x00, 0x00, 0x40]);
+    bytes.setRange(47, 50, const [0x00, 0x00, 0xc0]);
+    final file = File('${tempDirectory.path}/pcm24.wav');
+    await file.writeAsBytes(bytes, flush: true);
+    return file;
+  }
+
+  test('signed 24-bit PCM samples decode with correct sign extension', () async {
+    final file = await create24BitWav();
+    final reader = await WhisperPcmReader.open(file);
+    try {
+      final samples = await reader.readSamples(0, 2);
+      expect(samples, hasLength(2));
+      expect(samples[0], closeTo(0.5, 0.0001));
+      expect(samples[1], closeTo(-0.5, 0.0001));
+    } finally {
+      await reader.close();
+    }
+  });
+
   test('16 kHz mono input preserves PCM samples and timeline', () async {
     final file = await createWav(
       sampleRate: 16000,
