@@ -1,4 +1,4 @@
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:cutawan_mobile/app.dart';
 import 'package:cutawan_mobile/domain/clip_preferences.dart';
