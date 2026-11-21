@@ -218,7 +218,7 @@ class _ClipEditorPageState extends State<ClipEditorPage>{
                 divisions:(duration~/250).clamp(1,1200).toInt(),
                 labels:RangeLabels(_formatTime(_startMs),_formatTime(_endMs)),
                 onChanged:_updateTrim,
-                onChangeEnd:(_){final current=player.value.position.inMilliseconds;if(current<_startMs||current>_endMs)unawaited(_seekTo(_startMs));},
+                onChangeEnd: (_) { final current = player.value.position.inMilliseconds; if (current < _startMs || current > _endMs) { unawaited(_seekTo(_startMs)); } },
               ),
               Row(mainAxisAlignment:MainAxisAlignment.spaceBetween,children:[
                 Text('البداية: ${_formatTime(_startMs)}'),Text('النهاية: ${_formatTime(_endMs)}'),

@@ -66,7 +66,7 @@ void main() {
 
   testWidgets('settings route exposes diagnostics and model center actions', (tester) async {
     await tester.pumpWidget(const CutawanApp());
-    await tester.tap(find.byTooltip('الإعدادات'));
+    await tester.tap(find.byKey(const ValueKey('dashboard-settings')));
     await tester.pumpAndSettle();
     expect(find.text('إعدادات CUTAWAN'), findsOneWidget);
     expect(find.text('تشخيص وقبول Android'), findsOneWidget);
