@@ -142,6 +142,8 @@ void main() {
           reason: 'Choosing a source must not save a project before settings are confirmed.');
       await tester.tap(find.byKey(const ValueKey('create-step-continue')));
       await pumpUi(tester);
+      await tester.ensureVisible(find.byKey(const ValueKey('create-project-submit')));
+      await tester.pump();
       await tester.tap(find.byKey(const ValueKey('create-project-submit')));
       await pumpUi(tester);
       final savedProjects = await repository.listProjects();
@@ -211,7 +213,9 @@ void main() {
     await pumpUi(tester);
     await tester.tap(find.byKey(const ValueKey('create-step-continue')));
     await pumpUi(tester);
-    await tester.tap(find.byKey(const ValueKey('create-project-submit')));
+    await tester.ensureVisible(find.byKey(const ValueKey('create-project-submit')));
+      await tester.pump();
+      await tester.tap(find.byKey(const ValueKey('create-project-submit')));
     await pumpUi(tester);
     await tester.tap(find.text('المهام'));
     await pumpUi(tester);
@@ -244,7 +248,9 @@ void main() {
     await pumpUi(tester);
     await tester.tap(find.byKey(const ValueKey('create-step-continue')));
     await pumpUi(tester);
-    await tester.tap(find.byKey(const ValueKey('create-project-submit')));
+    await tester.ensureVisible(find.byKey(const ValueKey('create-project-submit')));
+      await tester.pump();
+      await tester.tap(find.byKey(const ValueKey('create-project-submit')));
     await pumpUi(tester);
     await tester.tap(find.text('المهام'));
     await pumpUi(tester);
