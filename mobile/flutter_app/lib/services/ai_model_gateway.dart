@@ -120,6 +120,7 @@ class AiProviderCatalog {
       defaultBaseUrl: '',
       keyLabel: 'API key (يمكن تركه فارغاً للخوادم المحلية)',
       apiKind: AiApiKind.openAiChat,
+      keyRequired: false,
     ),
   ];
 
@@ -169,7 +170,8 @@ class AiCredentialStore {
     if (normalized.isEmpty) {
       throw const FormatException('API key is empty.');
     }
-    if (normalized.length > 4096 || normalized.contains('\n')) {
+    if (normalized.length > 4096 ||
+        RegExp(r'[\x00-\x1F\x7F]').hasMatch(normalized)) {
       throw const FormatException('API key has an invalid format.');
     }
     await _storage.write(_key(provider), normalized);
@@ -197,10 +199,13 @@ class AiCredentialStore {
     AiProviderId provider,
     String modelId,
   ) async {
-    if (modelId.trim().isEmpty) {
-      throw const FormatException('Model ID is empty.');
+    final normalized = modelId.trim();
+    if (normalized.isEmpty ||
+        normalized.length > 512 ||
+        RegExp(r'[\x00-\x1F\x7F]').hasMatch(normalized)) {
+      throw const FormatException('Model ID is invalid.');
     }
-    await _storage.write(_model(provider), modelId.trim());
+    await _storage.write(_model(provider), normalized);
   }
 
   Future<String?> readSelectedModel(AiProviderId provider) =>
@@ -249,6 +254,12 @@ class AiCredentialStore {
   Future<bool> hasCloudConsent() async =>
       await _storage.read(_cloudConsentKey) == 'true';
 
+  Future<void> requireCloudConsent() async {
+    if (!await hasCloudConsent()) {
+      throw StateError('Cloud provider requests require explicit consent.');
+    }
+  }
+
   static Uri _validateBaseUrl(String value) {
     final uri = Uri.tryParse(value);
     final secureRemote = uri?.scheme == 'https';
@@ -290,6 +301,18 @@ class AiModelGateway {
   final AiCredentialStore credentials;
   final http.Client _client;
 
+  Future<void> _requireConsentForEndpoint(
+    AiProviderId provider,
+    Uri base,
+  ) async {
+    const localHosts = {'10.0.2.2', '127.0.0.1', 'localhost'};
+    final localCompatible = provider == AiProviderId.compatible &&
+        localHosts.contains(base.host);
+    if (!localCompatible) {
+      await credentials.requireCloudConsent();
+    }
+  }
+
   Future<List<AiModelChoice>> listModels(
     AiProviderId provider, {
     String? apiKeyOverride,
@@ -301,6 +324,7 @@ class AiModelGateway {
       throw StateError('احفظ مفتاح API لهذا المزوّد أولاً.');
     }
     final base = await _resolveBase(provider, baseUrlOverride);
+    await _requireConsentForEndpoint(provider, base);
     final uri = provider == AiProviderId.gemini
         ? _geminiModelsUri(base)
         : _openAiModelsUri(base);
@@ -371,11 +395,17 @@ class AiModelGateway {
     String? baseUrlOverride,
     int maxTokens = 900,
   }) async {
-    if (modelId.trim().isEmpty) {
-      throw const FormatException('Model ID is empty.');
+    final normalizedModelId = modelId.trim();
+    if (normalizedModelId.isEmpty ||
+        normalizedModelId.length > 512 ||
+        RegExp(r'[\x00-\x1F\x7F]').hasMatch(normalizedModelId)) {
+      throw const FormatException('Model ID is invalid.');
     }
-    if (prompt.trim().isEmpty || prompt.length > 50000) {
-      throw const FormatException('AI prompt is empty or exceeds the limit.');
+    if (prompt.trim().isEmpty ||
+        prompt.length > 50000 ||
+        maxTokens < 1 ||
+        maxTokens > 4096) {
+      throw const FormatException('AI prompt or output-token limit is invalid.');
     }
     final definition = AiProviderCatalog.byId(provider);
     final key = apiKeyOverride ?? await credentials.readApiKey(provider);
@@ -383,12 +413,13 @@ class AiModelGateway {
       throw StateError('احفظ مفتاح API لهذا المزوّد أولاً.');
     }
     final base = await _resolveBase(provider, baseUrlOverride);
+    await _requireConsentForEndpoint(provider, base);
     if (provider == AiProviderId.gemini) {
       try {
         return await _completeGeminiInteractions(
           base,
           key,
-          modelId,
+          normalizedModelId,
           prompt,
         );
       } on AiProviderRequestException catch (error) {
@@ -396,8 +427,9 @@ class AiModelGateway {
         return _completeGeminiGenerateContent(
           base,
           key,
-          modelId,
+          normalizedModelId,
           prompt,
+          maxTokens,
         );
       }
     }
@@ -409,7 +441,7 @@ class AiModelGateway {
             'Content-Type': 'application/json',
           },
           body: jsonEncode({
-            'model': modelId,
+            'model': normalizedModelId,
             'messages': [
               {'role': 'user', 'content': prompt},
             ],
@@ -445,6 +477,7 @@ class AiModelGateway {
     String? key,
     String model,
     String prompt,
+    int maxTokens,
   ) async {
     final uri = base.resolve('models/${Uri.encodeComponent(model)}:generateContent');
     final response = await _client
@@ -461,7 +494,10 @@ class AiModelGateway {
                 'parts': [{'text': prompt}],
               },
             ],
-            'generationConfig': {'temperature': 0, 'maxOutputTokens': 900},
+            'generationConfig': {
+              'temperature': 0,
+              'maxOutputTokens': maxTokens,
+            },
           }),
         )
         .timeout(const Duration(seconds: 90));
@@ -507,7 +543,7 @@ class AiModelGateway {
     if (provider == AiProviderId.gemini) {
       final uri = AiCredentialStore._validateBaseUrl(base);
       if (uri.host != 'generativelanguage.googleapis.com' ||
-          !uri.path.startsWith('/v1beta')) {
+          !(uri.path == '/v1beta' || uri.path.startsWith('/v1beta/'))) {
         throw const FormatException('Gemini base URL must use the Google API host.');
       }
       return _ensureTrailingSlash(uri);
@@ -536,8 +572,11 @@ class AiModelGateway {
 
   Map<String, String> _headers(AiProviderId provider, String? key) => {
         'Accept': 'application/json',
-        if (key != null && key.isNotEmpty) 'Authorization': 'Bearer $key',
-        if (provider == AiProviderId.gemini && key != null)
+        if (provider != AiProviderId.gemini &&
+            key != null &&
+            key.isNotEmpty)
+          'Authorization': 'Bearer $key',
+        if (provider == AiProviderId.gemini && key != null && key.isNotEmpty)
           'x-goog-api-key': key,
       };
 

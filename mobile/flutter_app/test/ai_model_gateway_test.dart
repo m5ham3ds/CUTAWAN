@@ -32,7 +32,7 @@ void main() {
     ]));
     expect(
       AiProviderCatalog.byId(AiProviderId.compatible).keyRequired,
-      isTrue,
+      isFalse,
     );
   });
 
@@ -50,7 +50,11 @@ void main() {
   test('API key format and insecure remote endpoints are rejected', () async {
     final credentials = AiCredentialStore(storage: MemorySecretStorage());
     await expectLater(
-      credentials.saveApiKey(AiProviderId.openAi, 'key\nforged-header'),
+      credentials.saveApiKey(AiProviderId.openAi, 'key\r\nforged-header'),
+      throwsA(isA<FormatException>()),
+    );
+    await expectLater(
+      credentials.saveSelectedModel(AiProviderId.openAi, 'model\nheader'),
       throwsA(isA<FormatException>()),
     );
     await expectLater(
@@ -70,6 +74,7 @@ void main() {
     final storage = MemorySecretStorage();
     final credentials = AiCredentialStore(storage: storage);
     await credentials.saveApiKey(AiProviderId.openAi, 'mock-openai-key');
+    await credentials.saveCloudConsent(true);
     final requests = <http.Request>[];
     final client = MockClient((request) async {
       requests.add(request);
@@ -105,6 +110,7 @@ void main() {
     final storage = MemorySecretStorage();
     final credentials = AiCredentialStore(storage: storage);
     await credentials.saveApiKey(AiProviderId.gemini, 'mock-gemini-key');
+    await credentials.saveCloudConsent(true);
     final requests = <http.Request>[];
     final client = MockClient((request) async {
       requests.add(request);
@@ -146,6 +152,7 @@ void main() {
       requests.last.headers['x-goog-api-key'],
       'mock-gemini-key',
     );
+    expect(requests.last.headers.containsKey('authorization'), isFalse);
     gateway.close();
   });
 
@@ -153,6 +160,7 @@ void main() {
     final storage = MemorySecretStorage();
     final credentials = AiCredentialStore(storage: storage);
     await credentials.saveApiKey(AiProviderId.huggingFace, 'mock-hf-token');
+    await credentials.saveCloudConsent(true);
     final client = MockClient((request) async {
       if (request.url.path.endsWith('/models')) {
         return http.Response(jsonEncode({
@@ -188,6 +196,7 @@ void main() {
   test('Gemini cannot be redirected to an arbitrary remote hostname', () async {
     final credentials = AiCredentialStore(storage: MemorySecretStorage());
     await credentials.saveApiKey(AiProviderId.gemini, 'mock-key');
+    await credentials.saveCloudConsent(true);
     final gateway = AiModelGateway(credentials: credentials);
     await expectLater(
       gateway.listModels(
@@ -220,7 +229,59 @@ void main() {
     expect(storage.values['ai.execution.mode'], 'local');
   });
 
-  test('deleting a provider model removes only that provider selection', () async {
+  test('gateway blocks cloud requests until consent is saved', () async {
+    final credentials = AiCredentialStore(storage: MemorySecretStorage());
+    await credentials.saveApiKey(AiProviderId.openAi, 'mock-key');
+    var requestCount = 0;
+    final gateway = AiModelGateway(
+      credentials: credentials,
+      client: MockClient((request) async {
+        requestCount++;
+        return http.Response('{}', 200);
+      }),
+    );
+
+    await expectLater(
+      gateway.listModels(AiProviderId.openAi),
+      throwsA(isA<StateError>()),
+    );
+    await expectLater(
+      gateway.complete(
+        AiProviderId.openAi,
+        modelId: 'chat-model',
+        prompt: 'This text must not be sent.',
+      ),
+      throwsA(isA<StateError>()),
+    );
+    expect(requestCount, 0);
+    gateway.close();
+  });
+
+  test('local compatible endpoint works without cloud consent or API key', () async {
+    final credentials = AiCredentialStore(storage: MemorySecretStorage());
+    await credentials.saveBaseUrl(
+      AiProviderId.compatible,
+      'http://10.0.2.2:8080/v1/',
+    );
+    final requests = <http.Request>[];
+    final gateway = AiModelGateway(
+      credentials: credentials,
+      client: MockClient((request) async {
+        requests.add(request);
+        return http.Response(jsonEncode({
+          'data': [{'id': 'local-chat-model'}],
+        }), 200);
+      }),
+    );
+
+    final models = await gateway.listModels(AiProviderId.compatible);
+    expect(models.single.id, 'local-chat-model');
+    expect(requests.single.url.host, '10.0.2.2');
+    expect(requests.single.headers.containsKey('authorization'), isFalse);
+    gateway.close();
+  });
+
+  test('deleting a provider model removes only that provider selection', async {
     final storage = MemorySecretStorage();
     final credentials = AiCredentialStore(storage: storage);
     await credentials.saveSelectedModel(AiProviderId.openAi, 'chat-model');

@@ -232,8 +232,8 @@ class _CaptionStudioPageState extends State<CaptionStudioPage> with SingleTicker
       _uppercase = style.uppercase;
       _bold = style.bold;
       _error = null;
+      _rebuildPreviewGroups();
     });
-    _rebuildPreviewGroups();
   }
   void _setColor(String field, String value) {
     final validColor = RegExp(r'^#[0-9A-Fa-f]{6}$').hasMatch(value);
@@ -410,7 +410,7 @@ class _CaptionStudioPageState extends State<CaptionStudioPage> with SingleTicker
           },
         ),
         const SizedBox(height: 8),
-        Text('المعاينة تفاعلية محلياً. يتبع التصدير توقيت الكلمات المحفوظ مع النمط، ويُحرق النص في MP4 عند تفعيل الكابشن.', style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+        Text('تعرض المعاينة كلمات التفريغ بتوقيتها. مزامنتها مع تشغيل الفيديو وحرق الكابشن داخل MP4 ما زالا ضمن عمل محرّك التصدير.', style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
         if (_error != null) ...[const SizedBox(height: 10), _StatusNote(text: _error!)],
         const SizedBox(height: 22),
         const _Eyebrow('التصميم البصري', icon: Icons.palette_outlined),
@@ -437,8 +437,10 @@ class _CaptionStudioPageState extends State<CaptionStudioPage> with SingleTicker
           decoration: const InputDecoration(labelText: 'عائلة الخط'),
           items: const [DropdownMenuItem(value: 'Anton', child: Text('Anton')), DropdownMenuItem(value: 'Poppins', child: Text('Poppins')), DropdownMenuItem(value: 'Poppins Medium', child: Text('Poppins Medium'))],
           onChanged: (value) { if (value != null) {
-              setState(() => _fontFamily = value);
-              _rebuildPreviewGroups();
+              setState(() {
+                _fontFamily = value;
+                _rebuildPreviewGroups();
+              });
             } },
         ),
         Material(
@@ -448,14 +450,18 @@ class _CaptionStudioPageState extends State<CaptionStudioPage> with SingleTicker
         Material(
           color: Colors.transparent,
           child: SwitchListTile(contentPadding: EdgeInsets.zero, title: const Text('أحرف كبيرة للإنجليزية'), value: _uppercase, onChanged: (value) {
-            setState(() => _uppercase = value);
-            _rebuildPreviewGroups();
+            setState(() {
+              _uppercase = value;
+              _rebuildPreviewGroups();
+            });
           }),
         ),
         Text('حجم الخط · ${(_fontScale * 100).toStringAsFixed(1)}%'),
         Slider(value: _fontScale, min: 0.025, max: 0.075, divisions: 50, onChanged: (value) {
-          setState(() => _fontScale = value);
-          _rebuildPreviewGroups();
+          setState(() {
+            _fontScale = value;
+            _rebuildPreviewGroups();
+          });
         }),
         Text('موضع النص · ${(_positionY * 100).round()}% من أعلى الإطار'),
         Slider(value: _positionY, min: 0.1, max: 0.9, divisions: 80, onChanged: (value) => setState(() => _positionY = value)),
