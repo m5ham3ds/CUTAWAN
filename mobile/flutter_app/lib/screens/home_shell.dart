@@ -80,6 +80,12 @@ class _HomeShellState extends State<HomeShell> with SingleTickerProviderStateMix
     }
   }
 
+  Future<void> _handleProjectSaved() async {
+    await _reloadProjects();
+    if (!mounted) return;
+    _selectDestination(3);
+  }
+
   void _selectDestination(int index) {
     if (index == _selectedIndex) return;
     HapticFeedback.selectionClick();
@@ -142,7 +148,7 @@ class _HomeShellState extends State<HomeShell> with SingleTickerProviderStateMix
       ),
       TickerMode(
         enabled: _selectedIndex == 1,
-        child: CreatePage(repository: _repository, onProjectSaved: _reloadProjects),
+        child: CreatePage(repository: _repository, onProjectSaved: _handleProjectSaved),
       ),
       TickerMode(
         enabled: _selectedIndex == 2,

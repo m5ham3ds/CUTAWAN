@@ -138,6 +138,12 @@ void main() {
       await pumpUi(tester);
 
       expect(methods, contains('pickVideo'));
+      expect(await repository.listProjects(), isEmpty,
+          reason: 'Choosing a source must not save a project before settings are confirmed.');
+      await tester.tap(find.byKey(const ValueKey('create-step-continue')));
+      await pumpUi(tester);
+      await tester.tap(find.byKey(const ValueKey('create-project-submit')));
+      await pumpUi(tester);
       final savedProjects = await repository.listProjects();
       expect(
         savedProjects,
@@ -203,6 +209,12 @@ void main() {
     await openCreatePage(tester);
     await tester.tap(find.text('اختيار فيديو'));
     await pumpUi(tester);
+    await tester.tap(find.byKey(const ValueKey('create-step-continue')));
+    await pumpUi(tester);
+    await tester.tap(find.byKey(const ValueKey('create-project-submit')));
+    await pumpUi(tester);
+    await tester.tap(find.text('المهام'));
+    await pumpUi(tester);
 
     expect(methods, contains('pickVideo'));
     expect(methods, contains('releasePersistedPermission'));
@@ -229,6 +241,12 @@ void main() {
 
     await openCreatePage(tester);
     await tester.tap(find.text('اختيار فيديو'));
+    await pumpUi(tester);
+    await tester.tap(find.byKey(const ValueKey('create-step-continue')));
+    await pumpUi(tester);
+    await tester.tap(find.byKey(const ValueKey('create-project-submit')));
+    await pumpUi(tester);
+    await tester.tap(find.text('المهام'));
     await pumpUi(tester);
 
     expect(methods, contains('pickVideo'));

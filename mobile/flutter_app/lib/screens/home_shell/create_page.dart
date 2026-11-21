@@ -1,610 +1,606 @@
 part of '../home_shell.dart';
 
 class CreatePage extends StatefulWidget {
-  const CreatePage({
-    required this.repository,
-    required this.onProjectSaved,
-    super.key,
-  });
-
+  const CreatePage({required this.repository, required this.onProjectSaved, super.key});
   final LocalProjectRepository repository;
   final Future<void> Function() onProjectSaved;
-
   @override
   State<CreatePage> createState() => _CreatePageState();
 }
 
 class _CreatePageState extends State<CreatePage> {
   final _urlController = TextEditingController();
-  final _minimumSecondsController = TextEditingController(text: '15');
-  final _maximumSecondsController = TextEditingController(text: '90');
+  final _minimumController = TextEditingController(text: '15');
+  final _maximumController = TextEditingController(text: '90');
+  int _step = 0;
+  VideoAssetMetadata? _source;
+  bool _sourceIsDownloaded = false;
+  bool _projectSaved = false;
+  bool _busy = false;
+  DownloadCancellation? _cancellation;
+  VideoDownloadProgress? _downloadProgress;
+  DateTime _lastProgress = DateTime.fromMillisecondsSinceEpoch(0);
   int _clipCount = 10;
   ClipDurationMode _duration = ClipDurationMode.automatic;
   ClipAspectRatio _ratio = ClipAspectRatio.portrait916;
-  int _customMinimumSeconds = 15;
-  int _customMaximumSeconds = 90;
   String _resolution = '1080p';
-  String _captionStyleId = 'karaoke';
-  String _captionAnimationId = 'word_pop';
+  String _styleId = 'karaoke';
+  String _animationId = 'word_pop';
   bool _captions = true;
-  bool _speakerTracking = true;
-  bool _isImporting = false;
-  DownloadCancellation? _downloadCancellation;
-  VideoDownloadProgress? _downloadProgress;
-  DateTime _lastProgressUpdate = DateTime.fromMillisecondsSinceEpoch(0);
 
   @override
   void dispose() {
-    _downloadCancellation?.cancel();
+    _cancellation?.cancel();
+    final source = _source;
+    if (source != null && !_projectSaved) {
+      unawaited(_discardSource(source, downloaded: _sourceIsDownloaded));
+    }
     _urlController.dispose();
-    _minimumSecondsController.dispose();
-    _maximumSecondsController.dispose();
+    _minimumController.dispose();
+    _maximumController.dispose();
     super.dispose();
   }
 
-  void _showMessage(String message) {
-    if (!mounted) { return; }
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  void _message(String value) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(value)));
   }
 
-  ClipPreferences _currentPreferences() {
-    final minimumSeconds = _duration == ClipDurationMode.custom
-        ? int.tryParse(_minimumSecondsController.text.trim())
-        : _customMinimumSeconds;
-    final maximumSeconds = _duration == ClipDurationMode.custom
-        ? int.tryParse(_maximumSecondsController.text.trim())
-        : _customMaximumSeconds;
-    if (minimumSeconds == null || maximumSeconds == null) {
+  ClipPreferences _preferences() {
+    final minimum = _duration == ClipDurationMode.custom
+        ? int.tryParse(_minimumController.text.trim())
+        : 15;
+    final maximum = _duration == ClipDurationMode.custom
+        ? int.tryParse(_maximumController.text.trim())
+        : 90;
+    if (minimum == null || maximum == null) {
       throw const FormatException('أدخل حدّي المدة المخصصة كأرقام صحيحة.');
     }
-    final preferences = ClipPreferences(
+    final value = ClipPreferences(
       requestedClipCount: _clipCount,
       durationMode: _duration,
-      customMinimumSeconds: minimumSeconds,
-      customMaximumSeconds: maximumSeconds,
+      customMinimumSeconds: minimum,
+      customMaximumSeconds: maximum,
       aspectRatio: _ratio,
       resolution: _resolution,
       captionsEnabled: _captions,
-      speakerTrackingEnabled: _speakerTracking,
-      captionStyleId: _captionStyleId,
-      captionAnimationId: _captionAnimationId,
+      speakerTrackingEnabled: true,
+      captionStyleId: _styleId,
+      captionAnimationId: _animationId,
     );
-    final validationError = preferences.validate();
-    if (validationError != null) { throw FormatException(validationError); }
-    return preferences;
+    final error = value.validate();
+    if (error != null) throw FormatException(error);
+    return value;
   }
 
-  Future<void> _importVideo() async {
-    if (_isImporting) { return; }
-    VideoAssetMetadata? selectedSource;
-    var projectSaved = false;
-    setState(() => _isImporting = true);
-    try {
-      final preferences = _currentPreferences();
-      final source = await AndroidVideoPicker.pickVideo();
-      if (!mounted) {
-        if (source != null) {
-          await _releasePersistedGrantIfUnreferenced(source);
-        }
-        return;
-      }
-      if (source == null) {
-        _showMessage('تم إلغاء اختيار الفيديو.');
-        return;
-      }
-
-      selectedSource = source;
-      final project = CutawanProject.create(
-        source: source,
-        preferences: preferences,
-      );
-      await widget.repository.save(project);
-      projectSaved = true;
-      await widget.onProjectSaved();
-      _showMessage('تم استيراد الفيديو وحفظ المشروع محليًا.');
-    } on PlatformException catch (error) {
-      _showMessage(error.message ?? 'تعذّر استيراد الفيديو من Android.');
-    } on FormatException catch (error) {
-      _showMessage('بيانات الفيديو غير صالحة: ${error.message}');
-    } catch (error) {
-      _showMessage('فشل حفظ المشروع: $error');
-    } finally {
-      if (selectedSource != null && !projectSaved) {
-        await _releasePersistedGrantIfUnreferenced(selectedSource);
-      }
-      if (mounted) { setState(() => _isImporting = false); }
-    }
-  }
-
-  Future<void> _releasePersistedGrantIfUnreferenced(
-    VideoAssetMetadata source,
-  ) async {
-    if (Uri.tryParse(source.uri)?.scheme != 'content') return;
-    try {
-      final projects = await widget.repository.listProjects();
-      final isReferenced = projects.any(
-        (project) => project.source.uri == source.uri,
-      );
-      if (!isReferenced) {
-        await AndroidVideoPicker.releasePersistedPermission(source.uri);
-      }
-    } catch (_) {
-      // Preserve access when repository state cannot be read safely.
-    }
-  }
-
-  Future<void> _downloadDirectVideo() async {
-    if (_isImporting) { return; }
-    final url = _urlController.text.trim();
-    if (url.isEmpty) {
-      _showMessage('أدخل رابط ملف فيديو مباشر أولًا.');
-      return;
-    }
-
-    late final ClipPreferences preferences;
-    try {
-      preferences = _currentPreferences();
-    } on FormatException catch (error) {
-      _showMessage(error.message);
-      return;
-    }
-
-    final cancellation = DownloadCancellation();
-    setState(() {
-      _isImporting = true;
-      _downloadCancellation = cancellation;
-      _downloadProgress = null;
-    });
-
-    try {
-      final downloader = DirectVideoDownloader(
+  DirectVideoDownloader _downloader() => DirectVideoDownloader(
         availableStorageBytes: AndroidVideoPicker.availableStorageBytes,
         inspectLocalFile: AndroidVideoPicker.inspectLocalFile,
       );
-      final source = await downloader.download(
+
+  Future<void> _selectVideo() async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    try {
+      final picked = await AndroidVideoPicker.pickVideo();
+      if (picked == null) {
+        _message('لم يتم اختيار فيديو.');
+      } else {
+        await _setPendingSource(picked, downloaded: false);
+      }
+    } on PlatformException catch (error) {
+      _message(error.message ?? 'تعذّر اختيار الفيديو من Android.');
+    } catch (error) {
+      _message('تعذّر تجهيز الفيديو: $error');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _downloadVideo() async {
+    if (_busy) return;
+    final url = _urlController.text.trim();
+    if (url.isEmpty) {
+      _message('أدخل رابط ملف فيديو مباشر أولاً.');
+      return;
+    }
+    final cancellation = DownloadCancellation();
+    setState(() {
+      _busy = true;
+      _cancellation = cancellation;
+      _downloadProgress = null;
+    });
+    try {
+      final source = await _downloader().download(
         url,
         cancellation: cancellation,
         onProgress: (progress) {
           final now = DateTime.now();
-          if (now.difference(_lastProgressUpdate).inMilliseconds < 180 &&
-              progress.fraction != 1) {
-            return;
-          }
-          _lastProgressUpdate = now;
-          if (mounted) { setState(() => _downloadProgress = progress); }
+          if (now.difference(_lastProgress).inMilliseconds < 180 &&
+              progress.fraction != 1) return;
+          _lastProgress = now;
+          if (mounted) setState(() => _downloadProgress = progress);
         },
       );
       if (!mounted) {
-        await downloader.deleteDownloadedVideo(source.uri);
+        await _discardSource(source, downloaded: true);
         return;
       }
-      final project = CutawanProject.create(
-        source: source,
-        preferences: preferences,
-      );
-      try {
-        await widget.repository.save(project);
-      } catch (_) {
-        await downloader.deleteDownloadedVideo(source.uri);
-        rethrow;
-      }
-      await widget.onProjectSaved();
       _urlController.clear();
-      _showMessage('اكتمل التنزيل، وفُحص الفيديو، وحُفظ المشروع محليًا.');
+      await _setPendingSource(source, downloaded: true);
+      _message('اكتمل تنزيل الفيديو وفحصه. انتقل إلى إعدادات المشروع.');
     } on VideoDownloadCancelled {
-      _showMessage('أُلغي التنزيل وحُذفت الأجزاء المؤقتة.');
+      _message('أُلغي التنزيل وحُذفت الأجزاء المؤقتة.');
     } on PlatformException catch (error) {
-      _showMessage(error.message ?? 'تعذّر الوصول إلى خدمات تخزين Android.');
+      _message(error.message ?? 'تعذّر الوصول إلى خدمات تخزين Android.');
     } catch (error) {
-      _showMessage('تعذّر تنزيل الفيديو: $error');
+      _message('تعذّر تنزيل الفيديو: $error');
     } finally {
       if (mounted) {
         setState(() {
-          _isImporting = false;
-          _downloadCancellation = null;
+          _busy = false;
+          _cancellation = null;
           _downloadProgress = null;
         });
       }
     }
   }
 
-  void _cancelDownload() {
-    _downloadCancellation?.cancel();
+  void _cancelDownload() => _cancellation?.cancel();
+
+  Future<void> _setPendingSource(VideoAssetMetadata next, {required bool downloaded}) async {
+    if (!mounted) {
+      await _discardSource(next, downloaded: downloaded);
+      return;
+    }
+    final previous = _source;
+    final previousDownloaded = _sourceIsDownloaded;
+    setState(() {
+      _source = next;
+      _sourceIsDownloaded = downloaded;
+    });
+    if (previous != null && previous.uri != next.uri && !_projectSaved) {
+      await _discardSource(previous, downloaded: previousDownloaded);
+    }
+  }
+
+  Future<void> _discardSource(VideoAssetMetadata source, {required bool downloaded}) async {
+    if (downloaded && Uri.tryParse(source.uri)?.scheme == 'file') {
+      try {
+        await _downloader().deleteDownloadedVideo(source.uri);
+      } catch (_) {
+        // Best-effort cleanup of a download owned by this app.
+      }
+      return;
+    }
+    if (Uri.tryParse(source.uri)?.scheme != 'content') return;
+    try {
+      final projects = await widget.repository.listProjects();
+      if (!projects.any((project) => project.source.uri == source.uri)) {
+        await AndroidVideoPicker.releasePersistedPermission(source.uri);
+      }
+    } catch (_) {
+      // Keep SAF access if the repository cannot be checked safely.
+    }
+  }
+
+  Future<void> _createProject() async {
+    if (_busy) return;
+    final source = _source;
+    if (source == null) {
+      setState(() => _step = 0);
+      _message('اختر الفيديو أولاً.');
+      return;
+    }
+    late final ClipPreferences prefs;
+    try {
+      prefs = _preferences();
+    } on FormatException catch (error) {
+      _message(error.message);
+      return;
+    }
+    setState(() => _busy = true);
+    try {
+      await widget.repository.save(CutawanProject.create(source: source, preferences: prefs));
+      _projectSaved = true;
+      _source = null;
+      _sourceIsDownloaded = false;
+      await widget.onProjectSaved();
+    } on PlatformException catch (error) {
+      _message(error.message ?? 'تعذّر حفظ المشروع على Android.');
+    } catch (error) {
+      _message('تعذّر إنشاء المشروع: $error');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
   }
 
   String get _durationLabel => switch (_duration) {
-        ClipDurationMode.automatic => 'تلقائي حسب اكتمال اللحظة',
+        ClipDurationMode.automatic => 'تلقائي',
         ClipDurationMode.seconds15To30 => '15–30 ثانية',
         ClipDurationMode.seconds30To45 => '30–45 ثانية',
         ClipDurationMode.seconds30To60 => '30–60 ثانية',
         ClipDurationMode.seconds60To90 => '60–90 ثانية',
-        ClipDurationMode.custom => 'مدة مخصصة',
+        ClipDurationMode.custom => 'مخصصة',
       };
 
-  @override
-  Widget build(BuildContext context) {
+  String get _ratioLabel => switch (_ratio) {
+        ClipAspectRatio.portrait916 => '9:16',
+        ClipAspectRatio.square11 => '1:1',
+        ClipAspectRatio.landscape169 => '16:9',
+        ClipAspectRatio.original => 'الأصلية',
+      };
+
+  Widget _sourceCard({bool change = false}) {
+    final source = _source!;
     final theme = Theme.of(context);
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(4, 18, 4, 32),
-      children: [
-        const _Eyebrow('مساحة العمل  /  مشروع جديد', icon: Icons.auto_awesome_rounded),
-        const SizedBox(height: 14),
-        Text(
-          'من المصدر إلى\nمقاطع تستحق المشاهدة.',
-          style: theme.textTheme.headlineMedium?.copyWith(
-            height: 1.08,
-            fontWeight: FontWeight.w800,
-            letterSpacing: -0.8,
-          ),
-        ),
-        const SizedBox(height: 10),
-        Text(
-          'ارفع الفيديو، حدّد أسلوب القصّ، واترك مساحة العمل ترتّب خطوات المعالجة.',
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-            height: 1.55,
-          ),
-        ),
-        const SizedBox(height: 20),
-        _Panel(
-          accent: true,
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final compact = constraints.maxWidth < 360;
-              return Row(children: [
-                Container(
-                  width: compact ? 34 : 46,
-                  height: compact ? 34 : 46,
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.primary.withValues(alpha: 0.16),
-                    borderRadius: BorderRadius.circular(15),
-                  ),
-                  child: Icon(Icons.movie_creation_outlined, color: theme.colorScheme.primary),
-                ),
-                SizedBox(width: compact ? 5 : 13),
-                Expanded(child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('مساحة إنشاء جديدة', style: theme.textTheme.titleSmall),
-                    const SizedBox(height: 3),
-                    Text(
-                      'إعداداتك محفوظة داخل المشروع ويمكن تعديلها قبل المعالجة.',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                        fontSize: compact ? 9 : null,
-                      ),
-                      maxLines: compact ? 2 : null,
-                      overflow: compact ? TextOverflow.ellipsis : TextOverflow.visible,
-                    ),
-                  ],
-                )),
-                if (!compact) Icon(Icons.arrow_back_rounded, color: theme.colorScheme.primary),
-              ]);
-            },
-          ),
-        ),
-        const SizedBox(height: 24),
-        const _Eyebrow('01  /  مصدر الفيديو', icon: Icons.video_file_outlined),
-        const SizedBox(height: 8),
+    final scheme = theme.colorScheme;
+    return _Panel(
+      accent: true,
+      child: Row(children: [
+        Icon(Icons.video_file_outlined, color: scheme.primary, size: 28),
+        const SizedBox(width: 12),
+        Expanded(child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(source.displayName, maxLines: 1, overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800)),
+            const SizedBox(height: 4),
+            Text('${source.width} × ${source.height} · ${_formatDuration(source.durationMs)} · ${_formatBytes(source.sizeBytes)}',
+              maxLines: 2, overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
+            Text(source.mimeType, style: theme.textTheme.labelSmall?.copyWith(color: scheme.onSurfaceVariant)),
+          ],
+        )),
+        if (change)
+          IconButton(
+            key: const ValueKey('create-change-source'),
+            tooltip: 'تغيير الفيديو',
+            onPressed: _busy ? null : () => setState(() => _step = 0),
+            icon: const Icon(Icons.edit_outlined),
+          )
+        else
+          Icon(Icons.check_circle_rounded, color: scheme.primary),
+      ]),
+    );
+  }
+
+  Widget _buildSourceStep(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      const _Eyebrow('01 / مصدر الفيديو', icon: Icons.video_file_outlined),
+      const SizedBox(height: 8),
+      Text('أضف الفيديو الأصلي', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900)),
+      const SizedBox(height: 6),
+      Text('ابدأ بملف واحد. بعد فحصه سننتقل إلى إعداد عدد المقاطع ومدتها ونسبة الإخراج.',
+        style: theme.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant, height: 1.5)),
+      const SizedBox(height: 16),
+      _Panel(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         TextField(
+          key: const ValueKey('create-direct-video-url'),
           controller: _urlController,
           keyboardType: TextInputType.url,
           textInputAction: TextInputAction.done,
           decoration: const InputDecoration(
-            hintText: 'رابط مباشر لملف MP4 / MOV / WebM',
-            prefixIcon: Icon(Icons.link),
+            labelText: 'رابط ملف الفيديو المباشر',
+            hintText: 'https://example.com/video.mp4',
+            prefixIcon: Icon(Icons.link_rounded),
           ),
-          onSubmitted: (_) => _downloadDirectVideo(),
+          onSubmitted: (_) => _downloadVideo(),
         ),
-        const SizedBox(height: 12),
-        LayoutBuilder(
-          builder: (context, constraints) {
-            final narrow = constraints.maxWidth < 390;
-            final downloadButton = FilledButton.icon(
-              onPressed: _isImporting ? null : _downloadDirectVideo,
-              icon: const Icon(Icons.play_arrow_rounded),
-              label: const Text('تنزيل رابط مباشر'),
-            );
-            final importButton = OutlinedButton.icon(
-              onPressed: _isImporting ? null : _importVideo,
-              icon: _isImporting
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.upload_file_outlined),
-              label: Text(_isImporting ? 'جارٍ الاستيراد' : 'اختيار فيديو'),
-            );
-            if (narrow) {
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  downloadButton,
-                  const SizedBox(height: 9),
-                  SizedBox(width: double.infinity, child: importButton),
-                ],
-              );
-            }
-            return Row(
-              children: [
-                Expanded(child: downloadButton),
-                const SizedBox(width: 10),
-                importButton,
-              ],
-            );
-          },
-        ),
-        if (_isImporting && _downloadProgress != null) ...[
-          const SizedBox(height: 14),
-          LinearProgressIndicator(value: _downloadProgress!.fraction),
-          const SizedBox(height: 6),
-          Text(
-            _downloadProgress!.totalBytes == null
-                ? 'تم تنزيل ${_formatBytes(_downloadProgress!.receivedBytes)}'
-                : '${_formatBytes(_downloadProgress!.receivedBytes)} من ${_formatBytes(_downloadProgress!.totalBytes!)}',
-            style: theme.textTheme.bodySmall,
-          ),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: TextButton.icon(
-              onPressed: _cancelDownload,
-              icon: const Icon(Icons.cancel_outlined),
-              label: const Text('إلغاء التنزيل'),
-            ),
-          ),
-        ],
-        const SizedBox(height: 9),
-        Text(
-          'يدعم تنزيل روابط HTTP/HTTPS المباشرة لملفات الفيديو فقط. روابط YouTube والمنصات الاجتماعية التي تتطلب تجاوز قيود أو DRM غير مدعومة. ويمكنك اختيار ملف محلي عبر منتقي Android.',
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-        ),
-        const SizedBox(height: 30),
-        const Divider(),
-        const SizedBox(height: 18),
-        const _Eyebrow('02  /  إعدادات المقاطع', icon: Icons.tune_rounded),
-        const SizedBox(height: 14),
-        Text('عدد المقاطع', style: theme.textTheme.titleSmall),
         const SizedBox(height: 10),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [5, 10, 15, 20]
-              .map((value) => ChoiceChip(
-                    label: Text('$value'),
-                    selected: _clipCount == value,
-                    onSelected: (_) => setState(() => _clipCount = value),
-                  ))
-              .toList(),
-        ),
-        const SizedBox(height: 22),
+        LayoutBuilder(builder: (context, constraints) {
+          final download = FilledButton.icon(
+            key: const ValueKey('create-download-direct'),
+            onPressed: _busy ? null : _downloadVideo,
+            icon: const Icon(Icons.download_rounded),
+            label: const Text('تنزيل الرابط'),
+          );
+          final pick = OutlinedButton.icon(
+            key: const ValueKey('create-pick-local'),
+            onPressed: _busy ? null : _selectVideo,
+            icon: const Icon(Icons.folder_open_rounded),
+            label: const Text('اختيار فيديو'),
+          );
+          if (constraints.maxWidth < 390) {
+            return Column(crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [download, const SizedBox(height: 9), pick]);
+          }
+          return Row(children: [Expanded(child: download), const SizedBox(width: 10), Expanded(child: pick)]);
+        }),
+        if (_busy && _downloadProgress != null) ...[
+          const SizedBox(height: 14),
+          LinearProgressIndicator(value: _downloadProgress!.fraction, borderRadius: BorderRadius.circular(99)),
+          const SizedBox(height: 7),
+          Text(_downloadProgress!.totalBytes == null
+              ? 'تم تنزيل ${_formatBytes(_downloadProgress!.receivedBytes)}'
+              : '${_formatBytes(_downloadProgress!.receivedBytes)} من ${_formatBytes(_downloadProgress!.totalBytes!)}',
+            style: theme.textTheme.bodySmall),
+          Align(alignment: AlignmentDirectional.centerEnd,
+            child: TextButton.icon(onPressed: _cancelDownload,
+              icon: const Icon(Icons.close_rounded), label: const Text('إلغاء التنزيل'))),
+        ],
+        if (_busy && _downloadProgress == null) ...[
+          const SizedBox(height: 12),
+          const LinearProgressIndicator(),
+          const SizedBox(height: 7),
+          Text('جارٍ اختيار الفيديو وفحص بياناته…', style: theme.textTheme.bodySmall),
+        ],
+        const SizedBox(height: 10),
+        Text('المصادر المتاحة: ملفات الجهاز وروابط HTTP/HTTPS المباشرة لملفات الفيديو. روابط YouTube وTwitch وVimeo والمنصات التي تتطلب تجاوز قيود الوصول غير مدعومة حاليًا.',
+          style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant, height: 1.45)),
+      ])),
+      if (_source != null) ...[
+        const SizedBox(height: 16),
+        Text('المصدر المختار', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800)),
+        const SizedBox(height: 8),
+        _sourceCard(),
+        const SizedBox(height: 14),
+        SizedBox(width: double.infinity, child: FilledButton.icon(
+          key: const ValueKey('create-step-continue'),
+          onPressed: _busy ? null : () => setState(() => _step = 1),
+          icon: const Icon(Icons.arrow_forward_rounded),
+          label: const Text('متابعة إلى إعدادات المقاطع'),
+        )),
+      ],
+    ]);
+  }
+
+  Widget _buildSettingsStep(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      const _Eyebrow('02 / إعداد المشروع', icon: Icons.tune_rounded),
+      const SizedBox(height: 8),
+      Text('اضبط المقاطع قبل الإنشاء', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900)),
+      const SizedBox(height: 6),
+      Text('راجع الإعدادات قبل إنشاء المشروع. سيحتفظ المشروع بها لاستخدامها في مسار المعالجة.',
+        style: theme.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant, height: 1.5)),
+      const SizedBox(height: 16),
+      _sourceCard(change: true),
+      const SizedBox(height: 14),
+      _Panel(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text('عدد المقاطع المطلوبة', style: theme.textTheme.titleSmall),
+        const SizedBox(height: 10),
+        Wrap(spacing: 8, runSpacing: 8, children: [5, 10, 15, 20].map((count) => ChoiceChip(
+          key: ValueKey('create-clip-count-$count'),
+          label: Text('$count'),
+          selected: _clipCount == count,
+          onSelected: _busy ? null : (_) => setState(() => _clipCount = count),
+        )).toList()),
+        const SizedBox(height: 18),
         Text('المدة المستهدفة', style: theme.textTheme.titleSmall),
         const SizedBox(height: 8),
         DropdownButtonFormField<ClipDurationMode>(
+          key: const ValueKey('create-duration-mode'),
           initialValue: _duration,
           isExpanded: true,
-          items: ClipDurationMode.values
-              .map((mode) => DropdownMenuItem(
-                    value: mode,
-                    child: Text(switch (mode) {
-                      ClipDurationMode.automatic => 'تلقائي حسب اكتمال اللحظة',
-                      ClipDurationMode.seconds15To30 => '15–30 ثانية',
-                      ClipDurationMode.seconds30To45 => '30–45 ثانية',
-                      ClipDurationMode.seconds30To60 => '30–60 ثانية',
-                      ClipDurationMode.seconds60To90 => '60–90 ثانية',
-                      ClipDurationMode.custom => 'مدة مخصصة',
-                    }),
-                  ))
-              .toList(),
-          onChanged: (value) {
-            if (value != null) { setState(() => _duration = value); }
+          items: ClipDurationMode.values.map((mode) => DropdownMenuItem(
+            value: mode,
+            child: Text(switch (mode) {
+              ClipDurationMode.automatic => 'تلقائي حسب اكتمال اللحظة',
+              ClipDurationMode.seconds15To30 => '15–30 ثانية',
+              ClipDurationMode.seconds30To45 => '30–45 ثانية',
+              ClipDurationMode.seconds30To60 => '30–60 ثانية',
+              ClipDurationMode.seconds60To90 => '60–90 ثانية',
+              ClipDurationMode.custom => 'مدة مخصصة',
+            }),
+          )).toList(),
+          onChanged: _busy ? null : (value) {
+            if (value != null) setState(() => _duration = value);
           },
         ),
         if (_duration == ClipDurationMode.custom) ...[
           const SizedBox(height: 12),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final minimumField = TextField(
-                controller: _minimumSecondsController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'أقل مدة (ثانية)',
-                ),
-                onChanged: (value) {
-                  final parsed = int.tryParse(value);
-                  if (parsed != null) {
-                    setState(() => _customMinimumSeconds = parsed);
-                  }
-                },
-              );
-              final maximumField = TextField(
-                controller: _maximumSecondsController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'أقصى مدة (ثانية)',
-                ),
-                onChanged: (value) {
-                  final parsed = int.tryParse(value);
-                  if (parsed != null) {
-                    setState(() => _customMaximumSeconds = parsed);
-                  }
-                },
-              );
-              if (constraints.maxWidth < 390) {
-                return Column(
-                  children: [
-                    minimumField,
-                    const SizedBox(height: 10),
-                    maximumField,
-                  ],
-                );
-              }
-              return Row(
-                children: [
-                  Expanded(child: minimumField),
-                  const SizedBox(width: 12),
-                  Expanded(child: maximumField),
-                ],
-              );
-            },
-          ),
-        ],
-        const SizedBox(height: 22),
-        Text('نسبة الأبعاد', style: theme.textTheme.titleSmall),
-        const SizedBox(height: 10),
-        Wrap(
-          spacing: 8,
-          children: ClipAspectRatio.values.map((ratio) {
-            final label = switch (ratio) {
-              ClipAspectRatio.portrait916 => '9:16',
-              ClipAspectRatio.square11 => '1:1',
-              ClipAspectRatio.landscape169 => '16:9',
-              ClipAspectRatio.original => 'الأصلية',
-            };
-            return ChoiceChip(
-              label: Text(label),
-              selected: _ratio == ratio,
-              onSelected: (_) => setState(() => _ratio = ratio),
+          LayoutBuilder(builder: (context, constraints) {
+            final minField = TextField(
+              key: const ValueKey('create-minimum-seconds'),
+              controller: _minimumController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(labelText: 'أقل مدة (ثانية)'),
             );
-          }).toList(),
-        ),
-        const SizedBox(height: 22),
-        Text('جودة التصدير', style: theme.textTheme.titleSmall),
+            final maxField = TextField(
+              key: const ValueKey('create-maximum-seconds'),
+              controller: _maximumController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(labelText: 'أقصى مدة (ثانية)'),
+            );
+            if (constraints.maxWidth < 390) {
+              return Column(children: [minField, const SizedBox(height: 10), maxField]);
+            }
+            return Row(children: [Expanded(child: minField), const SizedBox(width: 12), Expanded(child: maxField)]);
+          }),
+        ],
+      ])),
+      const SizedBox(height: 12),
+      _Panel(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text('نسبة أبعاد الفيديو', style: theme.textTheme.titleSmall),
+        const SizedBox(height: 10),
+        Wrap(spacing: 8, runSpacing: 8, children: ClipAspectRatio.values.map((ratio) {
+          final label = switch (ratio) {
+            ClipAspectRatio.portrait916 => '9:16',
+            ClipAspectRatio.square11 => '1:1',
+            ClipAspectRatio.landscape169 => '16:9',
+            ClipAspectRatio.original => 'الأصلية',
+          };
+          return ChoiceChip(
+            key: ValueKey('create-ratio-${ratio.name}'),
+            label: Text(label),
+            selected: _ratio == ratio,
+            onSelected: _busy ? null : (_) => setState(() => _ratio = ratio),
+          );
+        }).toList()),
+        const SizedBox(height: 18),
+        Text('جودة الإخراج', style: theme.textTheme.titleSmall),
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
+          key: const ValueKey('create-export-resolution'),
           initialValue: _resolution,
           isExpanded: true,
           items: const [
             DropdownMenuItem(value: '720p', child: Text('720p')),
             DropdownMenuItem(value: '1080p', child: Text('1080p')),
           ],
-          onChanged: (value) {
-            if (value != null) { setState(() => _resolution = value); }
+          onChanged: _busy ? null : (value) {
+            if (value != null) setState(() => _resolution = value);
           },
         ),
-        const SizedBox(height: 14),
-        _Panel(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-          child: Material(
-            color: Colors.transparent,
-            child: SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              secondary: const Icon(Icons.closed_caption_outlined),
-              title: const Text('كابشن ذكي'),
-              subtitle: const Text('تفريغ الكلام وتطبيق النمط والحركة المختارين.'),
-              value: _captions,
-              onChanged: (value) => setState(() => _captions = value),
-            ),
-          ),
-        ),
-        _Panel(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-          child: Material(
-            color: Colors.transparent,
-            child: SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              secondary: const Icon(Icons.face_retouching_natural_outlined),
-              title: const Text('تتبع الوجه والتأطير'),
-              subtitle: const Text('يُحفظ كخيار للمشروع؛ التنفيذ الكامل يتطلب محرك الرؤية.'),
-              value: _speakerTracking,
-              onChanged: (value) => setState(() => _speakerTracking = value),
-            ),
-          ),
+      ])),
+      const SizedBox(height: 12),
+      _Panel(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        SwitchListTile(
+          key: const ValueKey('create-captions-enabled'),
+          contentPadding: EdgeInsets.zero,
+          title: const Text('إنشاء الترجمة النصية'),
+          subtitle: const Text('تفريغ الكلام وتوليد توقيت الكلمات وتركيب الترجمة على المقاطع.'),
+          value: _captions,
+          onChanged: _busy ? null : (value) => setState(() => _captions = value),
         ),
         if (_captions) ...[
-          const SizedBox(height: 12),
-          Text('تصميم الكابشن', style: theme.textTheme.titleSmall),
+          const Divider(height: 20),
+          Text('نمط الترجمة', style: theme.textTheme.titleSmall),
           const SizedBox(height: 8),
           DropdownButtonFormField<String>(
-            initialValue: _captionStyleId,
+            key: const ValueKey('create-caption-style'),
+            initialValue: _styleId,
             isExpanded: true,
-            items: captionStylePresets
-                .map((style) => DropdownMenuItem(
-                      value: style.id,
-                      child: Text(style.name),
-                    ))
-                .toList(),
-            onChanged: (value) {
-              if (value != null) { setState(() => _captionStyleId = value); }
+            items: captionStylePresets.map((style) => DropdownMenuItem(value: style.id, child: Text(style.name))).toList(),
+            onChanged: _busy ? null : (value) {
+              if (value != null) setState(() => _styleId = value);
             },
           ),
-          const SizedBox(height: 16),
-          Text('حركة النص', style: theme.textTheme.titleSmall),
+          const SizedBox(height: 14),
+          Text('حركة الكلمات', style: theme.textTheme.titleSmall),
           const SizedBox(height: 8),
           DropdownButtonFormField<String>(
-            initialValue: _captionAnimationId,
+            key: const ValueKey('create-caption-animation'),
+            initialValue: _animationId,
             isExpanded: true,
-            items: captionAnimationPresets
-                .map((animation) => DropdownMenuItem(
-                      value: animation.id,
-                      child: Text(animation.name),
-                    ))
-                .toList(),
-            onChanged: (value) {
-              if (value != null) { setState(() => _captionAnimationId = value); }
+            items: captionAnimationPresets.map((item) => DropdownMenuItem(value: item.id, child: Text(item.name))).toList(),
+            onChanged: _busy ? null : (value) {
+              if (value != null) setState(() => _animationId = value);
             },
           ),
         ],
-        Theme(
-          data: theme.copyWith(dividerColor: Colors.transparent),
-          child: ExpansionTile(
-            tilePadding: EdgeInsets.zero,
-            title: const Text('خيارات متقدمة', style: TextStyle(fontWeight: FontWeight.w700)),
-            subtitle: const Text('المدة والتكوين وسلوك اختيار المقاطع'),
-            children: const [
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: Icon(Icons.tune),
-                title: Text('التفاصيل الإضافية'),
-                subtitle: Text(
-                  'ستضاف حدود المدة المخصصة وترتيب المقاطع ومستوى إزالة التكرار في مرحلة إعداد المحرك.',
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 16),
-        const Divider(),
-        const SizedBox(height: 12),
+      ])),
+      _Panel(child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Icon(Icons.center_focus_strong_rounded, color: scheme.primary),
+        const SizedBox(width: 12),
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text('تحليل التأطير التلقائي', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800)),
+          const SizedBox(height: 4),
+          Text('يحلل CUTAWAN الإطارات ويضع خطة للتأطير عند توفر دليل بصري كافٍ. تعمل هذه الخطوة تلقائيًا حاليًا، ولا تعني التعرّف المؤكد على المتحدث النشط.',
+            style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant, height: 1.45)),
+        ])),
+      ])),
+      const SizedBox(height: 14),
+      _Panel(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text('ملخص المشروع', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w900)),
+        const SizedBox(height: 10),
         _SummaryLine(label: 'عدد المقاطع', value: '$_clipCount'),
         _SummaryLine(label: 'المدة', value: _durationLabel),
-        _SummaryLine(label: 'الجودة', value: _resolution),
+        _SummaryLine(label: 'نسبة الأبعاد', value: _ratioLabel),
+        _SummaryLine(label: 'جودة الإخراج', value: _resolution),
+        _SummaryLine(label: 'الترجمة النصية', value: _captions ? 'مفعّلة' : 'متوقفة'),
         if (_captions) ...[
-          _SummaryLine(
-            label: 'تصميم الكابشن',
-            value: captionStylePresets
-                .firstWhere((style) => style.id == _captionStyleId)
-                .name,
-          ),
-          _SummaryLine(
-            label: 'حركة النص',
-            value: captionAnimationPresets
-                .firstWhere((animation) => animation.id == _captionAnimationId)
-                .name,
-          ),
+          _SummaryLine(label: 'نمط الترجمة', value: captionStylePresets.firstWhere((item) => item.id == _styleId).name),
+          _SummaryLine(label: 'الحركة', value: captionAnimationPresets.firstWhere((item) => item.id == _animationId).name),
         ],
-        _SummaryLine(
-          label: 'التكوين',
-          value: switch (_ratio) {
-            ClipAspectRatio.portrait916 => '9:16',
-            ClipAspectRatio.square11 => '1:1',
-            ClipAspectRatio.landscape169 => '16:9',
-            ClipAspectRatio.original => 'الأصلية',
-          },
+      ])),
+      const SizedBox(height: 14),
+      Row(children: [
+        Expanded(child: OutlinedButton.icon(
+          key: const ValueKey('create-step-back'),
+          onPressed: _busy ? null : () => setState(() => _step = 0),
+          icon: const Icon(Icons.arrow_back_rounded),
+          label: const Text('العودة للفيديو'),
+        )),
+        const SizedBox(width: 10),
+        Expanded(child: FilledButton.icon(
+          key: const ValueKey('create-project-submit'),
+          onPressed: _busy ? null : _createProject,
+          icon: _busy
+              ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+              : const Icon(Icons.rocket_launch_rounded),
+          label: Text(_busy ? 'جارٍ الحفظ…' : 'إنشاء المشروع'),
+        )),
+      ]),
+      const SizedBox(height: 6),
+      Text('بعد الحفظ ستنتقل إلى المراجعة لتشغيل التحليل ومتابعة المقاطع والتصدير.',
+        textAlign: TextAlign.center,
+        style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
+    ]);
+  }
+
+  Widget _stepIndicator(int number, String label, {required bool active, required bool complete}) {
+    final scheme = Theme.of(context).colorScheme;
+    return Expanded(child: Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 11),
+      decoration: BoxDecoration(
+        color: active ? scheme.primary.withValues(alpha: 0.12) : scheme.surfaceContainer,
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: active ? scheme.primary : scheme.outlineVariant),
+      ),
+      child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+        CircleAvatar(
+          radius: 13,
+          backgroundColor: active || complete ? scheme.primary : scheme.surfaceContainerHighest,
+          child: complete
+              ? Icon(Icons.check_rounded, size: 16, color: scheme.onPrimary)
+              : Text('$number', style: TextStyle(
+                  color: active ? scheme.onPrimary : scheme.onSurfaceVariant,
+                  fontSize: 12, fontWeight: FontWeight.w800,
+                )),
         ),
-        _SummaryLine(label: 'الكابشن', value: _captions ? 'مفعّل' : 'متوقف'),
-        _SummaryLine(
-          label: 'تتبع المتحدث',
-          value: _speakerTracking ? 'محدد' : 'متوقف',
-        ),
-        const SizedBox(height: 18),
-        const _StatusNote(
-          text:
-              'استيراد الفيديو وحفظ بياناته محليًا متاحان الآن. تحليل الروابط والتفريغ الصوتي وإنشاء المقاطع لم تُربط بمحركاتها بعد.',
-        ),
-      ],
+        const SizedBox(width: 8),
+        Flexible(child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis,
+          style: TextStyle(color: active ? scheme.primary : scheme.onSurfaceVariant, fontWeight: FontWeight.w800))),
+      ]),
+    ));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    return SingleChildScrollView(
+      key: const ValueKey('create-workflow-scroll'),
+      padding: const EdgeInsets.fromLTRB(16, 18, 16, 116),
+      child: Center(child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 680),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            Container(
+              width: 42, height: 42,
+              decoration: BoxDecoration(color: scheme.primary.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(14)),
+              child: Icon(Icons.movie_creation_outlined, color: scheme.primary),
+            ),
+            const SizedBox(width: 12),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('مشروع فيديو جديد', style: theme.textTheme.labelLarge?.copyWith(color: scheme.primary, fontWeight: FontWeight.w800)),
+              const SizedBox(height: 3),
+              Text('من المصدر إلى مقاطع تستحق المشاهدة.', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900)),
+            ])),
+          ]),
+          const SizedBox(height: 16),
+          Row(children: [
+            _stepIndicator(1, 'الفيديو', active: _step == 0, complete: _source != null),
+            const SizedBox(width: 9),
+            _stepIndicator(2, 'إعدادات المقاطع', active: _step == 1, complete: false),
+          ]),
+          const SizedBox(height: 20),
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 220),
+            switchInCurve: Curves.easeOutCubic,
+            switchOutCurve: Curves.easeInCubic,
+            child: KeyedSubtree(
+              key: ValueKey<int>(_step),
+              child: _step == 0 ? _buildSourceStep(context) : _buildSettingsStep(context),
+            ),
+          ),
+        ]),
+      )),
     );
   }
 }
