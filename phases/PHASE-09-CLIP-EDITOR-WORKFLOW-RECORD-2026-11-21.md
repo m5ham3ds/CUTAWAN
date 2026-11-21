@@ -86,8 +86,8 @@ These are automated CI results, not physical-device acceptance.
 - The broader caption animation catalogue and native render behavior still need mode-by-mode visual parity verification.
 - No long real-media fixture, physical ARM64 device playback/export quality test, background render/process-death validation, sustained thermal/battery test or physical accessibility review was performed in this page pass.
 
-## Next page — do not repeat accepted work
+## Successor page — do not repeat accepted work
 
-**Caption Studio** is next. Work only on that page. Start by resolving selected-project ownership (currently its preference loader/saver uses the first project), then align preview controls, preset/motion behavior and persisted timing/style preferences with the existing caption contract. Verify actual preview/export support per animation instead of presenting unimplemented effects as complete.
+Caption Studio has now been accepted in `PHASE-09-CAPTION-STUDIO-WORKFLOW-RECORD-2026-11-21.md` and passed Android run 44953830473 with 154/154 tests and an ARM64-only APK.
 
-Do not repeat or restyle Create, Review or Clip Editor unless a specific regression is reported.
+**Current next page: Jobs only.** Work on the Jobs task/status workflow; do not repeat Create, Review, Clip Editor or Caption Studio unless a specific regression is reported.

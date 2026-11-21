@@ -66,6 +66,6 @@ Ssemble was used only as a reference for workflow sequencing: source → configu
 
 ## Successor-page status
 
-The Clip Editor was the next page after Create and Review and is now accepted in `PHASE-09-CLIP-EDITOR-WORKFLOW-RECORD-2026-11-21.md`. Its successful Android gate is Mobile run 44944753374 with 150/150 tests and ARM64-only APK packaging.
+The Clip Editor and Caption Studio are now accepted in their own page records. Caption Studio passed Mobile Android run 44953830473 with 154/154 tests and an ARM64-only APK.
 
-**Current next page: Caption Studio only.** This file remains the historical Create/Review record; its next-page pointer is superseded by the Clip Editor delivery record. Do not repeat Create, Review or Clip Editor unless a specific regression is reported.
+**Current next page: Jobs only.** This file remains the historical Create/Review record. Do not repeat Create, Review, Clip Editor or Caption Studio unless a specific regression is reported.

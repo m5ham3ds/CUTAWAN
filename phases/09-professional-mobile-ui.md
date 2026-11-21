@@ -135,3 +135,20 @@ This page-by-page delivery uses Ssemble as a **workflow reference only**. No vis
 - Root/desktop CI [44944753329](https://github.com/m5ham3ds/CUTAWAN/actions/runs/44944753329) — success.
 - **Not yet complete:** no filmstrip thumbnails; manual focus is a static point, not keyframed; no transition or multitrack editing; preview crop/caption rendering is not pixel-identical to Media3 output; the animation catalogue is broader than the editor's verified visual preview/export parity; physical-device/long-video testing remains open. This page slice therefore remains accepted while broader Phase 9 and Phase 10 remain in progress.
 - **Next page:** Caption Studio only. Do not repeat Create, Review or Clip Editor.
+
+
+## Caption Studio workflow delivery — 2026-11-21
+
+- Reworked `caption_studio_page.dart` into an explicit project-scoped workspace. The project selector reloads the selected project's preferences and saved transcript; save writes only to that project's record. A preference snapshot detects external changes when the page is not dirty.
+- Retained the existing 12 caption style preset IDs and 10 motion preview IDs. Style controls include font family/scale, text/highlight/background colors, position, bold/uppercase, caption enablement and word timing offset.
+- Split preview motion from MP4 export motion with nullable, backward-compatible `captionPreviewAnimationId` in `ClipPreferences`. The preview keeps the chosen effect on reopen, while export stores only the modes verified by the native MP4 renderer (`static`, `karaoke_fill`). Other effects remain preview-only and safely fall back to Static in MP4; the UI states this explicitly.
+- Caption background is now carried through caption style resolution, ASS sidecar style and renderer fingerprint. Clip Editor preview resolves the same saved background preference.
+- Timed transcript preview uses saved Whisper word timings and preserves Arabic RTL / other-language LTR. Caption timing offset is persisted and passed through the existing sidecar/export contract.
+- Tests cover selected-project ownership and preference save, preview-vs-export motion separation, backwards compatibility of old preference JSON, custom caption background in ASS, updated timed preview and a 320dp RTL narrow viewport.
+- Final accepted head: `e2d3c08e9f2d4559cd931f4b461607f6012a2a95`. Earlier test attempts exposed UI-test ordering/expectation issues and were corrected; do not resume from failed runs 44952913543, 44953293933 or 44953561180.
+- Mobile Android run [44953830473](https://github.com/m5ham3ds/CUTAWAN/actions/runs/44953830473), run number 257 — **success**: Dart format passed, `flutter analyze --fatal-infos` passed with no issues, **154/154 tests passed**, ARM64 debug APK built, ARM64-only ABI verification passed, duplicate native library check passed and APK uploaded.
+- APK artifact [14727205792](https://github.com/m5ham3ds/CUTAWAN/actions/runs/44953830473/artifacts/14727205792): 59,094,264 bytes; archive SHA-256 `366a66f02d012135b0bec933492642c6a487bdd9b1a7a532cd1978b5b5fb1adf`. It contains only `arm64-v8a`, 10 unique native libraries and no duplicate basenames.
+- Coverage artifact [14726905907](https://github.com/m5ham3ds/CUTAWAN/actions/runs/44953830473/artifacts/14726905907): 16,294 bytes; archive SHA-256 `13b8639dab36826fd00e3a20f61ef94ad8b2df28e167df63af4c8b66f21119f3`.
+- Root/desktop CI [44953830478](https://github.com/m5ham3ds/CUTAWAN/actions/runs/44953830478) — **success**. The packaging, Xvfb UI smoke, typecheck/lint/tests and offline video/caption pipeline jobs passed.
+- **Known limits:** the preview animates transcript groups but is not synchronized with live video playback. Export supports only Static and Karaoke Fill; other effects are preview-only, not falsely claimed as rendered in MP4. Caption preview/native overlay parity and physical-device appearance still require visual acceptance.
+- **Next page:** Jobs only. Do not repeat Create, Review, Clip Editor or Caption Studio.
