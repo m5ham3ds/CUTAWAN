@@ -64,14 +64,8 @@ Ssemble was used only as a reference for workflow sequencing: source → configu
 - Full physical-device acceptance, long-media quality, process-death/background render acceptance, thermal/battery measurements and exact preview/export parity remain separate open gates.
 - Broader Phase 9 is still in progress.
 
-## Resume point — next page only
+## Successor-page status
 
-**Next page to redesign: Clip Editor.**
+The Clip Editor was the next page after Create and Review and is now accepted in `PHASE-09-CLIP-EDITOR-WORKFLOW-RECORD-2026-11-21.md`. Its successful Android gate is Mobile run 44944753374 with 150/150 tests and ARM64-only APK packaging.
 
-Order that page around:
-1. Video playback and source-time trim.
-2. Framing/aspect-ratio/crop/focus.
-3. Caption appearance and timing controls relevant to the selected candidate.
-4. Save/return to Review and retain candidate identity.
-
-Preserve the existing source-time trim and candidate persistence contracts. Do not re-open the accepted Create/Review work unless a new regression is found. Jobs and Caption Studio are outside this next page pass.
+**Current next page: Caption Studio only.** This file remains the historical Create/Review record; its next-page pointer is superseded by the Clip Editor delivery record. Do not repeat Create, Review or Clip Editor unless a specific regression is reported.

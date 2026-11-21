@@ -116,3 +116,22 @@ This page-by-page delivery uses Ssemble as a **workflow reference only**. No vis
 - The broader Clip Editor still needs its page-by-page workflow pass (playback/trim, framing/crop, caption edit, save/return) and its narrow-width/accessibility tests.
 - Filmstrip thumbnails, manual focus keyframes, transitions, pixel-exact preview/export parity, larger-text/landscape accessibility and physical-device visual acceptance remain open.
 - **Next page:** Clip Editor only. Keep the current source-time trim/edit persistence and output invalidation contracts. Do not start Jobs or Caption Studio redesign as part of the Clip Editor pass.
+
+
+## Clip Editor workflow delivery — 2026-11-21
+
+- Rebuilt `clip_editor_page.dart` as a focused mobile editing flow: selected clip playback, bounded 500ms-minimum source-time trim, title edit, output-ratio selection, framing choices and caption controls.
+- The preview uses the original media source and loops/pauses at the candidate boundaries. Supported source forms remain content URI, local file and HTTP/HTTPS video URLs.
+- Added aspect choices for portrait 9:16, square 1:1, landscape 16:9 and original.
+- Framing choices: automatic (existing analyzed reframe plan), full frame (fit) and manual static focus. Manual focus X/Y is saved per candidate in a separate versioned `clip_edit_<clipId>.json` artifact; the repository confirms the clip belongs to the selected project before writing.
+- Caption controls: enable/disable, existing preset and animation identifiers, text/highlight colors, font family/scale, vertical position, uppercase/bold flags and a bounded timing offset. The timing shift is applied to source word times before they are clipped to the candidate window for SRT/ASS and render cues.
+- Caption preview is built from saved transcript word timing and follows Arabic RTL / other-language LTR. The export pipeline resolves the same caption style fields and reads per-clip framing overrides. Clip and caption fingerprints include edit settings, preventing old validated exports from being accepted as current after edits.
+- Save preserves the candidate ID, writes the modified candidate range/title, stores clip-local framing, saves project preferences and returns to Review. A new processing run is required to create the changed MP4.
+- Added tests for override serialization/validation, manual crop aspect ratio and edge clamping, independent per-clip persistence, preference round-trip and subtitle timing offset.
+- Final accepted app head: `3c0e7ee077364a980670982671b2c34676dc638a`. Preceding source fixes include repository persistence correction and strict analyzer cleanup; no Create or Review implementation was repeated.
+- Mobile Android run [44944753374](https://github.com/m5ham3ds/CUTAWAN/actions/runs/44944753374), run 253 — **success**: format passed, `flutter analyze --fatal-infos` passed, **150/150 Flutter tests passed**, ARM64 debug APK built, ABI check and duplicate-library verification passed, artifact uploaded.
+- APK artifact [14723029272](https://github.com/m5ham3ds/CUTAWAN/actions/runs/44944753374/artifacts/14723029272): 59,076,229 bytes; archive SHA-256 `a4e46370c6df2c29d2bc4fe7a6dbf48ad4f4e9edc43831e2f046931dad689f8f`. APK contains only `arm64-v8a`, 10 unique native libraries and no duplicate native basenames.
+- Coverage artifact [14723970064](https://github.com/m5ham3ds/CUTAWAN/actions/runs/44944753374/artifacts/14723970064): 15,719 bytes; archive SHA-256 `b9ea9364ffe609a0f9b88183df3ffb2b2d2becebf4174df0a8d2f693af02ed60`.
+- Root/desktop CI [44944753329](https://github.com/m5ham3ds/CUTAWAN/actions/runs/44944753329) — success.
+- **Not yet complete:** no filmstrip thumbnails; manual focus is a static point, not keyframed; no transition or multitrack editing; preview crop/caption rendering is not pixel-identical to Media3 output; the animation catalogue is broader than the editor's verified visual preview/export parity; physical-device/long-video testing remains open. This page slice therefore remains accepted while broader Phase 9 and Phase 10 remain in progress.
+- **Next page:** Caption Studio only. Do not repeat Create, Review or Clip Editor.
