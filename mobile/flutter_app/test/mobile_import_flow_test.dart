@@ -140,6 +140,8 @@ void main() {
       expect(methods, contains('pickVideo'));
       expect(await repository.listProjects(), isEmpty,
           reason: 'Choosing a source must not save a project before settings are confirmed.');
+      await tester.ensureVisible(find.byKey(const ValueKey('create-step-continue')));
+      await tester.pump();
       await tester.tap(find.byKey(const ValueKey('create-step-continue')));
       await pumpUi(tester);
       await tester.ensureVisible(find.byKey(const ValueKey('create-project-submit')));
@@ -211,7 +213,9 @@ void main() {
     await openCreatePage(tester);
     await tester.tap(find.text('اختيار فيديو'));
     await pumpUi(tester);
-    await tester.tap(find.byKey(const ValueKey('create-step-continue')));
+    await tester.ensureVisible(find.byKey(const ValueKey('create-step-continue')));
+      await tester.pump();
+      await tester.tap(find.byKey(const ValueKey('create-step-continue')));
     await pumpUi(tester);
     await tester.ensureVisible(find.byKey(const ValueKey('create-project-submit')));
       await tester.pump();
@@ -246,7 +250,9 @@ void main() {
     await openCreatePage(tester);
     await tester.tap(find.text('اختيار فيديو'));
     await pumpUi(tester);
-    await tester.tap(find.byKey(const ValueKey('create-step-continue')));
+    await tester.ensureVisible(find.byKey(const ValueKey('create-step-continue')));
+      await tester.pump();
+      await tester.tap(find.byKey(const ValueKey('create-step-continue')));
     await pumpUi(tester);
     await tester.ensureVisible(find.byKey(const ValueKey('create-project-submit')));
       await tester.pump();
