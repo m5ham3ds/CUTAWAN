@@ -42,16 +42,35 @@ void main() {
   });
 
 
-  testWidgets('mobile shell shows the four primary destinations', (tester) async {
+  testWidgets('mobile shell shows the five primary destinations', (tester) async {
     await tester.pumpWidget(const CutawanApp());
 
     expect(find.text('CUTAWAN'), findsOneWidget);
     expect(find.text('AI CREATOR STUDIO'), findsOneWidget);
+    expect(find.text('الرئيسية'), findsOneWidget);
     expect(find.text('إنشاء'), findsOneWidget);
     expect(find.text('المهام'), findsOneWidget);
     expect(find.text('المراجعة'), findsOneWidget);
     expect(find.text('الاستوديو'), findsOneWidget);
+    expect(find.text('مرحباً بك في CUTAWAN'), findsOneWidget);
+  });
+
+  testWidgets('dashboard create action opens the real import page', (tester) async {
+    await tester.pumpWidget(const CutawanApp());
+    expect(find.text('مرحباً بك في CUTAWAN'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('dashboard-create-project')));
+    await tester.pumpAndSettle();
     expect(find.textContaining('من المصدر إلى'), findsOneWidget);
+    expect(find.text('اختيار فيديو'), findsOneWidget);
+  });
+
+  testWidgets('settings route exposes diagnostics and model center actions', (tester) async {
+    await tester.pumpWidget(const CutawanApp());
+    await tester.tap(find.byTooltip('الإعدادات'));
+    await tester.pumpAndSettle();
+    expect(find.text('إعدادات CUTAWAN'), findsOneWidget);
+    expect(find.text('تشخيص وقبول Android'), findsOneWidget);
+    expect(find.text('مركز النماذج والاتصالات'), findsOneWidget);
   });
 
   testWidgets('caption studio exposes 12 presets, RTL preview and separate animation controls', (tester) async {

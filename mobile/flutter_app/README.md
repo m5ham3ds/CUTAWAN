@@ -49,6 +49,14 @@ Direct URL import accepts a direct video-file endpoint only. It does not extract
 - The multilingual Whisper Base model remains user-installed and checksum-verified.
 - VAD, certified Arabic/English WER and timing accuracy, and physical-device memory/thermal acceptance remain open.
 
+### Phase 9 — dashboard, settings and clip-editor slice
+
+- Added a dedicated Dashboard with project counts, recent projects and navigation into Create, Jobs, Review and AI Center.
+- Added a Settings route linking to device diagnostics and model/privacy configuration. The theme follows Android system appearance; no inert preference switches are presented as functional.
+- Added a video editor using Flutter `video_player`: it opens the project's SAF content URI or local file, plays/pauses/seeks, adjusts source-time start/end, renames a candidate and saves the output aspect ratio.
+- The editor preview currently uses a centered crop for the selected aspect ratio. Dynamic reframe segments and burned captions remain part of the export pipeline; exact preview/export parity is not claimed.
+- Candidate timing participates in caption and render fingerprints. Editing a trim range regenerates subtitle sidecars and invalidates affected exports without rerunning discovery or overwriting manual edits.
+
 ## Known limitations — do not describe as completed
 
 The mobile app has real source import, local project persistence, job records, caption configuration and model-management foundations. However, the following still require implementation and acceptance:

@@ -61,3 +61,16 @@ Preserve schema compatibility and existing project data. Never fabricate AI resu
 ## Current status
 
 Redesign is **not complete**. Existing Flutter shell and feature parts are an initial implementation only. The current UI is not evidence that the target information architecture or editor has been delivered. Do not mark Phase 9 done until all applicable acceptance criteria pass.
+
+## Implementation update — 2026-11-21
+
+A first product-facing redesign slice is delivered in Flutter:
+
+- Five primary destinations: Dashboard, Create, Jobs, Review and Caption Studio.
+- Dedicated Dashboard showing project counts/recent projects with working navigation.
+- Dedicated Settings route linking to device diagnostics and AI/model/privacy settings.
+- A source-backed Clip Editor with playback, source-time trim-range adjustment, title edits and output aspect-ratio changes saved to existing project/candidate contracts.
+- Candidate timing is included in caption fingerprints. Changing aspect ratio does not rerun discovery and overwrite manually edited candidate ranges.
+- Added tests for candidate trim updates, out-of-source range rejection, Dashboard-to-import navigation and Settings navigation.
+
+**Still not complete:** feature-state extraction from the shared `part` library, filmstrip thumbnails, manual crop/focus keyframes and transitions, caption playback synchronized with video, exact preview/export parity, full light/dark + RTL/LTR golden matrix, accessibility audit, keyboard/landscape coverage and physical-device acceptance. The current editor preview is a centered crop; final exports use the saved reframe timeline.

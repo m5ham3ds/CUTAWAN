@@ -23,6 +23,9 @@ import '../services/android_reframe_analysis_service.dart';
 import '../services/processing_job_service.dart';
 import '../services/processing_pipeline_service.dart';
 import 'device_acceptance_page.dart';
+import 'features/dashboard_page.dart';
+import 'features/settings_page.dart';
+import 'features/clip_editor_page.dart';
 
 part 'home_shell/create_page.dart';
 part 'home_shell/jobs_page.dart';
@@ -47,6 +50,7 @@ class _HomeShellState extends State<HomeShell> with SingleTickerProviderStateMix
   bool _didRecoverJobs = false;
 
   static const _destinations = [
+    (label: 'الرئيسية', icon: Icons.space_dashboard_outlined, selected: Icons.space_dashboard_rounded, hint: 'Dashboard'),
     (label: 'إنشاء', icon: Icons.add_circle_outline_rounded, selected: Icons.add_circle_rounded, hint: 'Create'),
     (label: 'المهام', icon: Icons.grid_view_rounded, selected: Icons.grid_view_rounded, hint: 'Projects'),
     (label: 'المراجعة', icon: Icons.movie_filter_outlined, selected: Icons.movie_filter_rounded, hint: 'Review'),
@@ -91,6 +95,15 @@ class _HomeShellState extends State<HomeShell> with SingleTickerProviderStateMix
     );
   }
 
+  void _openSettings() {
+    Navigator.of(context).push(MaterialPageRoute<void>(
+      builder: (_) => SettingsPage(
+        onDiagnostics: _openDeviceDiagnostics,
+        onModels: _openModels,
+      ),
+    ));
+  }
+
   void _openModels() {
     Navigator.of(context).push(PageRouteBuilder<void>(
       transitionDuration: const Duration(milliseconds: 360),
@@ -118,24 +131,35 @@ class _HomeShellState extends State<HomeShell> with SingleTickerProviderStateMix
     final pages = <Widget>[
       TickerMode(
         enabled: _selectedIndex == 0,
-        child: CreatePage(repository: _repository, onProjectSaved: _reloadProjects),
+        child: DashboardPage(
+          projects: _projects,
+          onCreate: () => _selectDestination(1),
+          onOpenJobs: () => _selectDestination(2),
+          onOpenReview: () => _selectDestination(3),
+          onOpenModels: _openModels,
+          onOpenSettings: _openSettings,
+        ),
       ),
       TickerMode(
         enabled: _selectedIndex == 1,
+        child: CreatePage(repository: _repository, onProjectSaved: _reloadProjects),
+      ),
+      TickerMode(
+        enabled: _selectedIndex == 2,
         child: JobsPage(
           projects: _projects,
           repository: _repository,
           onProjectsChanged: _reloadProjects,
-          onOpenReview: () => _selectDestination(2),
+          onOpenReview: () => _selectDestination(3),
           storageUsageBytes: widget.storageUsageBytes,
         ),
       ),
       TickerMode(
-        enabled: _selectedIndex == 2,
+        enabled: _selectedIndex == 3,
         child: ReviewPage(projects: _projects, repository: _repository, onProjectsChanged: _reloadProjects),
       ),
       TickerMode(
-        enabled: _selectedIndex == 3,
+        enabled: _selectedIndex == 4,
         child: CaptionStudioPage(projects: _projects, repository: _repository, onProjectsChanged: _reloadProjects),
       ),
     ];
@@ -144,7 +168,7 @@ class _HomeShellState extends State<HomeShell> with SingleTickerProviderStateMix
       child: Scaffold(
         extendBody: true,
         body: SafeArea(bottom: false, child: Column(children: [
-          _CutawanTopBar(onModels: _openModels, onRefresh: _reloadProjects, onDiagnostics: _openDeviceDiagnostics),
+          _CutawanTopBar(onModels: _openModels, onRefresh: _reloadProjects, onDiagnostics: _openDeviceDiagnostics, onSettings: _openSettings),
           Expanded(child: AnimatedSwitcher(
             duration: const Duration(milliseconds: 280),
             reverseDuration: const Duration(milliseconds: 210),
@@ -164,10 +188,11 @@ class _HomeShellState extends State<HomeShell> with SingleTickerProviderStateMix
 }
 
 class _CutawanTopBar extends StatelessWidget {
-  const _CutawanTopBar({required this.onModels, required this.onRefresh, required this.onDiagnostics});
+  const _CutawanTopBar({required this.onModels, required this.onRefresh, required this.onDiagnostics, required this.onSettings});
   final VoidCallback onModels;
   final Future<void> Function() onRefresh;
   final VoidCallback onDiagnostics;
+  final VoidCallback onSettings;
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -188,6 +213,7 @@ class _CutawanTopBar extends StatelessWidget {
           _TopBarAction(icon: Icons.refresh_rounded, tooltip: 'تحديث المشاريع', onTap: onRefresh),
           const SizedBox(width: 8),
         ],
+        _TopBarAction(icon: Icons.settings_outlined, tooltip: 'الإعدادات', onTap: onSettings),
         _TopBarAction(icon: Icons.monitor_heart_outlined, tooltip: 'تشخيص الجهاز', onTap: onDiagnostics),
         _TopBarAction(icon: Icons.memory_rounded, tooltip: 'مركز النماذج', onTap: onModels, accent: true),
       ]),

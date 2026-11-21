@@ -112,7 +112,10 @@ class ProcessingPipelineService {
         stage: 'discovering',
         progress: 0.42,
         fingerprintConfiguration: {
-          'clipPreferences': project.preferences.toJson(),
+          'requestedClipCount': project.preferences.requestedClipCount,
+          'durationMode': project.preferences.durationMode.name,
+          'customMinimumSeconds': project.preferences.customMinimumSeconds,
+          'customMaximumSeconds': project.preferences.customMaximumSeconds,
           'engine': 'evidence-ranking-qwen-optional-v1',
         },
         artifacts: const ['candidates.json'],
@@ -169,7 +172,10 @@ class ProcessingPipelineService {
           'enabled': project.preferences.captionsEnabled,
           'style': project.preferences.captionStyleId,
           'animation': project.preferences.captionAnimationId,
-          'candidateIds': candidates.candidates.map((item) => item.id).toList(),
+          'aspectRatio': _aspectRatio(project),
+          'candidates': candidates.candidates
+              .map((item) => item.toJson())
+              .toList(growable: false),
         },
       );
       final captionsValid = await _jobs.hasCheckpoint(

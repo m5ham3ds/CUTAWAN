@@ -30,6 +30,8 @@ class ClipCandidate {
   int get durationMs => endMs - startMs;
 
   ClipCandidate copyWith({
+    int? startMs,
+    int? endMs,
     String? title,
     String? hook,
     String? summary,
@@ -38,8 +40,8 @@ class ClipCandidate {
   }) =>
       ClipCandidate(
         id: id,
-        startMs: startMs,
-        endMs: endMs,
+        startMs: startMs ?? this.startMs,
+        endMs: endMs ?? this.endMs,
         score: score,
         title: title ?? this.title,
         hook: hook ?? this.hook,

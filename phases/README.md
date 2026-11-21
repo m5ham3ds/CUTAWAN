@@ -26,7 +26,7 @@
 | 6 | Caption Studio visual presets, motion preview, RTL and preference persistence | Studio preview now loads saved transcript words/timing and groups them using live style/font/scale settings | Not synchronized to actual video playback; Studio and Android overlay are not yet pixel-identical |
 | 7 | Multi-provider model selection, secure user credentials, consented cloud editorial annotations | Provider-scoped model/key storage, consent gates on outbound requests, local fallback on key deletion; latest Android CI passed | Physical Keystore/backup/rotation tests, real provider account/model compatibility, billing and policy acceptance remain open |
 | 8 | End-to-end pipeline, job orchestration and clip export | Media3 Transformer pipeline consumes time-ranged reframe segments and timed caption cues; native overlay burns captions into MP4; metadata/hash verification exists | Full decode validation, physical visual/media fixtures, render recovery after process death, background execution/notifications and per-clip retry remain open |
-| 9 | Professional UI redesign and navigation/component architecture | First slice delivered; screen parts and shared Material 3 themes added | Full information architecture, isolated feature boundaries, Clip Editor, accessibility, golden/RTL/responsive matrix and device evidence remain open |
+| 9 | Professional UI redesign and navigation/component architecture | Dashboard, Settings route, five primary destinations and a functional playback/trim editor slice delivered; still in progress | Feature-state extraction, filmstrip/focus/transition editing, preview/export parity, accessibility/golden/device matrix remain open |
 | 10 | Physical-device quality, security, performance and Arabic/English acceptance | Diagnostics instrumented; acceptance incomplete | Native device baseline + temporary secure-storage self-test added; still needs physical media corpus, WER/timing results, full-decode and lifecycle/thermal evidence |
 
 ## Global engineering constraints
@@ -86,3 +86,13 @@ Phases 1–7 have a successful automated Android gate on SHA `80e182b`; physical
 8. Repeat cancellation/retry/resume and render recovery after process death. Phase 8's current Activity-owned render map still prevents this gate from being accepted.
 
 **Acceptance rule:** no empty placeholder, synthetic fixture, CI pass or emulator snapshot may be counted as physical-device evidence. If a measurement is unavailable, it remains `null`/blocked and the phase stays incomplete.
+
+## Phase 9 UI/editor implementation — 2026-11-21
+
+- Added Dashboard and Settings screen modules; primary navigation now includes Dashboard, Create, Jobs, Review and Caption Studio.
+- Dashboard metrics and recent projects are bound to persisted project state. Its actions open real app destinations.
+- Settings exposes working routes to Android diagnostics and model/privacy controls.
+- Added a source-backed playback editor with source-time trim, title and aspect-ratio changes persisted into existing records.
+- Caption and render fingerprints include candidate timing; editor changes invalidate affected sidecars/exports but do not force discovery to overwrite manual edits.
+- Added candidate-range and navigation/settings widget tests.
+- Filmstrip, manual crop/focus handles, transition editing and exact preview/export parity remain open.

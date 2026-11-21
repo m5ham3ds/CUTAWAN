@@ -55,6 +55,30 @@ class ClipPreferences {
   final bool? captionUppercase;
   final bool? captionBold;
 
+  ClipPreferences copyWith({
+    ClipAspectRatio? aspectRatio,
+  }) =>
+      ClipPreferences(
+        requestedClipCount: requestedClipCount,
+        durationMode: durationMode,
+        customMinimumSeconds: customMinimumSeconds,
+        customMaximumSeconds: customMaximumSeconds,
+        aspectRatio: aspectRatio ?? this.aspectRatio,
+        resolution: resolution,
+        captionsEnabled: captionsEnabled,
+        speakerTrackingEnabled: speakerTrackingEnabled,
+        captionStyleId: captionStyleId,
+        captionAnimationId: captionAnimationId,
+        mainTextColor: mainTextColor,
+        highlightColor: highlightColor,
+        captionBackgroundColor: captionBackgroundColor,
+        captionFontFamily: captionFontFamily,
+        captionFontScale: captionFontScale,
+        captionPositionY: captionPositionY,
+        captionUppercase: captionUppercase,
+        captionBold: captionBold,
+      );
+
   String? validate() {
     if (requestedClipCount < 1 || requestedClipCount > 50) {
       return 'Clip count must be between 1 and 50.';

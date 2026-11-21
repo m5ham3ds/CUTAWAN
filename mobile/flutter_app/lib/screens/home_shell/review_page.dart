@@ -328,6 +328,28 @@ class _ReviewPageState extends State<ReviewPage> {
     }
   }
 
+  Future<void> _openClipEditor(
+    BuildContext context,
+    CutawanProject project,
+    CandidateSet candidateSet,
+    ClipCandidate candidate,
+  ) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => ClipEditorPage(
+          project: project,
+          candidateSet: candidateSet,
+          candidate: candidate,
+          repository: widget.repository,
+          onSaved: () async {
+            await _loadArtifacts(project.id);
+            await widget.onProjectsChanged();
+          },
+        ),
+      ),
+    );
+  }
+
   Future<void> _runFullPipeline(CutawanProject project) async {
     if (_pipelineRunning || _busyProjectId != null) return;
     setState(() {
@@ -602,7 +624,7 @@ class _ReviewPageState extends State<ReviewPage> {
                             Text(
                               '${export['width']} × ${export['height']} · '
                               '${_formatDuration((export['durationMs'] as num? ?? 0).toInt())} · '
-                              '${_formatBytes((export['sizeBytes'] as num? ?? 0).toInt())} · SHA-256 verified',
+                              '${_formatBytes((export['sizeBytes'] as num? ?? 0).toInt())} · ${export['fullyDecodeValidated'] == true ? 'Full decode verified' : 'needs full-decode revalidation'}',
                               style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                             ),
                           ],
@@ -661,6 +683,12 @@ class _ReviewPageState extends State<ReviewPage> {
                             ),
                           ],
                         ),
+                      ),
+                      IconButton(
+                        key: ValueKey<String>('edit-clip-${candidate.id}'),
+                        tooltip: 'فتح محرر المقطع',
+                        onPressed: isBusy ? null : () => _openClipEditor(context, project, candidateSet, candidate),
+                        icon: const Icon(Icons.edit_video_outlined),
                       ),
                     ],
                   ),
