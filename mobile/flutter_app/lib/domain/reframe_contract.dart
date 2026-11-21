@@ -498,7 +498,7 @@ class ReframePlanner {
           ? 1200
           : intervals[intervals.length ~/ 2];
       final maximumTrackedGapMs = max(1600, medianInterval * 2).toInt();
-      final halfSupportMs = max(1, maximumTrackedGapMs ~/ 2).toInt();
+      final halfSupportMs = math.max(1, maximumTrackedGapMs ~/ 2).toInt();
       var cursor = 0;
 
       for (var index = 0; index < samples.length; index++) {
@@ -507,20 +507,20 @@ class ReframePlanner {
         final next = index + 1 < samples.length ? samples[index + 1] : null;
 
         final start = previous == null
-            ? max(0, sample.timestampMs - halfSupportMs).toInt()
+            ? math.max(0, sample.timestampMs - halfSupportMs).toInt()
             : sample.timestampMs - previous.timestampMs <=
                     maximumTrackedGapMs
                 ? (previous.timestampMs + sample.timestampMs) ~/ 2
-                : max(
+                : math.max(
                     previous.timestampMs + halfSupportMs,
                     sample.timestampMs - halfSupportMs,
                   ).toInt();
         final end = next == null
-            ? min(sourceDurationMs, sample.timestampMs + halfSupportMs)
+            ? math.min(sourceDurationMs, sample.timestampMs + halfSupportMs)
                 .toInt()
             : next.timestampMs - sample.timestampMs <= maximumTrackedGapMs
                 ? (sample.timestampMs + next.timestampMs) ~/ 2
-                : min(
+                : math.min(
                     sample.timestampMs + halfSupportMs,
                     next.timestampMs - halfSupportMs,
                   ).toInt();
