@@ -1,46 +1,72 @@
 # Phase 10 — Physical-device, security, quality and performance acceptance
 
+## Purpose and acceptance rule
+
+Phase 10 verifies the mobile release on a real ARM64 Android handset using a hash-locked media corpus. It is not accepted by a successful CI build, a mocked platform response, or a heuristic device-class marker. Every result must record the handset, Android release/API, application build SHA, fixture SHA-256, method, measurements, and limitations.
+
 ## Test corpus
 
-- Arabic single-speaker interview.
-- Arabic overlapping/multi-speaker discussion.
+- Arabic single-speaker interview and Arabic overlapping/multi-speaker discussion.
 - English interview/podcast.
 - Gaming/webcam and screen demonstration.
 - Speech-light and music-heavy source.
 - Portrait/landscape and rotated device footage.
-- Long file, short file, partial/corrupt video and source with no audio.
+- Short and long files, partial/corrupt video, and source with no audio.
 
-## Measurements
+The corpus must be versioned and SHA-256 locked. Each speech fixture needs a manually reviewed transcript and word boundaries. No generated or placeholder transcript is valid reference evidence.
 
-- Word error rate and word timestamp alignment against manually reviewed references.
-- Candidate completeness, editorial precision, duplicate ratio, source coverage and human selection.
-- Face-track retention and crop continuity, not just detector confidence.
-- Output full-decode success, duration/size, dimensions, audio continuity and caption timing.
-- Memory high-water mark, processing time, thermal throttling, battery and storage peak.
-- App restart/resume, URI permission persistence, encrypted key lifecycle and network-consent behavior.
+## Required measurements
 
-## Acceptance
+- Word error rate with insertion/deletion/substitution counts, matched-word coverage, and median/P95 word start/end timing error.
+- Candidate completeness, editorial precision, duplicate ratio, source coverage, and human-selection outcome.
+- Face-track retention and crop continuity across movement and scene cuts, not detector confidence alone.
+- Full MediaCodec decode of every exported audio/video track to end-of-stream; record dimensions, duration, size, audio continuity and caption synchronization.
+- Peak process PSS/RAM, processing time, temporary-storage peak, battery delta, and thermal state before/during/after sustained runs.
+- Process restart/resume, SAF URI permission after force-stop/relaunch, secure-key lifecycle, and outbound network behavior with and without consent.
 
-No phase is marked complete using a unit-test result alone when it has a device or accuracy requirement. Every result records device model, Android version, build SHA, input fixture hashes, test method, metrics and known limitations.
+## Automated baseline instrumentation
 
+The Android bridge collects only non-identifying runtime/device information: manufacturer/model, Android release/API, CPU count, RAM/available RAM, process PSS/private-dirty, app-private free storage, battery level/temperature, thermal status, app version and uptime. No serial number, media path, filename, provider key or media contents are included.
 
-## Diagnostic baseline gate — 2026-11-21
+The Flutter service verifies required baseline fields and rejects impossible RAM ranges. `Build.FINGERPRINT` remains a heuristic only; `physical-candidate` is not a physical-device identity assertion. Manual handset confirmation remains separate. CI builds carry `BUILD_SHA`; local builds are marked unpinned.
 
-The automated device-class field uses a Build.FINGERPRINT marker heuristic. A result of physical-candidate is not proof that a human has inspected the handset. The UI keeps manual physical-device confirmation separate and leaves it not-verified until a real device session.
+A temporary random secure-storage canary is written/read/deleted. It does not access saved provider credentials. This is a single-install round-trip check only, not backup/restore, reinstall or key-rotation proof.
 
-The baseline gate requires the physical-device marker check, manufacturer/model, Android release/API, CPU count, total/available RAM, app process PSS, app-private free storage and app version. Missing values remain listed; they are never replaced with zero or inferred data.
+## Acceptance workbench UI
 
-The report separately exposes media corpus, Whisper quality, candidate quality, physical full-decode, sustained thermal/performance, process-death resume, SAF lifecycle, Keystore lifecycle and end-to-end network-consent evidence. Each remains not collected or not verified until a real test run is recorded.
+The diagnostic page groups device profile, headline memory/storage metrics, media quality, stability and privacy evidence. Status codes are translated into compact Arabic labels; raw values remain available in copied JSON. Long identifiers wrap/select rather than being forced into a fixed trailing width. The workbench does not display a green phase-complete state while any physical evidence is missing.
 
-CI provides 137 passing Flutter tests and an ARM64-only APK. This validates source, test and packaging gates only. No committed audio/video acceptance fixtures or physical-device measurements exist in the repository. Phase 10 therefore remains incomplete.
+Widget tests cover a 320dp viewport with enlarged text, RTL, long build identifiers, light/dark theme, evidence rows and error-free layout. These are layout regression tests and do not substitute for device acceptance.
 
+## Current automated evidence
 
-## Latest automated gate — 2026-11-21
+- Mobile Android workflow [44868851973](https://github.com/m5ham3ds/CUTAWAN/actions/runs/44868851973) validated the prior baseline instrumentation: 139 Flutter tests, strict analysis, format, ARM64-only APK, and unique native-library checks.
+- The responsive workbench and its new tests are recorded in the subsequent implementation commit and must be verified by the new workflow run before calling this UI change accepted.
 
-Mobile Android workflow [44868851973](https://github.com/m5ham3ds/CUTAWAN/actions/runs/44868851973) on SHA `bad891491288e67324932f81c261b6953916055c` passed the formatting, strict analysis, Flutter tests (**139/139**), ARM64 debug APK build, native-library/ABI checks and artifact upload.
+## Still not accepted — real-device gates
 
-APK: [cutawan-mobile-arm64-debug artifact 14693675362](https://github.com/m5ham3ds/CUTAWAN/actions/runs/44868851973/artifacts/14693675362). It contains exactly the `arm64-v8a` ABI and 10 unique native libraries without duplicate basenames. ZIP digest: `56cf57b2c79b83ee5533b1897e212f607c11f200f854a80cb79c21069a101ae4`.
+- No physical handset report or human device confirmation is attached.
+- No SHA-locked audio/video corpus or manually reviewed Arabic/English transcript set has been committed.
+- No physical Whisper WER/timing, candidate quality, crop continuity or full MP4 decode score has been collected.
+- No sustained memory, battery, thermal or processing-time measurement exists.
+- No process-death recovery, SAF force-stop/relaunch, Keystore backup/restore/reinstall/key-rotation or consent-blocking end-to-end physical result is attached.
+- Activity-owned renderer sessions are cancelled when the Activity is destroyed; durable background render execution and session reconstruction remain Phase 8 work, not Phase 10 evidence.
 
-The test suite includes mocked device-baseline validation, emulator rejection, incomplete-report detection and secure-storage canary cleanup. Those tests verify the gate code only. The physical identity marker is explicitly heuristic; a human still needs to confirm the actual handset and build.
+## Required field procedure
 
-**Physical acceptance remains incomplete:** no real handset report, committed test-media corpus, manually reviewed word timings, WER/candidate-quality score, sustained processing/thermal/battery record, on-device end-to-end MP4 decode, process-death recovery, SAF force-stop/relaunch, Keystore backup/restore/reinstall or consent-blocking physical test is attached.
+1. Install an APK whose copied JSON contains the expected 40-character build SHA.
+2. Run **تشخيص الجهاز** and copy the JSON report. Confirm the real handset manually; do not infer physical identity from the fingerprint heuristic.
+3. Execute each versioned fixture and retain its SHA-256 and a manually checked reference transcript.
+4. Record the measurements above for each fixture and export. Keep failed and inconclusive runs; do not replace them with synthetic values.
+5. Run force-stop/relaunch, process-death, security lifecycle and cloud-consent checks on the physical phone.
+6. Append results and known limitations to this record. Phase 10 remains incomplete until every required gate has evidence.
+
+## Implementation history — responsive diagnostic workbench
+
+- Replaced repetitive diagnostic cards and fixed-width trailing values with a compact responsive screen.
+- Grouped evidence into media quality, performance/stability, and privacy/security.
+- Translated raw service states to short Arabic labels and made status color semantic rather than decorative.
+- Added adaptive metric cards, wrapping identifiers, selectable build SHA, retry feedback, expandable technical readings and a single JSON export action.
+- Extended diagnostic metadata with an explicit build-identity status and schema version 2.
+- Added a baseline test for impossible available-memory values and widget tests for 320dp + enlarged text and dark theme.
+- No physical acceptance claim is made by these code and widget tests.

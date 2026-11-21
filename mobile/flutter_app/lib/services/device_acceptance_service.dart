@@ -70,8 +70,7 @@ class DeviceAcceptanceService {
     final appVersionName = native['appVersionName'];
     final appVersionCode = native['appVersionCode'];
 
-    // Android's Build.FINGERPRINT test is a heuristic only. It cannot replace
-    // human confirmation that this report came from the intended physical device.
+    // Build.FINGERPRINT is a heuristic only; it cannot replace human confirmation.
     final physicalDeviceMarkerCheck = native['isPhysicalDevice'] == true;
 
     requireField(physicalDeviceMarkerCheck, 'physicalDeviceMarkerCheck');
@@ -118,7 +117,7 @@ class DeviceAcceptanceService {
       'fixtureEvidenceStatus': 'not-collected-by-device-baseline',
       'secureStorageRoundTrip': 'passed',
       'secureStorageCanaryDeleted': true,
-      'diagnosticSchemaVersion': 1,
+      'diagnosticSchemaVersion': 2,
       'deviceClass': physicalDeviceMarkerCheck
           ? 'physical-candidate'
           : 'emulator-or-unverified',
@@ -128,6 +127,8 @@ class DeviceAcceptanceService {
           baselineReady ? 'ready-for-physical-media-tests' : 'incomplete',
       'diagnosticMissingFields': missingBaselineFields,
       'buildIdentityPinned': buildShaPinned,
+      'buildIdentityStatus':
+          buildShaPinned ? 'pinned-to-commit' : 'local-or-unpinned-build',
       'mediaCorpusStatus': 'not-collected',
       'speechQualityStatus': 'not-collected',
       'candidateQualityStatus': 'not-collected',

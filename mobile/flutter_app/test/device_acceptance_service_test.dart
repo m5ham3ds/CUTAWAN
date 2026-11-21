@@ -36,7 +36,7 @@ void main() {
     messenger.setMockMethodCallHandler(channel, null);
   });
 
-  test('collects device baseline and verifies temporary secure-storage cleanup', () async {
+  test('collects a baseline and verifies temporary secure-storage cleanup', () async {
     messenger.setMockMethodCallHandler(channel, (call) async {
       expect(call.method, 'getDeviceAcceptanceDiagnostics');
       return <String, Object?>{
@@ -71,6 +71,7 @@ void main() {
     expect(report['diagnosticBaselineStatus'], 'ready-for-physical-media-tests');
     expect(report['diagnosticMissingFields'], isEmpty);
     expect(report['buildIdentityPinned'], isFalse);
+    expect(report['buildIdentityStatus'], 'local-or-unpinned-build');
     expect(report['mediaCorpusStatus'], 'not-collected');
     expect(report['videoFullDecodeStatus'], 'not-collected-on-physical-device');
     expect(report['secureStorageRoundTrip'], 'passed');
@@ -110,7 +111,30 @@ void main() {
     expect(report['sustainedPerformanceStatus'], 'not-collected');
   });
 
-  test('missing core diagnostics keep the baseline incomplete without fabricating measurements', () async {
+  test('invalid memory ranges remain listed as missing evidence', () async {
+    messenger.setMockMethodCallHandler(channel, (call) async => <String, Object?>{
+      'manufacturer': 'Example',
+      'model': 'Device',
+      'androidRelease': '16',
+      'androidSdk': 36,
+      'isPhysicalDevice': true,
+      'cpuCoreCount': 8,
+      'totalMemoryBytes': 8 * 1024 * 1024 * 1024,
+      'availableMemoryBytes': 9 * 1024 * 1024 * 1024,
+      'processPssKb': 1000,
+      'availableStorageBytes': 1000,
+      'appVersionName': '0.2.0',
+      'appVersionCode': 2,
+    });
+    final report = await DeviceAcceptanceService(
+      secretStorage: _MemorySecretStorage(),
+    ).collect();
+
+    expect(report['diagnosticBaselineStatus'], 'incomplete');
+    expect(report['diagnosticMissingFields'], contains('availableMemoryBytes'));
+  });
+
+  test('missing core diagnostics keep the baseline incomplete', () async {
     messenger.setMockMethodCallHandler(channel, (call) async => <String, Object?>{
       'manufacturer': 'Example',
       'model': 'Unknown',
