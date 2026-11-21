@@ -46,6 +46,10 @@
 
 Implement and gate in this order: Phases 1–3 together; then Phases 4–5; then Phases 6–7; then Phase 8; then Phase 9 once (the repeated 9 in the request is one phase); finally Phase 10. Later groups start only after the previous group has code and automated evidence. Physical-device requirements remain separate and cannot be inferred from CI.
 
+## Execution order agreed on 2026-11-21
+
+Implement and gate in this order: Phases 1–3 together; then Phases 4–5; then Phases 6–7; then Phase 8; then Phase 9 once (the repeated 9 in the request is one phase); finally Phase 10. Later groups start only after the previous group has code and automated evidence. Physical-device requirements remain separate and cannot be inferred from CI.
+
 ## Current next actions
 
 1. Complete the current Phases 1–3 batch: fresh app shell/ARM64 gates, real media/project lifecycle acceptance, and verified mono/16kHz audio normalization plus Whisper timing/overlap tests.
