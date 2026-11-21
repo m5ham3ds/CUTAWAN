@@ -76,6 +76,15 @@ flutter build apk --debug --target-platform android-arm64
 
 CI uses Flutter 3.47.6, generates the Android project, compiles the Kotlin bridge, analyzes and tests Dart code, builds an ARM64 APK and uploads the artifact.
 
+
+### Phase 10 — on-device acceptance diagnostics
+
+The app header now includes **تشخيص الجهاز**. Open it on the target Android phone to collect a non-identifying baseline (device model, Android/API version, RAM and process PSS, free app storage, battery/temperature, thermal status and app version). The copied JSON includes the build SHA for CI-produced APKs.
+
+The screen also performs a temporary secure-storage write/read/delete check without touching saved provider credentials. This checks the current install's secure-storage round trip only; it does not prove backup/restore, reinstall or key-rotation behavior.
+
+This baseline does **not** complete Phase 10. Real Arabic/English WER and word timing, fixture hashes, editorial/crop review, full MP4 end-to-end decode, process-death recovery, and physical-device performance/lifecycle evidence must still be collected. Never treat a CI or emulator pass as a physical-device acceptance result.
+
 ## Physical Android acceptance
 
 Install the generated APK and validate:
