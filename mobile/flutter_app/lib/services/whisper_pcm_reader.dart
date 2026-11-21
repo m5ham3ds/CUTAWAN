@@ -247,7 +247,7 @@ class WhisperPcmReader {
   double _readPcmSample(ByteData data, int offset) {
     if (sourceFormat == 3) {
       final value = data.getFloat32(offset, Endian.little);
-      return value.isFinite ? value.clamp(-1.0, 1.0).toDouble() : 0;
+      return value.isFinite ? value.clamp(-1.0, 1.0).toDouble() : 0.0;
     }
 
     switch (sourceBitsPerSample) {
