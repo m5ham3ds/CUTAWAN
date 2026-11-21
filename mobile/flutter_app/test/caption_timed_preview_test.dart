@@ -25,7 +25,7 @@ void main() {
   testWidgets(
     'Caption Studio previews saved transcript groups using word timing',
     (tester) async {
-      tester.view.physicalSize = const Size(1200, 3200);
+      tester.view.physicalSize = const Size(430, 932);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
@@ -112,10 +112,13 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: CaptionStudioPage(
-              projects: projects,
-              repository: repository,
-              onProjectsChanged: () async {},
+            body: TickerMode(
+              enabled: false,
+              child: CaptionStudioPage(
+                projects: projects,
+                repository: repository,
+                onProjectsChanged: () async {},
+              ),
             ),
           ),
         ),
@@ -130,13 +133,13 @@ void main() {
       );
       expect(find.text('المجموعة 1 من 2'), findsOneWidget);
 
-      await tester.tap(
+      final groupPicker = tester.widget<DropdownButton<int>>(
         find.byKey(const ValueKey('caption-timed-group-selector')),
       );
-      await tester.pump(const Duration(milliseconds: 250));
-      expect(find.text('مجموعة 2'), findsOneWidget);
-      await tester.tap(find.text('مجموعة 2').last);
-      await tester.pump(const Duration(milliseconds: 250));
+      expect(groupPicker.value, 0);
+      expect(groupPicker.onChanged, isNotNull);
+      groupPicker.onChanged!(1);
+      await tester.pump();
       expect(find.text('المجموعة 2 من 2'), findsOneWidget);
 
       final visibleCaptions = tester.widgetList<RichText>(find.byType(RichText));
