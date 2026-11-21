@@ -84,4 +84,18 @@ void main() {
       throwsA(isA<FormatException>()),
     );
   });
+  test('custom font scale and family affect the timed caption layout budget', () {
+    final preset = captionStylePresets.first;
+    final normal = engine.budget(preset, 9 / 16);
+    final larger = engine.budget(
+      preset,
+      9 / 16,
+      fontScaleOverride: 0.07,
+      fontFamilyOverride: 'Poppins',
+      uppercaseOverride: true,
+    );
+    expect(larger.lineWidthEm, lessThan(normal.lineWidthEm));
+    expect(larger.glyphWidthEm, greaterThan(normal.glyphWidthEm));
+  });
+
 }
