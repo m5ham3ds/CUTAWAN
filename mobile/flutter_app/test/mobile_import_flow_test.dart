@@ -186,7 +186,7 @@ void main() {
 
       await tester.tap(find.text('المراجعة'));
       await pumpUi(tester);
-      await tester.tap(find.text('إعادة فحص الوصول والبيانات'));
+      await tester.tap(find.text('فحص توفر الفيديو'));
       await pumpUi(tester);
 
       expect(methods, contains('inspectVideo'));

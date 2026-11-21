@@ -531,6 +531,13 @@ class _ReviewPageState extends State<ReviewPage> {
     final isBusy = _busyProjectId == project.id || pipelineActive;
     final canStart = !isBusy && !_pipelineRunning && _busyProjectId == null;
     final isLoading = _loadingArtifacts.contains(project.id);
+    final compactStatusLabel = switch (project.job.status) {
+      ProjectJobStatus.prepared => 'جاهز',
+      ProjectJobStatus.running => 'قيد التنفيذ',
+      ProjectJobStatus.completed => 'مكتمل',
+      ProjectJobStatus.cancelled => 'ملغاة',
+      ProjectJobStatus.failed => 'فشل',
+    };
     final activeStage = pipelineActive ? (_pipelineStage ?? project.job.stage) : project.job.stage;
     final stepIndex = project.job.status == ProjectJobStatus.completed
         ? 3
@@ -588,7 +595,7 @@ class _ReviewPageState extends State<ReviewPage> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                _StatusBadge(label: _jobStatusLabel(project.job.status), status: project.job.status),
+                _StatusBadge(label: compactStatusLabel, status: project.job.status),
               ],
             ),
             const SizedBox(height: 12),

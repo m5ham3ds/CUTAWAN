@@ -127,6 +127,6 @@ void main() {
 
     await tester.tap(find.text('المراجعة'));
     await tester.pumpAndSettle();
-    expect(find.text('لا توجد مقاطع للمراجعة'), findsOneWidget);
+    expect(find.text('لا توجد مشاريع للمراجعة'), findsOneWidget);
   });
 }
