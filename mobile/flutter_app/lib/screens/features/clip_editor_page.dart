@@ -52,10 +52,10 @@ class _ClipEditorPageState extends State<ClipEditorPage>{
       await controller.initialize();
       await controller.setLooping(false);
       final duration=controller.value.duration.inMilliseconds;
-      if(duration<500)throw StateError('مدة الفيديو أقصر من أن تسمح بإنشاء مقطع صالح.');
+      if (duration < 500) { throw StateError('مدة الفيديو أقصر من أن تسمح بإنشاء مقطع صالح.'); }
       _startMs=_startMs.clamp(0,duration-1).toInt();
       _endMs=_endMs.clamp(_startMs+1,duration).toInt();
-      if(_endMs-_startMs<500)_endMs=(_startMs+500).clamp(500,duration).toInt();
+      if (_endMs - _startMs < 500) { _endMs = (_startMs + 500).clamp(500, duration).toInt(); }
       controller.addListener(_handlePlaybackBoundary);
       await controller.seekTo(Duration(milliseconds:_startMs));
       if(!mounted){await controller.dispose();return;}
@@ -63,7 +63,7 @@ class _ClipEditorPageState extends State<ClipEditorPage>{
       setState(()=>_loading=false);
     }catch(error){
       await controller?.dispose();
-      if(!mounted)return;
+      if (!mounted) { return; }
       setState(()=>_error=error.toString());
       setState(()=>_loading=false);
     }
@@ -71,41 +71,41 @@ class _ClipEditorPageState extends State<ClipEditorPage>{
 
   void _handlePlaybackBoundary(){
     final player=_player;
-    if(!mounted||player==null||!player.value.isInitialized||!player.value.isPlaying||_handlingBoundary)return;
-    if(player.value.position.inMilliseconds<_endMs)return;
+    if (!mounted || player == null || !player.value.isInitialized || !player.value.isPlaying || _handlingBoundary) { return; }
+    if (player.value.position.inMilliseconds < _endMs) { return; }
     _handlingBoundary=true;
     unawaited(player.pause().then((_)=>player.seekTo(Duration(milliseconds:_startMs))).whenComplete(()=>_handlingBoundary=false));
   }
 
   Future<void> _togglePlayback() async{
     final player=_player;
-    if(player==null||!player.value.isInitialized)return;
+    if (player == null || !player.value.isInitialized) { return; }
     if(player.value.isPlaying){await player.pause();}
     else{
       final position=player.value.position.inMilliseconds;
-      if(position<_startMs||position>=_endMs)await player.seekTo(Duration(milliseconds:_startMs));
+      if (position < _startMs || position >= _endMs) { await player.seekTo(Duration(milliseconds: _startMs)); }
       await player.play();
     }
   }
 
   Future<void> _seekTo(int milliseconds) async{
     final player=_player;
-    if(player==null||!player.value.isInitialized)return;
+    if (player == null || !player.value.isInitialized) { return; }
     await player.seekTo(Duration(milliseconds:milliseconds.clamp(_startMs,_endMs).toInt()));
   }
 
   void _updateTrim(RangeValues values){
     final player=_player;
-    if(player==null||!player.value.isInitialized)return;
+    if (player == null || !player.value.isInitialized) { return; }
     final duration=player.value.duration.inMilliseconds;
-    if(duration<500)return;
+    if (duration < 500) { return; }
     var start=values.start.round().clamp(0,duration-1).toInt();
     var end=values.end.round().clamp(1,duration).toInt();
     if(end-start<500){
       if(start+500<=duration){end=start+500;}
       else{start=(end-500).clamp(0,duration-1).toInt();}
     }
-    setState(()=>{_startMs=start,_endMs=end});
+    setState(() { _startMs = start; _endMs = end; });
   }
 
   double _targetAspectRatio()=>switch(_aspectRatio){
@@ -116,9 +116,9 @@ class _ClipEditorPageState extends State<ClipEditorPage>{
   };
 
   Future<void> _saveEdits() async{
-    if(_saving)return;
+    if (_saving) { return; }
     final player=_player;
-    if(player==null||!player.value.isInitialized)return;
+    if (player == null || !player.value.isInitialized) { return; }
     final duration=player.value.duration.inMilliseconds;
     if(_startMs<0||_endMs<=_startMs||_endMs>duration||_endMs-_startMs<500){
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('نطاق القص غير صالح.')));
@@ -142,13 +142,13 @@ class _ClipEditorPageState extends State<ClipEditorPage>{
       await widget.repository.saveCandidates(widget.project.id,editedSet);
       await widget.repository.save(updatedProject);
       await widget.onSaved();
-      if(!mounted)return;
+      if (!mounted) { return; }
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('حُفظت حدود المقطع ونسبة الإخراج. أعد تشغيل مسار المعالجة لتحديث التصدير.')));
       Navigator.of(context).pop();
     }catch(error){
-      if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('تعذّر حفظ تعديلات المقطع: $error')));
+      if (mounted) { ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تعذّر حفظ تعديلات المقطع: $error'))); }
     }finally{
-      if(mounted)setState(()=>_saving=false);
+      if (mounted) { setState(() => _saving = false); }
     }
   }
 
@@ -180,7 +180,7 @@ class _ClipEditorPageState extends State<ClipEditorPage>{
         ValueListenableBuilder<VideoPlayerValue>(
           valueListenable:player,
           builder:(context,value,_){
-            if(!value.isInitialized)return const Center(child:CircularProgressIndicator());
+            if (!value.isInitialized) { return const Center(child: CircularProgressIndicator()); }
             final duration=value.duration.inMilliseconds;
             final position=value.position.inMilliseconds.clamp(_startMs,_endMs).toInt();
             final size=value.size;
@@ -235,7 +235,7 @@ class _ClipEditorPageState extends State<ClipEditorPage>{
                   ClipAspectRatio.landscape169=>'أفقي 16:9',
                   ClipAspectRatio.original=>'الأصلية',
                 }))).toList(growable:false),
-                onChanged:(value){if(value!=null)setState(()=>_aspectRatio=value);},
+                onChanged:(value){if (value != null) { setState(() => _aspectRatio = value); }},
               ),
               const SizedBox(height:18),
               FilledButton.icon(
@@ -259,7 +259,7 @@ class _PlaybackError extends StatelessWidget{
     return Center(child:Padding(
       padding:const EdgeInsets.all(24),
       child:Column(mainAxisSize:MainAxisSize.min,children:[
-        Icon(Icons.video_file_off_outlined,size:38,color:scheme.error),
+        Icon(Icons.video_file_outlined,size:38,color:scheme.error),
         const SizedBox(height:12),
         const Text('تعذّر فتح معاينة الفيديو',style:TextStyle(fontWeight:FontWeight.w800)),
         const SizedBox(height:8),

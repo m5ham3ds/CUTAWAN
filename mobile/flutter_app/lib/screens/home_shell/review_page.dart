@@ -688,7 +688,7 @@ class _ReviewPageState extends State<ReviewPage> {
                         key: ValueKey<String>('edit-clip-${candidate.id}'),
                         tooltip: 'فتح محرر المقطع',
                         onPressed: isBusy ? null : () => _openClipEditor(context, project, candidateSet, candidate),
-                        icon: const Icon(Icons.edit_video_outlined),
+                        icon: const Icon(Icons.edit_outlined),
                       ),
                     ],
                   ),
