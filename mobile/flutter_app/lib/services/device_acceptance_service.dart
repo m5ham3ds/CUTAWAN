@@ -31,18 +31,14 @@ class DeviceAcceptanceService {
     ).map((value) => value.toRadixString(16).padLeft(2, '0')).join();
     final key = 'cutawan.phase10.keystore-self-test.$suffix';
     final canary = 'temporary-$suffix';
-    var canaryWritten = false;
     try {
       await _secretStorage.write(key, canary);
-      canaryWritten = true;
       final stored = await _secretStorage.read(key);
       if (stored != canary) {
         throw StateError('Secure storage read-after-write did not match.');
       }
     } finally {
-      if (canaryWritten) {
-        await _secretStorage.delete(key);
-      }
+      await _secretStorage.delete(key);
     }
     final leftover = await _secretStorage.read(key);
     if (leftover != null) {
