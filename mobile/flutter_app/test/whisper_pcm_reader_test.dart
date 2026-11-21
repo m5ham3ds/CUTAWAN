@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:cutawan_mobile/services/whisper_pcm_reader.dart';
@@ -187,4 +188,36 @@ void main() {
       await reader.close();
     }
   });
+
+  test('streamed WAV ranges preserve identical samples across chunk boundaries', () async {
+    final file = await createWav(
+      sampleRate: 44100,
+      channels: 2,
+      frameCount: 44100,
+      sample: (frame, _) =>
+          (math.sin(2 * math.pi * 6000 * frame / 44100) * 12000) / 32768,
+    );
+    final reader = await WhisperPcmReader.open(file);
+    try {
+      final full = await reader.readSamples(0, reader.outputSampleCount);
+      final streamed = <double>[];
+      const readSize = 233;
+      for (var offset = 0; offset < reader.outputSampleCount; offset += readSize) {
+        final count = math.min(
+          readSize,
+          reader.outputSampleCount - offset,
+        ).toInt();
+        final part = await reader.readSamples(offset, count);
+        streamed.addAll(part);
+      }
+
+      expect(streamed, hasLength(full.length));
+      for (var index = 0; index < full.length; index++) {
+        expect(streamed[index], closeTo(full[index], 1e-7));
+      }
+    } finally {
+      await reader.close();
+    }
+  });
+
 }
