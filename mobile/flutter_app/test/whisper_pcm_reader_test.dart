@@ -55,7 +55,7 @@ void main() {
       }
     }
 
-    final file = File('\${tempDirectory.path}/fixture-\$sampleRate-\$channels.wav');
+    final file = File('${tempDirectory.path}/fixture-$sampleRate-$channels.wav');
     await file.writeAsBytes(bytes, flush: true);
     return file;
   }
@@ -147,14 +147,14 @@ void main() {
   });
 
   test('reader rejects invalid and truncated WAV files', () async {
-    final invalid = File('\${tempDirectory.path}/invalid.wav');
+    final invalid = File('${tempDirectory.path}/invalid.wav');
     await invalid.writeAsBytes(List<int>.filled(64, 0));
     await expectLater(
       WhisperPcmReader.open(invalid),
       throwsA(isA<FormatException>()),
     );
 
-    final truncated = File('\${tempDirectory.path}/truncated.wav');
+    final truncated = File('${tempDirectory.path}/truncated.wav');
     await truncated.writeAsBytes(Uint8List.fromList([
       82, 73, 70, 70, 255, 255, 255, 127,
       87, 65, 86, 69,
