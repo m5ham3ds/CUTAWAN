@@ -252,7 +252,7 @@ class LocalProjectRepository {
   ) async {
     final project = await load(projectId);
     if (project == null) {
-      throw StateError('Project not found: ' + projectId);
+      throw StateError('Project not found: $projectId');
     }
     overrides.validate();
     final candidates = await loadCandidates(projectId);
@@ -262,9 +262,9 @@ class LocalProjectRepository {
     }
     final directory = await _artifactDirectory(projectId);
     final target = File(
-      directory.path + Platform.pathSeparator + 'clip_edit_' + overrides.clipId + '.json',
+      '${directory.path}${Platform.pathSeparator}clip_edit_${overrides.clipId}.json',
     );
-    final temporary = File(target.path + '.tmp');
+    final temporary = File('${target.path}.tmp');
     await temporary.writeAsString(jsonEncode(overrides.toJson()), flush: true);
     if (await target.exists()) {
       await target.delete();
@@ -282,7 +282,7 @@ class LocalProjectRepository {
     }
     final directory = await _artifactDirectory(projectId);
     final file = File(
-      directory.path + Platform.pathSeparator + 'clip_edit_' + clipId + '.json',
+      '${directory.path}${Platform.pathSeparator}clip_edit_${clipId}.json',
     );
     if (!await file.exists()) {
       return null;

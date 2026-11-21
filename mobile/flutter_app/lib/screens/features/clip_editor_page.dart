@@ -73,7 +73,7 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
         'content' => VideoPlayerController.contentUri(uri),
         'file' => VideoPlayerController.file(File.fromUri(uri)),
         'http' || 'https' => VideoPlayerController.networkUrl(uri),
-        _ => throw FormatException('مصدر الفيديو غير مدعوم للمعاينة: ' + uri.scheme),
+        _ => throw FormatException('مصدر الفيديو غير مدعوم للمعاينة: ${uri.scheme}'),
       };
       await controller.initialize();
       await controller.setLooping(false);
@@ -133,7 +133,7 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
       setState(() {
         _loadingArtifacts = false;
         _artifactLoadFailed = true;
-        _captionPreviewError = 'تعذّر تحميل أدلة الترجمة أو التأطير: ' + error.toString();
+        _captionPreviewError = 'تعذّر تحميل أدلة الترجمة أو التأطير: $error';
       });
     }
   }
@@ -166,7 +166,7 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
           : null;
     } catch (error) {
       _previewCues = const [];
-      _captionPreviewError = 'تعذّرت معاينة الترجمة: ' + error.toString();
+      _captionPreviewError = 'تعذّرت معاينة الترجمة: $error';
     }
   }
 
@@ -361,7 +361,7 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
     final localPosition = sourcePositionMs - _startMs;
     final spans = <TextSpan>[];
     var cursor = 0;
-    final words = rawWords.whereType<Map>().toList(growable: false)
+    final words = rawWords.whereType<Map<String, Object?>>().toList(growable: false)
       ..sort((a, b) => ((a['startOffset'] as num?)?.toInt() ?? 0)
           .compareTo((b['startOffset'] as num?)?.toInt() ?? 0));
     for (final word in words) {
@@ -441,7 +441,7 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
 
   Color _parseColor(String hex) {
     final value = hex.replaceFirst('#', '');
-    return Color(int.parse('FF' + value, radix: 16));
+    return Color(int.parse('FF$value', radix: 16));
   }
 
   String _formatTime(int milliseconds) {
@@ -449,11 +449,9 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
     final minutes = value ~/ 60000;
     final seconds = (value % 60000) ~/ 1000;
     final tenths = (value % 1000) ~/ 100;
-    return minutes.toString().padLeft(2, '0') +
-        ':' +
-        seconds.toString().padLeft(2, '0') +
-        '.' +
-        tenths.toString();
+    return '${minutes.toString().padLeft(2, '0')}:'
+        '${seconds.toString().padLeft(2, '0')}.'
+        '${tenths.toString()}';
   }
 
   String _ratioLabel(ClipAspectRatio ratio) => switch (ratio) {
@@ -502,7 +500,7 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
     final preferencesError = preferences.validate();
     if (preferencesError != null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('إعدادات التصدير غير صالحة: ' + preferencesError)),
+        SnackBar(content: Text('إعدادات التصدير غير صالحة: $preferencesError')),
       );
       return;
     }
@@ -535,7 +533,7 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('تعذّر حفظ تعديلات المقطع: ' + error.toString())),
+          SnackBar(content: Text('تعذّر حفظ تعديلات المقطع: $error')),
         );
       }
     } finally {
@@ -604,7 +602,7 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
     return _sectionPanel(
       context: context,
       title: 'معاينة المقطع',
-      subtitle: 'المقطع المحدد · ' + _formatTime(_startMs) + ' — ' + _formatTime(_endMs),
+      subtitle: 'المقطع المحدد · ${_formatTime(_startMs)} — ${_formatTime(_endMs)}',
       icon: Icons.play_circle_outline_rounded,
       child: Column(
         children: [
@@ -663,9 +661,7 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  _formatTime(sourcePosition.clamp(_startMs, _endMs).toInt()) +
-                      ' / ' +
-                      _formatTime(_endMs),
+                  '${_formatTime(sourcePosition.clamp(_startMs, _endMs).toInt())} / ${_formatTime(_endMs)}',
                   style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w800),
                 ),
               ),
@@ -723,8 +719,8 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('البداية  ' + _formatTime(_startMs), style: theme.textTheme.labelMedium),
-              Text('النهاية  ' + _formatTime(_endMs), style: theme.textTheme.labelMedium),
+              Text('البداية  ${_formatTime(_startMs)}', style: theme.textTheme.labelMedium),
+              Text('النهاية  ${_formatTime(_endMs)}', style: theme.textTheme.labelMedium),
             ],
           ),
           const SizedBox(height: 10),
@@ -746,7 +742,7 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
           ),
           const SizedBox(height: 8),
           Text(
-            'مدة المقطع الناتجة: ' + _formatTime(_endMs - _startMs),
+            'مدة المقطع الناتجة: ${_formatTime(_endMs - _startMs)}',
             style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w800),
           ),
         ],
@@ -797,7 +793,7 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
           ),
           if (_framingMode == ClipFramingMode.manualFocus) ...[
             const SizedBox(height: 12),
-            Text('مركز القص الأفقي · ' + (_focusX * 100).round().toString() + '%'),
+            Text('مركز القص الأفقي · ${(_focusX * 100).round()}%'),
             Slider(
               value: _focusX,
               min: 0,
@@ -805,7 +801,7 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
               divisions: 100,
               onChanged: (value) => setState(() => _focusX = value),
             ),
-            Text('مركز القص العمودي · ' + (_focusY * 100).round().toString() + '%'),
+            Text('مركز القص العمودي · ${(_focusY * 100).round()}%'),
             Slider(
               value: _focusY,
               min: 0,
@@ -856,7 +852,7 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
         return Semantics(
           button: true,
           selected: active,
-          label: 'لون ' + hex,
+          label: 'لون $hex',
           child: InkWell(
             customBorder: const CircleBorder(),
             onTap: () => onSelected(hex),
@@ -970,7 +966,7 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
               ),
             ),
             const SizedBox(height: 14),
-            Text('حجم النص · ' + (fontScale * 100).toStringAsFixed(1) + '%'),
+            Text('حجم النص · ${(fontScale * 100).toStringAsFixed(1)}%'),
             Slider(
               value: fontScale.clamp(0.03, 0.075).toDouble(),
               min: 0.03,
@@ -980,7 +976,7 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
                 _draftPreferences.copyWith(captionFontScale: value),
               ),
             ),
-            Text('موضع الترجمة · ' + (position * 100).round().toString() + '% من ارتفاع الإطار'),
+            Text('موضع الترجمة · ${(position * 100).round()}% من ارتفاع الإطار'),
             Slider(
               value: position.clamp(0.55, 0.92).toDouble(),
               min: 0.55,
@@ -992,10 +988,7 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
             ),
             const SizedBox(height: 8),
             Text(
-              'مزامنة التوقيت · ' +
-                  (_draftPreferences.captionTimingOffsetMs > 0 ? '+' : '') +
-                  _draftPreferences.captionTimingOffsetMs.toString() +
-                  ' ms',
+              'مزامنة التوقيت · ${_draftPreferences.captionTimingOffsetMs > 0 ? '+' : ''}${_draftPreferences.captionTimingOffsetMs} ms',
               style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w800),
             ),
             Slider(
@@ -1098,7 +1091,7 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Text(
-                                widget.candidate.score.round().toString() + '/100',
+                                '${widget.candidate.score.round()}/100',
                                 style: TextStyle(color: scheme.primary, fontWeight: FontWeight.w900),
                               ),
                             ),
@@ -1106,7 +1099,7 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          'معرّف المقطع: ' + widget.candidate.id,
+                          'معرّف المقطع: ${widget.candidate.id}',
                           style: theme.textTheme.labelSmall?.copyWith(color: scheme.onSurfaceVariant),
                         ),
                         _buildPreview(context, value),

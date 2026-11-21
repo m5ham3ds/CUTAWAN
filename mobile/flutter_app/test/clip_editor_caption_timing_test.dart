@@ -61,10 +61,10 @@ void main() {
     final shiftedWords = shifted.cues.single['words']! as List;
     expect(baseWords, hasLength(2));
     expect((baseWords.first as Map)['text'], 'HELLO');
-    final shiftedBefore = shiftedWords.cast<Map>().firstWhere(
+    final shiftedBefore = shiftedWords.cast<Map<String, Object?>>().firstWhere(
       (word) => word['text'] == 'BEFORE',
     );
-    final shiftedHello = shiftedWords.cast<Map>().firstWhere(
+    final shiftedHello = shiftedWords.cast<Map<String, Object?>>().firstWhere(
       (word) => word['text'] == 'HELLO',
     );
     expect(shiftedBefore['startMs'], 150);
