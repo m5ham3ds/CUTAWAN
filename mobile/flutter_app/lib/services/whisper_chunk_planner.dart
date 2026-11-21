@@ -43,7 +43,7 @@ class WhisperChunkPlanner {
     final chunks = <WhisperChunkWindow>[];
     var start = 0;
     while (start < totalSamples) {
-      final end = (start + chunkSamples).clamp(0, totalSamples);
+      final end = (start + chunkSamples).clamp(0, totalSamples).toInt();
       final ownedStart = start == 0
           ? 0
           : start + ownershipInsetSamples;
