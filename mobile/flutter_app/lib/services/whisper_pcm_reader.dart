@@ -165,7 +165,7 @@ class WhisperPcmReader {
     final sourceEnd = math.min(
       sourceFrameCount,
       ((outputStart + outputCount) * ratio).ceil(),
-    );
+    ).toInt();
     final sourceCount = sourceEnd - sourceStart;
     if (sourceCount <= 0) {
       throw const FormatException('WAV range contains no source audio frames.');
@@ -196,7 +196,7 @@ class WhisperPcmReader {
       final intervalEnd = math.min(
         sourceFrameCount.toDouble(),
         (globalOutput + 1) * ratio,
-      );
+      ).toDouble();
       if (intervalEnd <= intervalStart) continue;
 
       final firstFrame = intervalStart.floor();
