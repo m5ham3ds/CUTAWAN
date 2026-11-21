@@ -27,7 +27,7 @@
 | 7 | Multi-provider model selection, secure user credentials, consented cloud editorial annotations | Provider-scoped model/key storage, consent gates on outbound requests, local fallback on key deletion; latest Android CI passed | Physical Keystore/backup/rotation tests, real provider account/model compatibility, billing and policy acceptance remain open |
 | 8 | End-to-end pipeline, job orchestration and clip export | Media3 Transformer pipeline consumes time-ranged reframe segments and timed caption cues; native overlay burns captions into MP4; metadata/hash verification exists | Full decode validation, physical visual/media fixtures, render recovery after process death, background execution/notifications and per-clip retry remain open |
 | 9 | Professional UI redesign and navigation/component architecture | First slice delivered; screen parts and shared Material 3 themes added | Full information architecture, isolated feature boundaries, Clip Editor, accessibility, golden/RTL/responsive matrix and device evidence remain open |
-| 10 | Physical-device quality, security, performance and Arabic/English acceptance | Planned; incomplete | Needs representative real-video corpus and Android devices |
+| 10 | Physical-device quality, security, performance and Arabic/English acceptance | Diagnostics instrumented; acceptance incomplete | Native device baseline + temporary secure-storage self-test added; still needs physical media corpus, WER/timing results, full-decode and lifecycle/thermal evidence |
 
 ## Global engineering constraints
 
@@ -65,3 +65,24 @@ Phases 1–7 have a successful automated Android gate on SHA `80e182b`; physical
 - Phase 9 remains in progress: production Clip Editor, full screen/navigation architecture, feature boundaries, golden/RTL/accessibility/keyboard matrix and physical UI evidence remain open.
 - Phase 10 remains incomplete: physical ARM64 accuracy, lifecycle, security, thermal, battery and performance evidence is required.
 - No branch merge or algorithm parity claim was made by the audit. Each port must have Dart/Kotlin code, upstream provenance/license and tests.
+
+## Phase 10 diagnostics instrumentation — 2026-11-21
+
+- Added an Android MethodChannel diagnostic snapshot for manufacturer/model, Android release/API level, app version, CPU count, total/available RAM, process PSS/private-dirty memory, battery percentage/temperature, thermal status and app-private free storage.
+- Added an in-app **تشخيص الجهاز** entry and a report-copy action. The report includes the exact source SHA embedded into CI-built APKs; local builds clearly identify themselves as `local-or-untracked`.
+- Added an ephemeral, random secure-storage write/read/delete self-test. It never reads or changes saved provider credentials and never includes the canary value in the report.
+- Added three Flutter tests covering successful capture/cleanup, missing native diagnostics and secure-storage read failure.
+- This is an evidence-collection instrument, **not Phase 10 acceptance**. A physical-device run and real-media evidence have not been collected in CI or claimed here.
+
+### Phase 10 remaining acceptance gates
+
+1. Run the diagnostics screen on a physical ARM64 Android device and retain the JSON with model, OS, build SHA and timestamp.
+2. Build a hash-locked Arabic/English corpus spanning solo/overlap speech, webcam/screen recordings, music/silence, portrait/landscape/rotation, short/long, truncated/corrupt and no-audio sources.
+3. Measure WER, insertion/deletion/substitution rates, matched-word coverage and median/P95 word start/end timing against manually reviewed references.
+4. Review candidate completeness/precision/duplicates and face-track retention/crop continuity on the same source fixtures.
+5. Run exported MP4s through a full decode to end-of-stream; verify audio continuity, dimensions, duration, caption synchronization and playback on device.
+6. Record peak PSS/RAM, processing time, battery delta, thermal status and temporary-storage peak during long runs.
+7. Verify SAF grant after force-stop/relaunch, secure-key behavior across backup/restore/reinstall/key deletion, and that cloud requests remain blocked without consent.
+8. Repeat cancellation/retry/resume and render recovery after process death. Phase 8's current Activity-owned render map still prevents this gate from being accepted.
+
+**Acceptance rule:** no empty placeholder, synthetic fixture, CI pass or emulator snapshot may be counted as physical-device evidence. If a measurement is unavailable, it remains `null`/blocked and the phase stays incomplete.
