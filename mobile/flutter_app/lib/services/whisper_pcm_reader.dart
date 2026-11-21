@@ -2,12 +2,9 @@ import 'dart:io';
 import 'dart:math' as math;
 import 'dart:typed_data';
 
-/// Reads PCM WAV audio in bounded ranges and converts it to the format
-/// required by Whisper: mono, signed float samples, 16 kHz.
-///
-/// The source file stays on disk. Only the requested output range and the
-/// corresponding source frames are held in memory, so long videos are not
-/// decoded into one enormous Float32List.
+/// Reads PCM WAV audio in bounded ranges and converts it to mono 16 kHz
+/// Float32 samples. A windowed-sinc low-pass resampler is applied when the
+/// source rate differs, avoiding aliasing during 44.1/48 kHz downsampling.
 class WhisperPcmReader {
   WhisperPcmReader._({
     required RandomAccessFile file,
@@ -21,9 +18,14 @@ class WhisperPcmReader {
   })  : _file = file,
         _dataOffset = dataOffset,
         _dataLength = dataLength,
-        _blockAlign = blockAlign;
+        _blockAlign = blockAlign,
+        _resampleKernel = sourceSampleRate == targetSampleRate
+            ? const <Float64List>[]
+            : _buildResampleKernel(sourceSampleRate);
 
   static const int targetSampleRate = 16000;
+  static const int _filterRadius = 8;
+  static const int _phaseCount = 128;
 
   final RandomAccessFile _file;
   final int sourceSampleRate;
@@ -33,12 +35,15 @@ class WhisperPcmReader {
   final int _dataOffset;
   final int _dataLength;
   final int _blockAlign;
+  final List<Float64List> _resampleKernel;
   bool _closed = false;
 
   int get sourceFrameCount => _dataLength ~/ _blockAlign;
 
   int get outputSampleCount =>
-      (sourceFrameCount * targetSampleRate / sourceSampleRate).round();
+      (((sourceFrameCount - 1) * targetSampleRate) / sourceSampleRate)
+              .floor() +
+          1;
 
   int get durationMs =>
       (sourceFrameCount * 1000 / sourceSampleRate).round();
@@ -54,7 +59,9 @@ class WhisperPcmReader {
       await file.setPosition(0);
       final riff = await _readExact(file, 12);
       if (_fourCc(riff, 0) != 'RIFF' || _fourCc(riff, 8) != 'WAVE') {
-        throw const FormatException('Audio extractor did not return a RIFF/WAVE file.');
+        throw const FormatException(
+          'Audio extractor did not return a RIFF/WAVE file.',
+        );
       }
 
       final riffSize = _u32(riff, 4);
@@ -80,7 +87,9 @@ class WhisperPcmReader {
         final chunkStart = cursor + 8;
         final chunkEnd = chunkStart + chunkLength;
         if (chunkEnd > riffEnd) {
-          throw const FormatException('WAV chunk exceeds the declared RIFF length.');
+          throw const FormatException(
+            'WAV chunk exceeds the declared RIFF length.',
+          );
         }
 
         if (chunkId == 'fmt ') {
@@ -109,14 +118,18 @@ class WhisperPcmReader {
           blockAlign == null ||
           dataOffset == null ||
           dataLength == null) {
-        throw const FormatException('WAV file is missing its format or data chunk.');
+        throw const FormatException(
+          'WAV file is missing its format or data chunk.',
+        );
       }
 
       final bytesPerSample = bitsPerSample ~/ 8;
       final supportedPcmBits = const {8, 16, 24, 32}.contains(bitsPerSample);
       final supportedFloat = format == 3 && bitsPerSample == 32;
       if (format != 1 && !supportedFloat) {
-        throw FormatException('Unsupported WAV encoding: $format / $bitsPerSample-bit.');
+        throw FormatException(
+          'Unsupported WAV encoding: $format / $bitsPerSample-bit.',
+        );
       }
       if (format == 1 && !supportedPcmBits) {
         throw FormatException('Unsupported PCM bit depth: $bitsPerSample.');
@@ -129,7 +142,9 @@ class WhisperPcmReader {
           blockAlign != channels * bytesPerSample ||
           dataLength <= 0 ||
           dataLength % blockAlign != 0) {
-        throw const FormatException('WAV audio format or frame alignment is invalid.');
+        throw const FormatException(
+          'WAV audio format or frame alignment is invalid.',
+        );
       }
 
       return WhisperPcmReader._(
@@ -149,6 +164,8 @@ class WhisperPcmReader {
   }
 
   /// Returns a normalized sample range indexed on the 16 kHz output timeline.
+  /// The source WAV remains on disk; only the requested chunk plus filter halo
+  /// is read into memory.
   Future<Float32List> readSamples(int outputStart, int outputCount) async {
     if (_closed) {
       throw StateError('WAV reader is already closed.');
@@ -161,11 +178,14 @@ class WhisperPcmReader {
     if (outputCount == 0) return Float32List(0);
 
     final ratio = sourceSampleRate / targetSampleRate;
-    final sourceStart = (outputStart * ratio).floor();
-    final sourceEnd = math.min(
-      sourceFrameCount,
-      ((outputStart + outputCount) * ratio).ceil(),
-    ).toInt();
+    final firstCenter = (outputStart * ratio).floor();
+    final lastOutput = outputStart + outputCount - 1;
+    final lastCenter = (lastOutput * ratio).floor() + 1;
+    final sourceStart =
+        math.max(0, firstCenter - _filterRadius).toInt();
+    final sourceEnd = math
+        .min(sourceFrameCount, lastCenter + _filterRadius + 1)
+        .toInt();
     final sourceCount = sourceEnd - sourceStart;
     if (sourceCount <= 0) {
       throw const FormatException('WAV range contains no source audio frames.');
@@ -190,32 +210,36 @@ class WhisperPcmReader {
     }
 
     final output = Float32List(outputCount);
+    if (sourceSampleRate == targetSampleRate) {
+      for (var index = 0; index < outputCount; index++) {
+        output[index] = mono[outputStart + index - sourceStart];
+      }
+      return output;
+    }
+
     for (var index = 0; index < outputCount; index++) {
       final globalOutput = outputStart + index;
-      final intervalStart = globalOutput * ratio;
-      final intervalEnd = math.min(
-        sourceFrameCount.toDouble(),
-        (globalOutput + 1) * ratio,
-      ).toDouble();
-      if (intervalEnd <= intervalStart) continue;
+      final sourcePosition = globalOutput * ratio;
+      var center = sourcePosition.floor();
+      var phase = ((sourcePosition - center) * _phaseCount).round();
+      if (phase >= _phaseCount) {
+        center++;
+        phase = 0;
+      }
 
-      final firstFrame = intervalStart.floor();
-      final endFrame = intervalEnd.ceil();
-      var weighted = 0.0;
-      var covered = 0.0;
-      for (var sourceFrame = firstFrame;
-          sourceFrame < endFrame;
-          sourceFrame++) {
-        if (sourceFrame < sourceStart || sourceFrame >= sourceEnd) continue;
-        final overlap = math.min(intervalEnd, sourceFrame + 1.0) -
-            math.max(intervalStart, sourceFrame.toDouble());
-        if (overlap <= 0) continue;
-        weighted += mono[sourceFrame - sourceStart] * overlap;
-        covered += overlap;
+      final weights = _resampleKernel[phase];
+      var value = 0.0;
+      var weightTotal = 0.0;
+      for (var tap = -_filterRadius; tap <= _filterRadius; tap++) {
+        final sourceFrame =
+            (center + tap).clamp(0, sourceFrameCount - 1).toInt();
+        final weight = weights[tap + _filterRadius];
+        value += mono[sourceFrame - sourceStart] * weight;
+        weightTotal += weight;
       }
-      if (covered > 0) {
-        output[index] = (weighted / covered).clamp(-1.0, 1.0).toDouble();
-      }
+      output[index] = (weightTotal == 0 ? 0.0 : value / weightTotal)
+          .clamp(-1.0, 1.0)
+          .toDouble();
     }
     return output;
   }
@@ -240,7 +264,9 @@ class WhisperPcmReader {
       case 32:
         return data.getInt32(offset, Endian.little) / 2147483648.0;
       default:
-        throw FormatException('Unsupported PCM bit depth: $sourceBitsPerSample.');
+        throw FormatException(
+          'Unsupported PCM bit depth: $sourceBitsPerSample.',
+        );
     }
   }
 
@@ -248,6 +274,38 @@ class WhisperPcmReader {
     if (_closed) return;
     _closed = true;
     await _file.close();
+  }
+
+  static List<Float64List> _buildResampleKernel(int sourceRate) {
+    final cutoff =
+        math.min(0.48, 0.48 * targetSampleRate / sourceRate).toDouble();
+    final kernels = <Float64List>[];
+    for (var phase = 0; phase < _phaseCount; phase++) {
+      final fraction = phase / _phaseCount;
+      final weights = Float64List(_filterRadius * 2 + 1);
+      var total = 0.0;
+      for (var tap = -_filterRadius; tap <= _filterRadius; tap++) {
+        final distance = tap - fraction;
+        final scaled = 2 * cutoff * distance;
+        final sinc = scaled.abs() < 1e-12
+            ? 1.0
+            : math.sin(math.pi * scaled) / (math.pi * scaled);
+        final windowPosition = distance / (_filterRadius + 1);
+        final window = windowPosition.abs() >= 1
+            ? 0.0
+            : 0.54 + 0.46 * math.cos(math.pi * windowPosition);
+        final weight = 2 * cutoff * sinc * window;
+        weights[tap + _filterRadius] = weight;
+        total += weight;
+      }
+      if (total.abs() > 1e-12) {
+        for (var index = 0; index < weights.length; index++) {
+          weights[index] /= total;
+        }
+      }
+      kernels.add(weights);
+    }
+    return kernels;
   }
 
   static Future<Uint8List> _readExact(
