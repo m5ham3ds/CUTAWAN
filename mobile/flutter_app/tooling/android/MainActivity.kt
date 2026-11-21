@@ -282,6 +282,9 @@ class MainActivity : FlutterActivity() {
         }
 
         val uri = data.data!!
+        val hadPersistedReadGrant = contentResolver.persistedUriPermissions.any {
+            it.uri == uri && it.isReadPermission
+        }
         try {
             val readFlag = data.flags and Intent.FLAG_GRANT_READ_URI_PERMISSION
             if (readFlag == 0) {
@@ -297,18 +300,32 @@ class MainActivity : FlutterActivity() {
             if (!persisted) {
                 throw SecurityException("Android did not persist access to the selected video.")
             }
-        } catch (error: SecurityException) {
+        } catch (error: Exception) {
+            if (!hadPersistedReadGrant) {
+                try {
+                    contentResolver.releasePersistableUriPermission(
+                        uri,
+                        Intent.FLAG_GRANT_READ_URI_PERMISSION
+                    )
+                } catch (_: Exception) { }
+            }
             reply.error("PERSIST_PERMISSION_FAILED", error.message, uri.toString())
             return
         }
 
-        inspectVideo(uri.toString(), reply, requirePersistedGrant = true)
+        inspectVideo(
+            uri.toString(),
+            reply,
+            requirePersistedGrant = true,
+            releaseGrantOnFailure = !hadPersistedReadGrant
+        )
     }
 
     private fun inspectVideo(
         rawUri: String,
         reply: MethodChannel.Result,
-        requirePersistedGrant: Boolean
+        requirePersistedGrant: Boolean,
+        releaseGrantOnFailure: Boolean = false
     ) {
         ioExecutor.execute {
             try {
@@ -340,6 +357,22 @@ class MainActivity : FlutterActivity() {
                 val metadata = readVideoMetadata(uri)
                 mainHandler.post { reply.success(metadata) }
             } catch (error: Exception) {
+                if (releaseGrantOnFailure) {
+                    try {
+                        val failedUri = Uri.parse(rawUri)
+                        if (failedUri.scheme == "content") {
+                            val hasGrant = contentResolver.persistedUriPermissions.any {
+                                it.uri == failedUri && it.isReadPermission
+                            }
+                            if (hasGrant) {
+                                contentResolver.releasePersistableUriPermission(
+                                    failedUri,
+                                    Intent.FLAG_GRANT_READ_URI_PERMISSION
+                                )
+                            }
+                        }
+                    } catch (_: Exception) { }
+                }
                 mainHandler.post {
                     reply.error(
                         "VIDEO_METADATA_FAILED",
