@@ -139,7 +139,9 @@ class _ReviewPageState extends State<ReviewPage> {
           if (!_pipelineRunning) {
             return;
           }
-          if (mounted) setState(() => _pipelineStage = stage);
+          if (mounted) {
+            setState(() => _pipelineStage = stage);
+          }
           unawaited(
             widget.repository.saveJobState(
               project.id,
@@ -269,7 +271,9 @@ class _ReviewPageState extends State<ReviewPage> {
         );
       }
     } catch (error) {
-      if (_pipelineRunning) rethrow;
+      if (_pipelineRunning) {
+        rethrow;
+      }
       if (mounted) { setState(() => _lastError = 'فشل اكتشاف المقاطع: $error'); }
     } finally {
       if (mounted) {
@@ -318,7 +322,9 @@ class _ReviewPageState extends State<ReviewPage> {
         SnackBar(content: Text(message)),
       );
     } catch (error) {
-      if (_pipelineRunning) rethrow;
+      if (_pipelineRunning) {
+        rethrow;
+      }
       if (mounted) {
         setState(() => _lastError = 'فشل تحليل التأطير: $error');
       }
