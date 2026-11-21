@@ -82,6 +82,11 @@ Future<void> pumpUi(WidgetTester tester) async {
   await tester.pump();
 }
 
+Future<void> openCreatePage(WidgetTester tester) async {
+  await tester.tap(find.text('إنشاء'));
+  await pumpUi(tester);
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -128,6 +133,7 @@ void main() {
       );
       await pumpUi(tester);
 
+      await openCreatePage(tester);
       await tester.tap(find.text('اختيار فيديو'));
       await pumpUi(tester);
 
@@ -194,6 +200,7 @@ void main() {
     );
     await pumpUi(tester);
 
+    await openCreatePage(tester);
     await tester.tap(find.text('اختيار فيديو'));
     await pumpUi(tester);
 
@@ -220,6 +227,7 @@ void main() {
     );
     await pumpUi(tester);
 
+    await openCreatePage(tester);
     await tester.tap(find.text('اختيار فيديو'));
     await pumpUi(tester);
 
