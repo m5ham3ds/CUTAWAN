@@ -2,6 +2,9 @@ package com.m5ham3ds.cutawan_mobile
 
 import android.content.ContentValues
 import android.os.Build
+import android.os.BatteryManager
+import android.os.Debug
+import android.os.PowerManager
 import android.os.Environment
 import android.provider.MediaStore
 import androidx.media3.common.MediaItem
@@ -21,6 +24,7 @@ import java.io.FileInputStream
 import java.io.InputStream
 import java.security.MessageDigest
 import android.app.Activity
+import android.app.ActivityManager
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.graphics.Bitmap
@@ -236,6 +240,17 @@ class MainActivity : FlutterActivity() {
                         val id = call.argument<String>("renderId")
                         if (id != null) renderSessions.remove(id)
                         result.success(null)
+                    }
+                    "getDeviceAcceptanceDiagnostics" -> {
+                        try {
+                            result.success(readDeviceAcceptanceDiagnostics())
+                        } catch (error: Exception) {
+                            result.error(
+                                "DEVICE_DIAGNOSTICS_FAILED",
+                                error.message ?: "Could not collect Android device diagnostics.",
+                                null
+                            )
+                        }
                     }
                     "verifyExport" -> verifyExport(call, result)
                     else -> result.notImplemented()
@@ -1847,6 +1862,70 @@ class MainActivity : FlutterActivity() {
                 }
             }
         }
+    }
+
+    /**
+     * Collects non-identifying device/runtime measurements for Phase 10 acceptance.
+     * This deliberately excludes serial numbers, account data, file names and media content.
+     */
+    private fun readDeviceAcceptanceDiagnostics(): Map<String, Any> {
+        val activityManager = getSystemService(ACTIVITY_SERVICE) as ActivityManager
+        val systemMemory = ActivityManager.MemoryInfo()
+        activityManager.getMemoryInfo(systemMemory)
+
+        val processMemory = Debug.MemoryInfo()
+        Debug.getMemoryInfo(processMemory)
+
+        val batteryManager = getSystemService(BATTERY_SERVICE) as BatteryManager
+        val batteryPercent = batteryManager.getIntProperty(
+            BatteryManager.BATTERY_PROPERTY_CAPACITY
+        )
+        val batteryIntent = registerReceiver(
+            null,
+            android.content.IntentFilter(Intent.ACTION_BATTERY_CHANGED)
+        )
+        val batteryTemperatureTenthsC = batteryIntent?.getIntExtra(
+            BatteryManager.EXTRA_TEMPERATURE,
+            -1
+        ) ?: -1
+
+        val thermalStatus = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            (getSystemService(POWER_SERVICE) as PowerManager).currentThermalStatus
+        } else {
+            -1
+        }
+        val packageInfo = packageManager.getPackageInfo(packageName, 0)
+        val appVersionCode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            packageInfo.longVersionCode
+        } else {
+            @Suppress("DEPRECATION")
+            packageInfo.versionCode.toLong()
+        }
+        val fingerprint = Build.FINGERPRINT.lowercase(Locale.ROOT)
+        val emulatorMarkers = listOf("generic", "unknown", "emulator", "sdk_gphone", "goldfish", "ranchu")
+        val isPhysicalDevice = emulatorMarkers.none { fingerprint.contains(it) }
+
+        return mapOf(
+            "manufacturer" to Build.MANUFACTURER,
+            "model" to Build.MODEL,
+            "device" to Build.DEVICE,
+            "androidRelease" to Build.VERSION.RELEASE,
+            "androidSdk" to Build.VERSION.SDK_INT,
+            "isPhysicalDevice" to isPhysicalDevice,
+            "cpuCoreCount" to Runtime.getRuntime().availableProcessors(),
+            "totalMemoryBytes" to systemMemory.totalMem,
+            "availableMemoryBytes" to systemMemory.availMem,
+            "lowMemory" to systemMemory.lowMemory,
+            "processPssKb" to processMemory.totalPss,
+            "processPrivateDirtyKb" to processMemory.totalPrivateDirty,
+            "batteryPercent" to batteryPercent,
+            "batteryTemperatureTenthsC" to batteryTemperatureTenthsC,
+            "thermalStatus" to thermalStatus,
+            "availableStorageBytes" to StatFs(filesDir.absolutePath).availableBytes,
+            "appVersionName" to (packageInfo.versionName ?: ""),
+            "appVersionCode" to appVersionCode,
+            "capturedAtUptimeMs" to SystemClock.elapsedRealtime()
+        )
     }
 
     private fun utcNowIso(): String {
