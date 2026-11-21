@@ -157,6 +157,7 @@ class _HomeShellState extends State<HomeShell> with SingleTickerProviderStateMix
           repository: _repository,
           onProjectsChanged: _reloadProjects,
           onOpenReview: () => _selectDestination(3),
+          onOpenCreate: () => _selectDestination(1),
           storageUsageBytes: widget.storageUsageBytes,
         ),
       ),
