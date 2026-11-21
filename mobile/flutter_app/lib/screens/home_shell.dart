@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:whisper_cpp_flutter_plus/whisper_cpp_flutter_plus.dart';
 import '../domain/caption_catalog.dart';
 import '../domain/caption_animation.dart';
+import '../domain/caption_layout.dart';
 import '../domain/clip_preferences.dart';
 import '../domain/project_contract.dart';
 import '../domain/transcript_contract.dart';
