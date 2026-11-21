@@ -199,15 +199,37 @@ void main() {
     gateway.close();
   });
 
-  test('execution mode requires explicit persisted cloud consent', () async {
-    final credentials = AiCredentialStore(storage: MemorySecretStorage());
+  test('execution mode cannot persist or restore remote without cloud consent', () async {
+    final storage = MemorySecretStorage();
+    final credentials = AiCredentialStore(storage: storage);
     expect(await credentials.readExecutionMode(), 'local');
     expect(await credentials.hasCloudConsent(), isFalse);
+    await expectLater(
+      credentials.saveExecutionMode('remote'),
+      throwsA(isA<StateError>()),
+    );
+
     await credentials.saveCloudConsent(true);
     await credentials.saveExecutionMode('remote');
     expect(await credentials.readExecutionMode(), 'remote');
+
+    // Simulate interruption after consent revocation but before mode reset.
     await credentials.saveCloudConsent(false);
-    await credentials.saveExecutionMode('local');
+    storage.values['ai.execution.mode'] = 'remote';
     expect(await credentials.readExecutionMode(), 'local');
+    expect(storage.values['ai.execution.mode'], 'local');
+  });
+
+  test('deleting a provider model removes only that provider selection', () async {
+    final storage = MemorySecretStorage();
+    final credentials = AiCredentialStore(storage: storage);
+    await credentials.saveSelectedModel(AiProviderId.openAi, 'chat-model');
+    await credentials.saveSelectedModel(AiProviderId.gemini, 'gemini-model');
+    await credentials.deleteSelectedModel(AiProviderId.openAi);
+    expect(await credentials.readSelectedModel(AiProviderId.openAi), isNull);
+    expect(
+      await credentials.readSelectedModel(AiProviderId.gemini),
+      'gemini-model',
+    );
   });
 }
