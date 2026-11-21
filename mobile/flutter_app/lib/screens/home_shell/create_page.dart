@@ -93,7 +93,9 @@ class _CreatePageState extends State<CreatePage> {
     } catch (error) {
       _message('تعذّر تجهيز الفيديو: $error');
     } finally {
-      if (mounted) setState(() => _busy = false);
+      if (mounted) {
+        setState(() => _busy = false);
+      }
     }
   }
 
@@ -119,7 +121,9 @@ class _CreatePageState extends State<CreatePage> {
           if (now.difference(_lastProgress).inMilliseconds < 180 &&
               progress.fraction != 1) return;
           _lastProgress = now;
-          if (mounted) setState(() => _downloadProgress = progress);
+          if (mounted) {
+            setState(() => _downloadProgress = progress);
+          }
         },
       );
       if (!mounted) {
@@ -388,7 +392,9 @@ class _CreatePageState extends State<CreatePage> {
             }),
           )).toList(),
           onChanged: _busy ? null : (value) {
-            if (value != null) setState(() => _duration = value);
+            if (value != null) {
+              setState(() => _duration = value);
+            }
           },
         ),
         if (_duration == ClipDurationMode.custom) ...[
@@ -443,7 +449,9 @@ class _CreatePageState extends State<CreatePage> {
             DropdownMenuItem(value: '1080p', child: Text('1080p')),
           ],
           onChanged: _busy ? null : (value) {
-            if (value != null) setState(() => _resolution = value);
+            if (value != null) {
+              setState(() => _resolution = value);
+            }
           },
         ),
       ])),
@@ -467,7 +475,9 @@ class _CreatePageState extends State<CreatePage> {
             isExpanded: true,
             items: captionStylePresets.map((style) => DropdownMenuItem(value: style.id, child: Text(style.name))).toList(),
             onChanged: _busy ? null : (value) {
-              if (value != null) setState(() => _styleId = value);
+              if (value != null) {
+                setState(() => _styleId = value);
+              }
             },
           ),
           const SizedBox(height: 14),
@@ -479,7 +489,9 @@ class _CreatePageState extends State<CreatePage> {
             isExpanded: true,
             items: captionAnimationPresets.map((item) => DropdownMenuItem(value: item.id, child: Text(item.name))).toList(),
             onChanged: _busy ? null : (value) {
-              if (value != null) setState(() => _animationId = value);
+              if (value != null) {
+                setState(() => _animationId = value);
+              }
             },
           ),
         ],
