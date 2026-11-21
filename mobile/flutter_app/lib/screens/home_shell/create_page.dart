@@ -119,7 +119,9 @@ class _CreatePageState extends State<CreatePage> {
         onProgress: (progress) {
           final now = DateTime.now();
           if (now.difference(_lastProgress).inMilliseconds < 180 &&
-              progress.fraction != 1) return;
+              progress.fraction != 1) {
+            return;
+          }
           _lastProgress = now;
           if (mounted) {
             setState(() => _downloadProgress = progress);
