@@ -131,7 +131,8 @@ class WavAudioNormalizer {
         var value = 0.0;
         var weightTotal = 0.0;
         for (var tap = -_filterRadius; tap <= _filterRadius; tap++) {
-          final sourceFrame = (center + tap).clamp(0, sourceFrames - 1);
+          final sourceFrame =
+              (center + tap).clamp(0, sourceFrames - 1).toInt();
           final weight = weights[tap + _filterRadius];
           final frameOffset = audioOffset + sourceFrame * blockAlign;
           var mixed = 0.0;
@@ -146,8 +147,9 @@ class WavAudioNormalizer {
           value += mixed * weight;
           weightTotal += weight;
         }
-        output[outputIndex] =
-            (weightTotal == 0 ? 0 : value / weightTotal).clamp(-1.0, 1.0);
+        output[outputIndex] = (weightTotal == 0 ? 0.0 : value / weightTotal)
+            .clamp(-1.0, 1.0)
+            .toDouble();
       }
     }
 
@@ -160,10 +162,9 @@ class WavAudioNormalizer {
   }
 
   static List<Float64List> _buildResampleKernel(int sourceRate) {
-    final cutoff = math.min(
-      0.48,
-      0.48 * targetSampleRate / sourceRate,
-    );
+    final double cutoff = math
+        .min(0.48, 0.48 * targetSampleRate / sourceRate)
+        .toDouble();
     final kernels = <Float64List>[];
     for (var phase = 0; phase < _phaseCount; phase++) {
       final fraction = phase / _phaseCount;
