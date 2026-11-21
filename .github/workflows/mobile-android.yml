@@ -22,6 +22,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: mobile-android-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   flutter-android:
     name: Analyze, test, and build ARM64 debug APK
