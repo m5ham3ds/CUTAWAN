@@ -281,7 +281,7 @@ void main() {
     gateway.close();
   });
 
-  test('deleting a provider model removes only that provider selection', async {
+  test('deleting a provider model removes only that provider selection', () async {
     final storage = MemorySecretStorage();
     final credentials = AiCredentialStore(storage: storage);
     await credentials.saveSelectedModel(AiProviderId.openAi, 'chat-model');
