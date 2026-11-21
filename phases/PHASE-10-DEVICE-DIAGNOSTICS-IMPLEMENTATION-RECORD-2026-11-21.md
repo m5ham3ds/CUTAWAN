@@ -35,3 +35,12 @@ The screen is a diagnostic instrument, not a test execution claim. The report ex
 ## Required next step
 
 Install an APK built from a SHA recorded in GitHub Actions on a physical ARM64 Android device, open **تشخيص الجهاز**, and preserve the copied JSON. Then run the versioned real-media acceptance corpus and append fixture hashes, methods, metrics and failures. Never use synthetic examples or hosted CI results to fill physical-device fields.
+
+
+## Baseline completeness and device-class caution — 2026-11-21
+
+- The report computes diagnostic baseline status from mandatory fields instead of treating any non-empty native response as complete.
+- Build.FINGERPRINT is explicitly a physical-device heuristic. The UI reports physical-candidate, not confirmed physical device.
+- Manual confirmation remains not-verified until a real handset session is performed.
+- Media corpus, transcription/candidate quality, full MP4 decode, sustained thermal/performance, process-death recovery, SAF persistence, Keystore lifecycle and end-to-end network-consent states are explicit evidence statuses and remain uncollected.
+- Tests validate the gate logic using mocked platform responses only; no mocked result is counted as physical acceptance.

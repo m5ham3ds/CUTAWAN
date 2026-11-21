@@ -45,6 +45,9 @@ void main() {
         'androidRelease': '16',
         'androidSdk': 36,
         'isPhysicalDevice': true,
+        'cpuCoreCount': 8,
+        'appVersionName': '0.2.0',
+        'appVersionCode': 2,
         'totalMemoryBytes': 8 * 1024 * 1024 * 1024,
         'availableMemoryBytes': 4 * 1024 * 1024 * 1024,
         'processPssKb': 256000,
@@ -62,6 +65,14 @@ void main() {
     expect(report['model'], 'Physical Test Device');
     expect(report['buildSha'], DeviceAcceptanceService.buildSha);
     expect(report['fixtureEvidenceStatus'], 'not-collected-by-device-baseline');
+    expect(report['deviceClass'], 'physical-candidate');
+    expect(report['physicalDeviceHeuristicPassed'], isTrue);
+    expect(report['physicalDeviceManualConfirmationStatus'], 'not-verified');
+    expect(report['diagnosticBaselineStatus'], 'ready-for-physical-media-tests');
+    expect(report['diagnosticMissingFields'], isEmpty);
+    expect(report['buildIdentityPinned'], isFalse);
+    expect(report['mediaCorpusStatus'], 'not-collected');
+    expect(report['videoFullDecodeStatus'], 'not-collected-on-physical-device');
     expect(report['secureStorageRoundTrip'], 'passed');
     expect(report['secureStorageCanaryDeleted'], isTrue);
     expect(
@@ -69,6 +80,52 @@ void main() {
       'incomplete-device-and-media-evidence-required',
     );
     expect(secureStorage.values, isEmpty);
+  });
+
+  test('emulator diagnostics never qualify as a physical-device baseline', () async {
+    messenger.setMockMethodCallHandler(channel, (call) async => <String, Object?>{
+      'manufacturer': 'Generic',
+      'model': 'Android SDK built for x86',
+      'androidRelease': '16',
+      'androidSdk': 36,
+      'isPhysicalDevice': false,
+      'cpuCoreCount': 4,
+      'totalMemoryBytes': 8 * 1024 * 1024 * 1024,
+      'availableMemoryBytes': 4 * 1024 * 1024 * 1024,
+      'processPssKb': 180000,
+      'availableStorageBytes': 10 * 1024 * 1024 * 1024,
+      'appVersionName': '0.2.0',
+      'appVersionCode': 2,
+    });
+    final report = await DeviceAcceptanceService(
+      secretStorage: _MemorySecretStorage(),
+    ).collect();
+
+    expect(report['deviceClass'], 'emulator-or-unverified');
+    expect(report['diagnosticBaselineStatus'], 'incomplete');
+    expect(report['diagnosticMissingFields'], contains('physicalDeviceMarkerCheck'));
+    expect(report['phase10Acceptance'],
+        'incomplete-device-and-media-evidence-required');
+    expect(report['mediaCorpusStatus'], 'not-collected');
+    expect(report['sustainedPerformanceStatus'], 'not-collected');
+  });
+
+  test('missing core diagnostics keep the baseline incomplete without fabricating measurements', () async {
+    messenger.setMockMethodCallHandler(channel, (call) async => <String, Object?>{
+      'manufacturer': 'Example',
+      'model': 'Unknown',
+      'isPhysicalDevice': true,
+    });
+    final report = await DeviceAcceptanceService(
+      secretStorage: _MemorySecretStorage(),
+    ).collect();
+
+    expect(report['diagnosticBaselineStatus'], 'incomplete');
+    expect(report['diagnosticMissingFields'], contains('androidSdk'));
+    expect(report['diagnosticMissingFields'], contains('cpuCoreCount'));
+    expect(report['diagnosticMissingFields'], contains('totalMemoryBytes'));
+    expect(report['phase10Acceptance'],
+        'incomplete-device-and-media-evidence-required');
   });
 
   test('does not create acceptance evidence when native diagnostics are missing', () async {

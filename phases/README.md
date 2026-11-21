@@ -27,7 +27,7 @@
 | 7 | Multi-provider model selection, secure user credentials, consented cloud editorial annotations | Provider-scoped model/key storage, consent gates on outbound requests, local fallback on key deletion; latest Android CI passed | Physical Keystore/backup/rotation tests, real provider account/model compatibility, billing and policy acceptance remain open |
 | 8 | End-to-end pipeline, job orchestration and clip export | Media3 Transformer pipeline consumes time-ranged reframe segments and timed caption cues; native overlay burns captions into MP4; metadata/hash verification exists | Full decode validation, physical visual/media fixtures, render recovery after process death, background execution/notifications and per-clip retry remain open |
 | 9 | Professional UI redesign and navigation/component architecture | Dashboard, Settings route, five primary destinations and a functional playback/trim editor slice delivered; still in progress | Feature-state extraction, filmstrip/focus/transition editing, preview/export parity, accessibility/golden/device matrix remain open |
-| 10 | Physical-device quality, security, performance and Arabic/English acceptance | Diagnostics instrumented; acceptance incomplete | Native device baseline + temporary secure-storage self-test added; still needs physical media corpus, WER/timing results, full-decode and lifecycle/thermal evidence |
+| 10 | Physical-device quality, security, performance and Arabic/English acceptance | Diagnostic baseline gate and missing-evidence reporting implemented; physical acceptance incomplete | 137-test CI suite and ARM64 APK pass; still needs manual handset confirmation, real media corpus, WER/timing, full-decode and lifecycle/thermal evidence |
 
 ## Global engineering constraints
 
@@ -96,3 +96,15 @@ Phases 1–7 have a successful automated Android gate on SHA `80e182b`; physical
 - Caption and render fingerprints include candidate timing; editor changes invalidate affected sidecars/exports but do not force discovery to overwrite manual edits.
 - Added candidate-range and navigation/settings widget tests.
 - Filmstrip, manual crop/focus handles, transition editing and exact preview/export parity remain open.
+
+
+## Phase 10 baseline gate and Phase 9 build evidence — 2026-11-21
+
+- Phase 9 acceptance run: Mobile Android run 44867941475, SHA 7770b3bb6a24efaf59606364a62280aab7ef0060.
+- Automated gates: format success, strict Dart analysis success, 137/137 Flutter tests passed, ARM64 debug APK build success, ARM64-only/unique-native-library verification success.
+- APK artifact: cutawan-mobile-arm64-debug, artifact ID 14693190037, size 59,010,179 bytes; archive digest SHA-256 176f1e21429f3d6b084d14fb522e94c53b727a1ada22f2a3d2d7e1883d8f56e0.
+- Native packaging check: exactly ARM64 ABI; 10 unique native libraries; GGML runtime libraries present; no duplicate library basenames.
+- Phase 10 report computes completeness of required diagnostics and enumerates missing fields.
+- Build.FINGERPRINT classification is explicitly a heuristic. A physical-candidate result is not human-confirmed physical evidence.
+- No real audio/video fixtures or handset diagnostic report exist in the repository. Speech/candidate quality, full media decode, thermal/performance, process-death, SAF lifecycle, Keystore restore/reinstall and end-to-end consent evidence remain open.
+- Phase 10 remains incomplete; CI and an ARM64 APK cannot substitute for physical-device acceptance.

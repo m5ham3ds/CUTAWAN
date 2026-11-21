@@ -89,7 +89,7 @@ class _DeviceAcceptancePageState extends State<DeviceAcceptancePage> {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final data = _report;
-    final isPhysical = data?['isPhysicalDevice'] == true;
+    final isPhysical = data?['deviceClass'] == 'physical-candidate';
     return Scaffold(
       appBar: AppBar(
         title: const Text('تشخيص قبول Android'),
@@ -123,7 +123,7 @@ class _DeviceAcceptancePageState extends State<DeviceAcceptancePage> {
                       ),
                       if (data != null)
                         Chip(
-                          label: Text(isPhysical ? 'جهاز فعلي' : 'محاكي / غير مؤكد'),
+                          label: Text(isPhysical ? 'مرشح جهاز فعلي — يلزم تأكيد' : 'محاكي / غير مؤكد'),
                         ),
                     ],
                   ),
@@ -161,6 +161,26 @@ class _DeviceAcceptancePageState extends State<DeviceAcceptancePage> {
             ),
             _metric(
               context,
+              'التحقق اليدوي من الجهاز',
+              data['physicalDeviceManualConfirmationStatus'] == 'verified'
+                  ? 'تم التحقق ميدانيًا'
+                  : 'مطلوب — مؤشر البصمة ليس إثباتًا',
+            ),
+            _metric(
+              context,
+              'اكتمال خط أساس التشخيص',
+              data['diagnosticBaselineStatus'] == 'ready-for-physical-media-tests'
+                  ? 'القياسات الأساسية مكتملة'
+                  : 'غير مكتمل — راجع الحقول الناقصة',
+            ),
+            if ((data['diagnosticMissingFields'] as List?)?.isNotEmpty == true)
+              _metric(
+                context,
+                'الحقول الناقصة',
+                (data['diagnosticMissingFields'] as List).join('، '),
+              ),
+            _metric(
+              context,
               'إصدار التطبيق',
               '${data['appVersionName'] ?? '—'} (${data['appVersionCode'] ?? '—'})',
             ),
@@ -195,6 +215,17 @@ class _DeviceAcceptancePageState extends State<DeviceAcceptancePage> {
             ),
             _metric(context, 'الحالة الحرارية', _thermal(data['thermalStatus'])),
             const SizedBox(height: 12),
+            const SizedBox(height: 12),
+            _section(context, 'حالة قبول الوسائط والأداء'),
+            _metric(context, 'Corpus العربي/الإنجليزي', _number(data['mediaCorpusStatus'])),
+            _metric(context, 'جودة التفريغ والتوقيت', _number(data['speechQualityStatus'])),
+            _metric(context, 'جودة المقاطع', _number(data['candidateQualityStatus'])),
+            _metric(context, 'فك MP4 الكامل على جهاز فعلي', _number(data['videoFullDecodeStatus'])),
+            _metric(context, 'الأداء والحرارة تحت الحمل', _number(data['sustainedPerformanceStatus'])),
+            _metric(context, 'استعادة المهمة بعد إغلاق العملية', _number(data['processDeathResumeStatus'])),
+            _metric(context, 'استمرارية أذونات SAF', _number(data['safLifecycleStatus'])),
+            _metric(context, 'دورة حياة Keystore', _number(data['keystoreLifecycleStatus'])),
+            _metric(context, 'منع الشبكة دون موافقة', _number(data['networkConsentEndToEndStatus'])),
             _section(context, 'فحوصات الأمان'),
             _metric(
               context,

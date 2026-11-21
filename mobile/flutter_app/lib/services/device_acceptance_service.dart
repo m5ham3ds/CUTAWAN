@@ -50,6 +50,73 @@ class DeviceAcceptanceService {
       throw StateError('Secure storage diagnostic canary was not deleted.');
     }
 
+    final missingBaselineFields = <String>[];
+    void requireField(bool condition, String field) {
+      if (!condition) missingBaselineFields.add(field);
+    }
+
+    final manufacturer = native['manufacturer'];
+    final model = native['model'];
+    final androidRelease = native['androidRelease'];
+    final androidSdk = native['androidSdk'];
+    final cpuCores = native['cpuCoreCount'];
+    final totalMemory = native['totalMemoryBytes'];
+    final availableMemory = native['availableMemoryBytes'];
+    final processPss = native['processPssKb'];
+    final availableStorage = native['availableStorageBytes'];
+    final appVersionName = native['appVersionName'];
+    final appVersionCode = native['appVersionCode'];
+    final physicalDeviceMarkerCheck = native['isPhysicalDevice'] == true;
+
+    requireField(physicalDeviceMarkerCheck, 'physicalDeviceMarkerCheck');
+    requireField(manufacturer is String && manufacturer.trim().isNotEmpty, 'manufacturer');
+    requireField(model is String && model.trim().isNotEmpty, 'model');
+    requireField(androidRelease is String && androidRelease.trim().isNotEmpty, 'androidRelease');
+    requireField(androidSdk is num && androidSdk >= 26, 'androidSdk');
+    requireField(cpuCores is num && cpuCores > 0, 'cpuCoreCount');
+    requireField(totalMemory is num && totalMemory > 0, 'totalMemoryBytes');
+    requireField(
+      availableMemory is num &&
+          totalMemory is num &&
+          availableMemory >= 0 &&
+          availableMemory <= totalMemory,
+      'availableMemoryBytes',
+    );
+    requireField(processPss is num && processPss >= 0, 'processPssKb');
+    requireField(availableStorage is num && availableStorage >= 0, 'availableStorageBytes');
+    requireField(appVersionName is String && appVersionName.trim().isNotEmpty, 'appVersionName');
+    requireField(appVersionCode is num && appVersionCode >= 0, 'appVersionCode');
+
+    final baselineReady = missingBaselineFields.isEmpty;
+    final buildShaPinned = RegExp(r'^[a-f0-9]{40}      'collectedAtUtc': DateTime.now().toUtc().toIso8601String(),
+      'buildSha': buildSha,
+      'fixtureEvidenceStatus': 'not-collected-by-device-baseline',
+      'secureStorageRoundTrip': 'passed',
+      'secureStorageCanaryDeleted': true,
+      'diagnosticSchemaVersion': 1,
+      'deviceClass':
+          physicalDeviceMarkerCheck ? 'physical-candidate' : 'emulator-or-unverified',
+      'physicalDeviceHeuristicPassed': physicalDeviceMarkerCheck,
+      'physicalDeviceManualConfirmationStatus': 'not-verified',
+      'diagnosticBaselineStatus':
+          baselineReady ? 'ready-for-physical-media-tests' : 'incomplete',
+      'diagnosticMissingFields': missingBaselineFields,
+      'buildIdentityPinned': buildShaPinned,
+      'mediaCorpusStatus': 'not-collected',
+      'speechQualityStatus': 'not-collected',
+      'candidateQualityStatus': 'not-collected',
+      'videoFullDecodeStatus': 'not-collected-on-physical-device',
+      'sustainedPerformanceStatus': 'not-collected',
+      'processDeathResumeStatus': 'not-verified-on-physical-device',
+      'safLifecycleStatus': 'not-verified-across-force-stop',
+      'keystoreLifecycleStatus': 'single-install-round-trip-only',
+      'networkConsentEndToEndStatus': 'not-verified-on-physical-device',
+      'phase10Acceptance': 'incomplete-device-and-media-evidence-required',
+    };
+  }
+}
+).hasMatch(buildSha);
+
     return <String, Object?>{
       ...native.map((key, value) => MapEntry(key, value)),
       'collectedAtUtc': DateTime.now().toUtc().toIso8601String(),
