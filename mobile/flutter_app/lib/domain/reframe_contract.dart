@@ -1,3 +1,5 @@
+import 'dart:math';
+
 class FrameBox {
   const FrameBox({
     required this.x,
