@@ -53,6 +53,9 @@ void main() {
 
   test('zero input is empty and negative input is rejected', () {
     expect(WhisperChunkPlanner.plan(0), isEmpty);
-    expect(() => WhisperChunkPlanner.plan(-1), throwsRangeError);
+    expect(
+      () => WhisperChunkPlanner.plan(-1),
+      throwsA(isA<RangeError>()),
+    );
   });
 }
