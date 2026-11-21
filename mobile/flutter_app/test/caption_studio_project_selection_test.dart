@@ -110,13 +110,6 @@ void main() {
         find.byKey(const ValueKey('caption-style-neon')),
       );
       expect(selectedNeon.selected, isTrue);
-      expect(
-        tester.widget<Text>(
-          find.byKey(const ValueKey('caption-timing-offset-label')),
-        ).data,
-        contains('+125 ms'),
-      );
-
       await tester.scrollUntilVisible(
         find.byKey(const ValueKey('caption-animation-fade')),
         320,
@@ -126,14 +119,32 @@ void main() {
       await tester.pump(const Duration(milliseconds: 50));
       expect(find.textContaining('للمعاينة فقط'), findsWidgets);
 
+      await tester.scrollUntilVisible(
+        find.byKey(const ValueKey('caption-timing-offset-label')),
+        320,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(
+        tester.widget<Text>(
+          find.byKey(const ValueKey('caption-timing-offset-label')),
+        ).data,
+        contains('+125 ms'),
+      );
+      await tester.scrollUntilVisible(
+        find.byKey(const ValueKey('caption-timing-offset')),
+        320,
+        scrollable: find.byType(Scrollable).first,
+      );
       final timingSlider = tester.widget<Slider>(
         find.byKey(const ValueKey('caption-timing-offset')),
       );
       timingSlider.onChanged!(-600);
       await tester.pump();
 
-      await tester.ensureVisible(
+      await tester.scrollUntilVisible(
         find.byKey(const ValueKey('caption-studio-save')),
+        320,
+        scrollable: find.byType(Scrollable).first,
       );
       await tester.tap(find.byKey(const ValueKey('caption-studio-save')));
       await tester.pump();
