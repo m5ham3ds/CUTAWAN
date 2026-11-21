@@ -42,9 +42,13 @@
 9. An incomplete render/export feature must remain visibly disabled rather than report a false success.
 10. Each phase must add its own implementation record, test list, known limits and remaining acceptance evidence.
 
+## Execution order agreed on 2026-11-21
+
+Implement and gate in this order: Phases 1–3 together; then Phases 4–5; then Phases 6–7; then Phase 8; then Phase 9 once (the repeated 9 in the request is one phase); finally Phase 10. Later groups start only after the previous group has code and automated evidence. Physical-device requirements remain separate and cannot be inferred from CI.
+
 ## Current next actions
 
-1. Perform physical-device checks for Phase 7: key save/replace/delete, backup disabled, restore/reinstall behavior, cloud-consent gating and provider success/failure without exposing secrets.
+1. Complete the current Phases 1–3 batch: fresh app shell/ARM64 gates, real media/project lifecycle acceptance, and verified mono/16kHz audio normalization plus Whisper timing/overlap tests.
 2. Continue Phase 8 by applying frame-level reframe plans and timed captions to MP4 output, then add full decode, fixture, process-death and physical-device acceptance.
 3. Continue Phase 9 by completing screen architecture, Clip Editor, golden/RTL/accessibility/keyboard tests and device review.
 4. Complete Phase 10 with Arabic/English media fixtures and physical ARM64 quality, privacy, thermal and performance evidence.
