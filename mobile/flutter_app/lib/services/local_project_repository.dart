@@ -282,7 +282,7 @@ class LocalProjectRepository {
     }
     final directory = await _artifactDirectory(projectId);
     final file = File(
-      '${directory.path}${Platform.pathSeparator}clip_edit_${clipId}.json',
+      '${directory.path}${Platform.pathSeparator}clip_edit_$clipId.json',
     );
     if (!await file.exists()) {
       return null;
