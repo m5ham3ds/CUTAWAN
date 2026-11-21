@@ -23,6 +23,7 @@ class _ReviewPageState extends State<ReviewPage> {
   final Set<String> _loadingArtifacts = {};
   final Map<String, List<Map<String, dynamic>>> _exportRecords = {};
   bool _pipelineRunning = false;
+  String? _pipelineProjectId;
   String? _pipelineStage;
   double _pipelineProgress = 0;
   String? _busyProjectId;
@@ -354,6 +355,7 @@ class _ReviewPageState extends State<ReviewPage> {
     if (_pipelineRunning || _busyProjectId != null) return;
     setState(() {
       _pipelineRunning = true;
+      _pipelineProjectId = project.id;
       _pipelineStage = 'queued';
       _pipelineProgress = 0;
       _lastError = null;
@@ -396,6 +398,7 @@ class _ReviewPageState extends State<ReviewPage> {
       if (mounted) {
         setState(() {
           _pipelineRunning = false;
+          _pipelineProjectId = null;
           _pipelineStage = null;
           _pipelineProgress = 0;
         });
@@ -403,42 +406,84 @@ class _ReviewPageState extends State<ReviewPage> {
       }
     }
   }
-  @override
-  Widget build(BuildContext context) {
-    return ValueListenableBuilder<List<CutawanProject>>(
-      valueListenable: widget.projects,
-      builder: (context, items, _) => ListView(
-        padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
+  String _workflowStageLabel(CutawanProject project) {
+    if (_pipelineRunning && _pipelineProjectId == project.id) {
+      return switch (_pipelineStage) {
+        'queued' => 'تجهيز المعالجة',
+        'inspecting' => 'فحص مصدر الفيديو',
+        'transcribing' => 'تفريغ الكلام',
+        'discovering' => 'اكتشاف المقاطع',
+        'reframing' => 'تحليل التأطير',
+        'captioning' => 'إعداد الترجمة',
+        'rendering' => 'تصدير المقاطع',
+        'validating' => 'التحقق من الملفات',
+        'complete' => 'اكتملت المعالجة',
+        _ => 'المعالجة قيد التنفيذ',
+      };
+    }
+    if (project.job.status == ProjectJobStatus.completed) return 'اكتملت المعالجة';
+    if (project.job.status == ProjectJobStatus.failed) return 'توقفت المعالجة';
+    if (project.job.status == ProjectJobStatus.cancelled) return 'المعالجة ملغاة';
+    if (project.job.stage.startsWith('render')) return 'تصدير المقاطع';
+    return switch (project.job.stage) {
+      'source_imported' || 'prepared' => 'جاهز لبدء المعالجة',
+      'inspecting' => 'فحص مصدر الفيديو',
+      'transcribing' => 'تفريغ الكلام',
+      'discovering' => 'اكتشاف المقاطع',
+      'reframing' => 'تحليل التأطير',
+      'captioning' => 'إعداد الترجمة',
+      'rendering' => 'تصدير المقاطع',
+      'validating' => 'التحقق من الملفات',
+      _ => 'جاهز للمراجعة',
+    };
+  }
+
+  Widget _workflowStep(
+    BuildContext context, {
+    required String title,
+    required String detail,
+    required IconData icon,
+    required bool complete,
+    required bool active,
+  }) {
+    final scheme = Theme.of(context).colorScheme;
+    final color = complete
+        ? scheme.secondary
+        : active
+            ? scheme.primary
+            : scheme.onSurfaceVariant;
+    return _Panel(
+      padding: const EdgeInsets.all(11),
+      accent: active && !complete,
+      child: Row(
         children: [
-          const _Eyebrow('مساحة العمل  /  التحليل والمراجعة', icon: Icons.movie_filter_rounded),
-          const SizedBox(height: 14),
-          Text(
-            'مراجعة المشاريع',
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.w800,
-                ),
+          Container(
+            width: 30,
+            height: 30,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(complete ? Icons.check_rounded : icon, size: 17, color: color),
           ),
-          const SizedBox(height: 8),
-          Text(
-            'شغّل مسارًا واحدًا من فحص المصدر إلى المقاطع المصدّرة، مع حفظ المراحل والنتائج للتحقق والاستئناف.',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  height: 1.5,
-                ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, maxLines: 1, overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      color: color,
+                      fontWeight: FontWeight.w800,
+                    )),
+                const SizedBox(height: 2),
+                Text(detail, maxLines: 2, overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: scheme.onSurfaceVariant,
+                    )),
+              ],
+            ),
           ),
-          if (_lastError != null) ...[
-            const SizedBox(height: 12),
-            _StatusNote(text: _lastError!),
-          ],
-          const SizedBox(height: 24),
-          if (items.isEmpty)
-            const _EmptyState(
-              icon: Icons.video_collection_outlined,
-              title: 'لا توجد مقاطع للمراجعة',
-              description: 'استورد فيديو من شاشة الإدخال ليظهر هنا.',
-            )
-          else
-            for (final project in items) _projectCard(context, project),
         ],
       ),
     );
@@ -446,257 +491,531 @@ class _ReviewPageState extends State<ReviewPage> {
 
   Widget _projectCard(BuildContext context, CutawanProject project) {
     final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
     final transcript = _transcripts[project.id];
     final candidateSet = _candidateSets[project.id];
     final reframePlan = _reframePlans[project.id];
-    final isBusy = _busyProjectId == project.id || _pipelineRunning;
+    final exports = _exportRecords[project.id] ?? const <Map<String, dynamic>>[];
+    final pipelineActive = _pipelineRunning && _pipelineProjectId == project.id;
+    final isBusy = _busyProjectId == project.id || pipelineActive;
+    final canStart = !isBusy && !_pipelineRunning && _busyProjectId == null;
     final isLoading = _loadingArtifacts.contains(project.id);
+    final activeStage = pipelineActive ? (_pipelineStage ?? project.job.stage) : project.job.stage;
+    final stepIndex = project.job.status == ProjectJobStatus.completed
+        ? 3
+        : activeStage.startsWith('render') || activeStage == 'validating'
+            ? 3
+            : activeStage == 'discovering' ||
+                    activeStage == 'reframing' ||
+                    activeStage == 'captioning'
+                ? 2
+                : activeStage == 'transcribing' || activeStage == 'inspecting'
+                    ? 1
+                    : 0;
+    final progress = pipelineActive
+        ? _pipelineProgress
+        : project.job.status == ProjectJobStatus.running
+            ? project.job.progress
+            : null;
+    final transcriptDetail = transcript == null
+        ? 'بانتظار التفريغ الصوتي'
+        : transcript.wordTimingReliable
+            ? '${transcript.words.length} كلمة بتوقيت موثوق'
+            : 'النص محفوظ؛ التوقيت يحتاج مراجعة';
+    final candidatesDetail = candidateSet == null
+        ? 'لم يبدأ اكتشاف المقاطع'
+        : candidateSet.candidates.isEmpty
+            ? 'لا توجد نتائج مناسبة'
+            : '${candidateSet.candidates.length} مقطع للمراجعة';
+    final exportDetail = exports.isEmpty
+        ? 'بانتظار تصدير الفيديو'
+        : '${exports.length} ملف مصدّر';
+
     return Card(
+      key: ValueKey<String>('review-project-${project.id}'),
       margin: const EdgeInsets.only(bottom: 16),
       child: Padding(
         padding: const EdgeInsets.all(14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(children: [
-              Expanded(child: Text(project.title, style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900))),
-              _StatusBadge(label: _jobStatusLabel(project.job.status), status: project.job.status),
-            ]),
-            const SizedBox(height: 6),
-            Text(project.source.displayName, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-            const SizedBox(height: 10),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Chip(label: Text('${project.source.width} × ${project.source.height}')),
-                Chip(label: Text(_formatDuration(project.source.durationMs))),
-                Chip(label: Text(_formatBytes(project.source.sizeBytes))),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(project.title, maxLines: 2, overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900)),
+                      const SizedBox(height: 4),
+                      Text(_workflowStageLabel(project),
+                          style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                _StatusBadge(label: _jobStatusLabel(project.job.status), status: project.job.status),
               ],
             ),
-            Text(
-              'المصدر: ${project.source.mimeType}',
-              style: theme.textTheme.bodySmall,
-            ),
-            const SizedBox(height: 16),
-            const _Eyebrow('إجراءات المشروع', icon: Icons.tune_rounded),
-            const SizedBox(height: 9),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                OutlinedButton.icon(
-                  onPressed: isBusy ? null : () => _verifySource(context, project),
-                  icon: const Icon(Icons.verified_outlined),
-                  label: const Text('إعادة فحص الوصول والبيانات'),
-                ),
-                FilledButton.tonalIcon(
-                  onPressed: isBusy ? null : () => _transcribe(project),
-                  icon: const Icon(Icons.graphic_eq),
-                  label: const Text('تفريغ الكلام'),
-                ),
-                FilledButton.tonalIcon(
-                  onPressed: isBusy ? null : () => _analyzeFraming(project),
-                  icon: const Icon(Icons.center_focus_strong),
-                  label: const Text('تحليل الوجه والتأطير'),
-                ),
-                FilledButton.icon(
-                  onPressed: isBusy || transcript == null ||
-                          !transcript.wordTimingReliable
-                      ? null
-                      : () => _discover(project),
-                  icon: const Icon(Icons.auto_awesome),
-                  label: const Text('اقتراح المقاطع'),
-                ),
-              ],
-            ),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                onPressed: isBusy || _pipelineRunning ? null : () => _runFullPipeline(project),
-                icon: Icon(_pipelineRunning ? Icons.hourglass_top_rounded : Icons.rocket_launch_rounded),
-                label: Text(_pipelineRunning ? 'المعالجة تعمل…' : 'تشغيل المعالجة الكاملة / استئناف'),
+            const SizedBox(height: 12),
+            _Panel(
+              accent: true,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.video_file_outlined, color: scheme.primary, size: 26),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(project.source.displayName, maxLines: 2, overflow: TextOverflow.ellipsis,
+                                style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800)),
+                            const SizedBox(height: 4),
+                            Text(
+                              '${project.source.width} × ${project.source.height} · ${_formatDuration(project.source.durationMs)} · ${_formatBytes(project.source.sizeBytes)}',
+                              style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      key: ValueKey<String>('review-verify-${project.id}'),
+                      onPressed: canStart ? () => _verifySource(context, project) : null,
+                      icon: const Icon(Icons.verified_outlined),
+                      label: const Text('فحص توفر الفيديو'),
+                    ),
+                  ),
+                ],
               ),
             ),
-            if (_pipelineRunning && _busyProjectId == null) ...[
-              const SizedBox(height: 10),
-              ClipRRect(borderRadius: BorderRadius.circular(99), child: LinearProgressIndicator(value: _pipelineProgress, minHeight: 7)),
-              const SizedBox(height: 6),
-              Text(
-                'المرحلة: ${_pipelineStage ?? 'بدء'} · ${(100 * _pipelineProgress).round()}%',
-                style: theme.textTheme.bodySmall,
-              ),
-            ],
-            if (isBusy) ...[
-              const SizedBox(height: 10),
-              ClipRRect(borderRadius: BorderRadius.circular(99), child: LinearProgressIndicator(value: _progress, minHeight: 6)),
-              const SizedBox(height: 6),
-              Text(
-                _busyStage == 'whisper'
-                    ? 'Whisper يعمل على الجهاز…'
-                    : _busyStage == 'reframe'
-                        ? 'تحليل عينات الوجه وبناء خطة تأطير محلية…'
-                        : 'تحليل الحدود وترتيب المقاطع محليًا…',
-                style: theme.textTheme.bodySmall,
-              ),
-            ],
             if (isLoading) ...[
               const SizedBox(height: 10),
-              const LinearProgressIndicator(),
+              const LinearProgressIndicator(minHeight: 4),
             ],
-            if (transcript != null) ...[
-              const SizedBox(height: 20),
-              const _Eyebrow('01 / التفريغ الصوتي', icon: Icons.graphic_eq_rounded),
-              const SizedBox(height: 8),
-              Text(
-                'التفريغ • ${transcript.language} • ${transcript.words.length} كلمة',
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w800,
-                ),
+            const SizedBox(height: 16),
+            const _Eyebrow('مسار المشروع', icon: Icons.route_outlined),
+            const SizedBox(height: 9),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final gap = 8.0;
+                final columns = constraints.maxWidth < 540 ? 2 : 4;
+                final width = (constraints.maxWidth - gap * (columns - 1)) / columns;
+                return Wrap(
+                  spacing: gap,
+                  runSpacing: gap,
+                  children: [
+                    SizedBox(width: width, child: _workflowStep(
+                      context,
+                      title: 'المصدر',
+                      detail: 'الفيديو محفوظ',
+                      icon: Icons.video_file_outlined,
+                      complete: true,
+                      active: stepIndex == 0,
+                    )),
+                    SizedBox(width: width, child: _workflowStep(
+                      context,
+                      title: 'التحليل',
+                      detail: transcriptDetail,
+                      icon: Icons.graphic_eq_rounded,
+                      complete: transcript != null && reframePlan != null,
+                      active: stepIndex == 1,
+                    )),
+                    SizedBox(width: width, child: _workflowStep(
+                      context,
+                      title: 'المقاطع',
+                      detail: candidatesDetail,
+                      icon: Icons.auto_awesome_rounded,
+                      complete: candidateSet != null,
+                      active: stepIndex == 2,
+                    )),
+                    SizedBox(width: width, child: _workflowStep(
+                      context,
+                      title: 'الإخراج',
+                      detail: exportDetail,
+                      icon: Icons.video_file_rounded,
+                      complete: exports.isNotEmpty,
+                      active: stepIndex == 3,
+                    )),
+                  ],
+                );
+              },
+            ),
+            const SizedBox(height: 12),
+            _Panel(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(_workflowStageLabel(project),
+                            style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w900)),
+                      ),
+                      if (progress != null)
+                        Text('${(progress * 100).round()}%',
+                            style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w900)),
+                    ],
+                  ),
+                  if (progress != null) ...[
+                    const SizedBox(height: 8),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(99),
+                      child: LinearProgressIndicator(
+                        value: progress.clamp(0.0, 1.0).toDouble(),
+                        minHeight: 7,
+                      ),
+                    ),
+                  ] else if (isBusy) ...[
+                    const SizedBox(height: 8),
+                    const LinearProgressIndicator(minHeight: 5),
+                  ],
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      key: ValueKey<String>('review-run-pipeline-${project.id}'),
+                      onPressed: canStart ? () => _runFullPipeline(project) : null,
+                      icon: Icon(pipelineActive ? Icons.hourglass_top_rounded : Icons.play_arrow_rounded),
+                      label: Text(
+                        pipelineActive
+                            ? 'المعالجة تعمل…'
+                            : project.job.status == ProjectJobStatus.completed
+                                ? 'التحقق من النتائج والاستكمال'
+                                : project.job.status == ProjectJobStatus.failed ||
+                                        project.job.status == ProjectJobStatus.cancelled
+                                    ? 'استئناف المعالجة'
+                                    : 'بدء المعالجة الكاملة',
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 6),
-              Text(
-                transcript.wordTimingReliable
-                    ? 'توقيت الكلمات متاح ويمكن استخدامه لضبط حدود المقاطع.'
-                    : 'النص محفوظ، لكن توقيت الكلمات غير موثوق؛ اكتشاف المقاطع معطّل لتجنب قصّ عشوائي.',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
+            ),
+            Card(
+              margin: const EdgeInsets.only(top: 12),
+              child: ExpansionTile(
+                key: ValueKey<String>('review-manual-tools-${project.id}'),
+                leading: const Icon(Icons.tune_rounded),
+                title: const Text('أدوات المراحل اليدوية'),
+                subtitle: const Text('إعادة تنفيذ خطوة محددة عند الحاجة'),
+                childrenPadding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+                children: [
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      FilledButton.tonalIcon(
+                        onPressed: canStart ? () => _transcribe(project) : null,
+                        icon: const Icon(Icons.graphic_eq_rounded),
+                        label: const Text('إعادة التفريغ'),
+                      ),
+                      FilledButton.tonalIcon(
+                        onPressed: canStart ? () => _analyzeFraming(project) : null,
+                        icon: const Icon(Icons.center_focus_strong_rounded),
+                        label: const Text('إعادة تحليل التأطير'),
+                      ),
+                      FilledButton.tonalIcon(
+                        onPressed: !canStart || transcript == null || !transcript.wordTimingReliable
+                            ? null
+                            : () => _discover(project),
+                        icon: const Icon(Icons.auto_awesome_rounded),
+                        label: const Text('إعادة اكتشاف المقاطع'),
+                      ),
+                    ],
+                  ),
+                  if (transcript == null || !transcript.wordTimingReliable) ...[
+                    const SizedBox(height: 8),
+                    Text('اكتشاف المقاطع متاح بعد وجود تفريغ بتوقيت كلمات موثوق.',
+                        style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
+                  ],
+                ],
               ),
-              if (transcript.text.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                Text(
-                  transcript.text.length > 420
-                      ? '${transcript.text.substring(0, 420)}…'
-                      : transcript.text,
-                  maxLines: 5,
-                  overflow: TextOverflow.ellipsis,
+            ),
+            Card(
+              margin: const EdgeInsets.only(top: 10),
+              child: ExpansionTile(
+                key: ValueKey<String>('review-transcript-${project.id}'),
+                leading: const Icon(Icons.graphic_eq_rounded),
+                title: Text(transcript == null ? 'التفريغ الصوتي' : 'التفريغ الصوتي · ${transcript.words.length} كلمة'),
+                subtitle: Text(
+                  transcript == null
+                      ? 'لم يتم التفريغ بعد'
+                      : transcript.wordTimingReliable
+                          ? '${transcript.language} · توقيت الكلمات موثوق'
+                          : '${transcript.language} · توقيت الكلمات غير موثوق',
                 ),
+                childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                children: [
+                  if (transcript == null)
+                    const Text('سيظهر النص هنا بعد إتمام التفريغ الصوتي.')
+                  else ...[
+                    Align(
+                      alignment: AlignmentDirectional.centerStart,
+                      child: Text(
+                        transcript.text.isEmpty ? 'لم ينتج المحرك نصًا قابلًا للعرض.' : transcript.text,
+                        textDirection: TextDirection.auto,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      transcript.wordTimingReliable
+                          ? 'يمكن استخدام توقيت الكلمات في اكتشاف المقاطع.'
+                          : 'حُفظ النص، لكن اكتشاف المقاطع معطّل لحماية دقة القصّ.',
+                      style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            Card(
+              margin: const EdgeInsets.only(top: 10),
+              child: ExpansionTile(
+                key: ValueKey<String>('review-framing-${project.id}'),
+                leading: const Icon(Icons.center_focus_strong_rounded),
+                title: const Text('خطة التأطير'),
+                subtitle: Text(
+                  reframePlan == null
+                      ? 'لم يتم تحليل الإطارات بعد'
+                      : '${reframePlan.shots.length} فترة زمنية · ${reframePlan.aspectRatio.toStringAsFixed(3)}',
+                ),
+                childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                children: [
+                  if (reframePlan == null)
+                    const Text('سيظهر ملخص التأطير هنا بعد التحليل.')
+                  else ...[
+                    Text(
+                      reframePlan.focusTrack == null
+                          ? 'وضع آمن: إظهار المشهد كاملاً. ${reframePlan.fallbackReason ?? ''}'
+                          : 'مسار وجه أمامي · ثقة ${(reframePlan.focusTrack!.averageConfidence * 100).round()}% · تغطية ${(reframePlan.focusTrack!.coverage * 100).round()}% · ${reframePlan.focusTrack!.keyframes.length} نقطة تركيز',
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'التحليل البصري يتتبع موضع الوجه الأمامي فقط؛ لا يثبت هوية المتحدث النشط من الصوت والصورة.',
+                      style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(height: 18),
+            const _Eyebrow('مراجعة المقاطع', icon: Icons.movie_filter_rounded),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: Text('المقاطع المكتشفة',
+                      style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900)),
+                ),
+                if (candidateSet != null)
+                  Text('${candidateSet.candidates.length}',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        color: scheme.primary,
+                        fontWeight: FontWeight.w900,
+                      )),
               ],
-            ],
-            if (reframePlan != null) ...[
-              const SizedBox(height: 20),
-              const _Eyebrow('02 / خطة التأطير', icon: Icons.center_focus_strong_rounded),
-              const SizedBox(height: 8),
-              Text(
-                'التأطير • ${reframePlan.shots.length} مقطع زمني • ${reframePlan.aspectRatio.toStringAsFixed(3)}',
-                style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                reframePlan.focusTrack == null
-                    ? 'وضع آمن: إظهار المشهد كاملاً. ${reframePlan.fallbackReason ?? ''}'
-                    : 'تتبّع وجه أمامي • ثقة ${(reframePlan.focusTrack!.averageConfidence * 100).round()}% • تغطية ${(reframePlan.focusTrack!.coverage * 100).round()}% • ${reframePlan.focusTrack!.keyframes.length} نقطة تركيز',
-                style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-              ),
-              const SizedBox(height: 4),
-              const Text(
-                'النسخة الحالية تتبع الوجه الأمامي فقط؛ لا تعتبر ذلك حكماً مؤكداً على المتحدث من الصوت والصورة.',
-                style: TextStyle(fontSize: 11),
-              ),
-            ],
-            if ((_exportRecords[project.id] ?? const []).isNotEmpty) ...[
-              const SizedBox(height: 20),
-              const _Eyebrow('03 / التصديرات', icon: Icons.video_file_rounded),
-              const SizedBox(height: 8),
-              Text('الملفات المصدّرة · ${_exportRecords[project.id]!.length}',
-                  style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800)),
-              for (final export in _exportRecords[project.id]!)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 7),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Padding(
-                        padding: EdgeInsets.only(top: 3),
-                        child: Icon(Icons.video_file_outlined, size: 20),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              export['displayName'] as String? ?? 'CUTAWAN export.mp4',
-                              style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
-                            ),
-                            const SizedBox(height: 3),
-                            Text(
-                              '${export['width']} × ${export['height']} · '
-                              '${_formatDuration((export['durationMs'] as num? ?? 0).toInt())} · '
-                              '${_formatBytes((export['sizeBytes'] as num? ?? 0).toInt())} · ${export['fullyDecodeValidated'] == true ? 'Full decode verified' : 'needs full-decode revalidation'}',
-                              style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-            ],
-            if (candidateSet != null) ...[
-              const SizedBox(height: 20),
-              const _Eyebrow('04 / المقاطع المقترحة', icon: Icons.auto_awesome_rounded),
-              const SizedBox(height: 8),
-              Text(
-                'الاقتراحات • ${candidateSet.candidates.length}',
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              Text(
-                'المحرك: ${candidateSet.rankingEngine} · لا توجد مقاطع مضافة لتلبية العدد المطلوب إذا لم توجد أدلة كافية.',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-              const SizedBox(height: 8),
+            ),
+            if (candidateSet == null)
+              _Panel(
+                child: Text('ستظهر المقاطع هنا بعد اكتمال التفريغ واكتشاف اللحظات المناسبة.',
+                    style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
+              )
+            else if (candidateSet.candidates.isEmpty)
+              _Panel(
+                child: Text('لم يعثر التحليل على مقاطع مكتملة ضمن المدة المحددة. لم تتم إضافة مقاطع وهمية.',
+                    style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
+              )
+            else ...[
+              Text('المحرك: ${candidateSet.rankingEngine}',
+                  style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
               for (final candidate in candidateSet.candidates)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 9),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Padding(
-                        padding: EdgeInsets.only(top: 3),
-                        child: Icon(Icons.movie_creation_outlined, size: 20),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                Card(
+                  key: ValueKey<String>('review-candidate-${candidate.id}'),
+                  margin: const EdgeInsets.only(top: 9),
+                  child: Padding(
+                    padding: const EdgeInsets.all(13),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
                           children: [
-                            Text(
-                              candidate.title.isEmpty ? 'مقطع مقترح' : candidate.title,
-                              style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
+                            Expanded(
+                              child: Text(
+                                candidate.title.isEmpty ? 'مقطع مقترح' : candidate.title,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
+                              ),
                             ),
-                            const SizedBox(height: 3),
-                            Text(
-                              '${_formatDuration(candidate.startMs)}–${_formatDuration(candidate.endMs)} · ${candidate.durationMs ~/ 1000}s · ${candidate.score.toStringAsFixed(0)}/100'
-                              '${candidate.modelAnnotated ? ' · وصف محلي' : ''}',
-                              style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              candidate.explanations.take(2).join(' · '),
-                              style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-                            ),
+                            Text('${candidate.score.toStringAsFixed(0)}/100',
+                                style: theme.textTheme.labelLarge?.copyWith(
+                                  color: scheme.primary,
+                                  fontWeight: FontWeight.w900,
+                                )),
                           ],
                         ),
-                      ),
-                      IconButton(
-                        key: ValueKey<String>('edit-clip-${candidate.id}'),
-                        tooltip: 'فتح محرر المقطع',
-                        onPressed: isBusy ? null : () => _openClipEditor(context, project, candidateSet, candidate),
-                        icon: const Icon(Icons.edit_outlined),
-                      ),
-                    ],
+                        const SizedBox(height: 6),
+                        Text(
+                          '${_formatDuration(candidate.startMs)} – ${_formatDuration(candidate.endMs)} · ${candidate.durationMs ~/ 1000} ثانية'
+                          '${candidate.modelAnnotated ? ' · تعليق النموذج' : ''}',
+                          style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+                        ),
+                        if (candidate.explanations.isNotEmpty) ...[
+                          const SizedBox(height: 5),
+                          Text(candidate.explanations.take(3).join(' · '),
+                              style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
+                        ],
+                        const SizedBox(height: 9),
+                        SizedBox(
+                          width: double.infinity,
+                          child: FilledButton.tonalIcon(
+                            key: ValueKey<String>('edit-clip-${candidate.id}'),
+                            onPressed: isBusy
+                                ? null
+                                : () => _openClipEditor(context, project, candidateSet, candidate),
+                            icon: const Icon(Icons.tune_rounded),
+                            label: const Text('فتح محرر هذا المقطع'),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
             ],
+            const SizedBox(height: 18),
+            const _Eyebrow('ملفات الإخراج', icon: Icons.video_file_rounded),
+            const SizedBox(height: 8),
+            Text('الفيديوهات المصدّرة',
+                style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900)),
+            if (exports.isEmpty)
+              _Panel(
+                child: Text('ستظهر هنا ملفات MP4 التي اجتازت فحص التحقق الكامل بعد التصدير.',
+                    style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
+              )
+            else
+              for (final export in exports)
+                Card(
+                  margin: const EdgeInsets.only(top: 8),
+                  child: Padding(
+                    padding: const EdgeInsets.all(13),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          export['fullyDecodeValidated'] == true
+                              ? Icons.verified_rounded
+                              : Icons.video_file_outlined,
+                          color: export['fullyDecodeValidated'] == true
+                              ? scheme.secondary
+                              : scheme.onSurfaceVariant,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                export['displayName'] as String? ?? 'CUTAWAN export.mp4',
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                '${export['width']} × ${export['height']} · '
+                                '${_formatDuration((export['durationMs'] as num? ?? 0).toInt())} · '
+                                '${_formatBytes((export['sizeBytes'] as num? ?? 0).toInt())}',
+                                style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                export['fullyDecodeValidated'] == true
+                                    ? 'تم التحقق من فك MP4 حتى نهاية الملف'
+                                    : 'يحتاج الملف إلى إعادة التحقق من فك الترميز',
+                                style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
           ],
         ),
       ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    return ValueListenableBuilder<List<CutawanProject>>(
+      valueListenable: widget.projects,
+      builder: (context, items, _) {
+        final completed = items.where((item) => item.job.status == ProjectJobStatus.completed).length;
+        final reviewable = _candidateSets.values.where((value) => value != null).length;
+        return ListView(
+          key: const ValueKey('review-workflow-list'),
+          padding: const EdgeInsets.fromLTRB(16, 20, 16, 132),
+          children: [
+            const _Eyebrow('مساحة العمل / المراجعة', icon: Icons.movie_filter_rounded),
+            const SizedBox(height: 8),
+            Text('راجع النتائج قبل إخراجها',
+                style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900)),
+            const SizedBox(height: 6),
+            Text(
+              'تابع تقدم التحليل، افحص المقاطع المكتشفة، ثم افتح المحرر عند الحاجة.',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: scheme.onSurfaceVariant,
+                height: 1.45,
+              ),
+            ),
+            if (items.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final gap = 8.0;
+                  final columns = constraints.maxWidth < 360 ? 2 : 3;
+                  final width = (constraints.maxWidth - gap * (columns - 1)) / columns;
+                  return Wrap(
+                    spacing: gap,
+                    runSpacing: gap,
+                    children: [
+                      SizedBox(width: width, child: _MetricCard(label: 'المشاريع', value: '${items.length}', icon: Icons.video_library_outlined)),
+                      SizedBox(width: width, child: _MetricCard(label: 'للمراجعة', value: '${reviewable}', icon: Icons.movie_filter_outlined)),
+                      SizedBox(width: width, child: _MetricCard(label: 'مكتملة', value: '${completed}', icon: Icons.check_circle_outline_rounded)),
+                    ],
+                  );
+                },
+              ),
+            ],
+            const SizedBox(height: 18),
+            if (items.isEmpty)
+              const _EmptyState(
+                icon: Icons.video_collection_outlined,
+                title: 'لا توجد مشاريع للمراجعة',
+                description: 'أنشئ مشروعًا أولاً. ستظهر هنا مراحل التحليل والمقاطع والملفات الناتجة.',
+              )
+            else
+              for (final project in items) _projectCard(context, project),
+            if (_lastError != null) ...[
+              const SizedBox(height: 8),
+              _StatusNote(text: _lastError!),
+            ],
+          ],
+        );
+      },
     );
   }
 }
