@@ -117,7 +117,7 @@ void main() {
       );
       await tester.tap(find.byKey(const ValueKey('caption-animation-fade')));
       await tester.pump(const Duration(milliseconds: 50));
-      expect(find.textContaining('للمعاينة فقط'), findsWidgets);
+      expect(find.textContaining('مثال بصري فقط؛ سيحفظ تأثير التصدير على Static.'), findsOneWidget);
 
       await tester.scrollUntilVisible(
         find.byKey(const ValueKey('caption-timing-offset-label')),
