@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import '../domain/caption_catalog.dart';
+import '../domain/clip_edit_overrides.dart';
 import '../domain/clip_preferences.dart';
 import '../domain/project_contract.dart';
 import 'android_video_picker.dart';
@@ -173,6 +174,14 @@ class ProcessingPipelineService {
           'style': project.preferences.captionStyleId,
           'animation': project.preferences.captionAnimationId,
           'aspectRatio': _aspectRatio(project),
+          'fontFamily': project.preferences.captionFontFamily,
+          'fontScale': project.preferences.captionFontScale,
+          'positionY': project.preferences.captionPositionY,
+          'textColor': project.preferences.mainTextColor,
+          'highlightColor': project.preferences.highlightColor,
+          'uppercase': project.preferences.captionUppercase,
+          'bold': project.preferences.captionBold,
+          'timingOffsetMs': project.preferences.captionTimingOffsetMs,
           'candidates': candidates.candidates
               .map((item) => item.toJson())
               .toList(growable: false),
@@ -187,10 +196,7 @@ class ProcessingPipelineService {
         await _jobs.setStage(projectId, stage: 'captioning', progress: 0.60);
         onProgress?.call('captioning', 0.60);
         if (project.preferences.captionsEnabled) {
-          final style = captionStylePresets.firstWhere(
-            (preset) => preset.id == project.preferences.captionStyleId,
-            orElse: () => captionStylePresets.first,
-          );
+          final style = _resolveCaptionStyle(project.preferences);
           for (final candidate in candidates.candidates) {
             final generated = _captions.generate(
               transcript: transcript,
@@ -198,6 +204,7 @@ class ProcessingPipelineService {
               style: style,
               aspectRatio: _aspectRatio(project),
               animationId: project.preferences.captionAnimationId,
+              timingOffsetMs: project.preferences.captionTimingOffsetMs,
             );
             if (generated.srt.isEmpty || generated.ass.isEmpty) {
               throw StateError('Subtitle generation returned no timed words for ${candidate.id}.');
@@ -244,10 +251,7 @@ class ProcessingPipelineService {
 
       final captionCuesByClip = <String, List<Map<String, Object?>>>{};
       final captionStyle = project.preferences.captionsEnabled
-          ? captionStylePresets.firstWhere(
-              (preset) => preset.id == project.preferences.captionStyleId,
-              orElse: () => captionStylePresets.first,
-            )
+          ? _resolveCaptionStyle(project.preferences)
           : null;
       final captionStylePayload = captionStyle == null
           ? null
@@ -272,6 +276,7 @@ class ProcessingPipelineService {
             style: captionStyle,
             aspectRatio: _aspectRatio(project),
             animationId: project.preferences.captionAnimationId,
+            timingOffsetMs: project.preferences.captionTimingOffsetMs,
           );
           if (generated.cues.isEmpty) {
             throw StateError('Caption overlay cues are missing for ${candidate.id}.');
@@ -287,35 +292,53 @@ class ProcessingPipelineService {
       for (var index = 0; index < total; index++) {
         final candidate = candidates.candidates[index];
         final stageName = 'render_${candidate.id}';
-        final clipReframeShots = reframe.shots
-            .where((shot) =>
-                shot.endMs > candidate.startMs &&
-                shot.startMs < candidate.endMs)
-            .map((shot) {
-          final clippedStart =
-              shot.startMs > candidate.startMs ? shot.startMs : candidate.startMs;
-          final clippedEnd =
-              shot.endMs < candidate.endMs ? shot.endMs : candidate.endMs;
-          return <String, Object?>{
-            'startMs': clippedStart - candidate.startMs,
-            'endMs': clippedEnd - candidate.startMs,
-            'mode': shot.mode,
-            'region': shot.region?.toJson(),
-          };
-        }).toList(growable: false);
         final sourceAspectRatio = _sourceAspectRatio(project);
+        final targetAspectRatio = _aspectRatio(project);
+        final clipEdit = await _repository.loadClipEditOverrides(
+              projectId,
+              candidate.id,
+            ) ??
+            ClipEditOverrides(clipId: candidate.id);
+        final manualShots = clipEdit.toExportShots(
+          durationMs: candidate.durationMs,
+          sourceAspectRatio: sourceAspectRatio,
+          targetAspectRatio: targetAspectRatio,
+        );
+        final clipReframeShots = manualShots.isNotEmpty
+            ? manualShots
+            : reframe.shots
+                .where((shot) =>
+                    shot.endMs > candidate.startMs &&
+                    shot.startMs < candidate.endMs)
+                .map((shot) {
+                  final clippedStart = shot.startMs > candidate.startMs
+                      ? shot.startMs
+                      : candidate.startMs;
+                  final clippedEnd = shot.endMs < candidate.endMs
+                      ? shot.endMs
+                      : candidate.endMs;
+                  return <String, Object?>{
+                    'startMs': clippedStart - candidate.startMs,
+                    'endMs': clippedEnd - candidate.startMs,
+                    'mode': shot.mode,
+                    'region': shot.region?.toJson(),
+                  };
+                }).toList(growable: false);
         final fingerprint = _jobs.stageFingerprint(
           sourceSha256: sourceSha,
           stage: stageName,
           configuration: {
             'candidate': candidate.toJson(),
-            'aspectRatio': _aspectRatio(project),
+            'aspectRatio': targetAspectRatio,
             'sourceAspectRatio': sourceAspectRatio,
             'reframeShots': clipReframeShots,
+            'clipEditOverrides': clipEdit.toJson(),
             'resolution': project.preferences.resolution,
             'renderer': 'androidx-media3-transformer-1.11.1-reframe-v1',
             'subtitleStyle': project.preferences.captionStyleId,
             'subtitleAnimation': project.preferences.captionAnimationId,
+            'captionStyle': captionStylePayload,
+            'captionTimingOffsetMs': project.preferences.captionTimingOffsetMs,
             'captionCues': captionCuesByClip[candidate.id] ?? const [],
             'captionRenderer': 'media3-canvas-overlay-rtl-v1',
           },
@@ -543,6 +566,33 @@ class ProcessingPipelineService {
         stage: stage,
         progress: progress.clamp(0.0, 0.99).toDouble(),
       ).then<void>((_) {}, onError: (Object _) {}),
+    );
+  }
+
+  static CaptionStylePreset _resolveCaptionStyle(ClipPreferences preferences) {
+    final base = captionStylePresets.firstWhere(
+      (preset) => preset.id == preferences.captionStyleId,
+      orElse: () => captionStylePresets.first,
+    );
+    return CaptionStylePreset(
+      id: base.id,
+      name: base.name,
+      fontFamily: preferences.captionFontFamily ?? base.fontFamily,
+      fontScale: preferences.captionFontScale > 0
+          ? preferences.captionFontScale
+          : base.fontScale,
+      uppercase: preferences.captionUppercase ?? base.uppercase,
+      textColor: preferences.mainTextColor,
+      highlightColor: preferences.highlightColor,
+      highlightBoxColor: base.highlightBoxColor,
+      outlineColor: base.outlineColor,
+      outlineWidth: base.outlineWidth,
+      shadow: base.shadow,
+      bold: preferences.captionBold ?? base.bold,
+      positionY: preferences.captionPositionY >= 0
+          ? preferences.captionPositionY
+          : base.positionY,
+      wordsPerGroup: base.wordsPerGroup,
     );
   }
 

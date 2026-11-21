@@ -1,270 +1,1183 @@
 import 'dart:async';
 import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
+
+import '../../domain/caption_catalog.dart';
 import '../../domain/clip_candidate.dart';
+import '../../domain/clip_edit_overrides.dart';
 import '../../domain/clip_preferences.dart';
 import '../../domain/project_contract.dart';
+import '../../domain/reframe_contract.dart';
+import '../../domain/transcript_contract.dart';
+import '../../services/caption_sidecar_generator.dart';
 import '../../services/local_project_repository.dart';
 
 class ClipEditorPage extends StatefulWidget {
-  const ClipEditorPage({required this.project,required this.candidateSet,required this.candidate,required this.repository,required this.onSaved,super.key});
+  const ClipEditorPage({
+    required this.project,
+    required this.candidateSet,
+    required this.candidate,
+    required this.repository,
+    required this.onSaved,
+    super.key,
+  });
+
   final CutawanProject project;
   final CandidateSet candidateSet;
   final ClipCandidate candidate;
   final LocalProjectRepository repository;
   final Future<void> Function() onSaved;
+
   @override
-  State<ClipEditorPage> createState()=>_ClipEditorPageState();
+  State<ClipEditorPage> createState() => _ClipEditorPageState();
 }
 
-class _ClipEditorPageState extends State<ClipEditorPage>{
+class _ClipEditorPageState extends State<ClipEditorPage> {
   VideoPlayerController? _player;
   late final TextEditingController _titleController;
   late int _startMs;
   late int _endMs;
-  late ClipAspectRatio _aspectRatio;
-  bool _loading=true;
-  bool _saving=false;
-  bool _handlingBoundary=false;
+  late ClipPreferences _draftPreferences;
+  ClipFramingMode _framingMode = ClipFramingMode.automatic;
+  double _focusX = 0.5;
+  double _focusY = 0.5;
+  CutawanTranscript? _transcript;
+  ReframePlan? _reframePlan;
+  List<Map<String, Object?>> _previewCues = const [];
+  bool _loading = true;
+  bool _loadingArtifacts = true;
+  bool _artifactLoadFailed = false;
+  bool _saving = false;
+  bool _handlingBoundary = false;
   String? _error;
+  String? _captionPreviewError;
 
   @override
-  void initState(){
+  void initState() {
     super.initState();
-    _startMs=widget.candidate.startMs;
-    _endMs=widget.candidate.endMs;
-    _aspectRatio=widget.project.preferences.aspectRatio;
-    _titleController=TextEditingController(text:widget.candidate.title);
+    _startMs = widget.candidate.startMs;
+    _endMs = widget.candidate.endMs;
+    _draftPreferences = widget.project.preferences;
+    _titleController = TextEditingController(text: widget.candidate.title);
     unawaited(_initializePlayer());
+    unawaited(_loadEditorArtifacts());
   }
 
-  Future<void> _initializePlayer() async{
+  Future<void> _initializePlayer() async {
     VideoPlayerController? controller;
-    try{
-      final uri=Uri.parse(widget.project.source.uri);
-      controller=switch(uri.scheme){
-        'content'=>VideoPlayerController.contentUri(uri),
-        'file'=>VideoPlayerController.file(File.fromUri(uri)),
-        'http'||'https'=>VideoPlayerController.networkUrl(uri),
-        _=>throw FormatException('مصدر الفيديو غير مدعوم للمعاينة: ${uri.scheme}'),
+    try {
+      final uri = Uri.parse(widget.project.source.uri);
+      controller = switch (uri.scheme) {
+        'content' => VideoPlayerController.contentUri(uri),
+        'file' => VideoPlayerController.file(File.fromUri(uri)),
+        'http' || 'https' => VideoPlayerController.networkUrl(uri),
+        _ => throw FormatException('مصدر الفيديو غير مدعوم للمعاينة: ' + uri.scheme),
       };
       await controller.initialize();
       await controller.setLooping(false);
-      final duration=controller.value.duration.inMilliseconds;
-      if (duration < 500) { throw StateError('مدة الفيديو أقصر من أن تسمح بإنشاء مقطع صالح.'); }
-      _startMs=_startMs.clamp(0,duration-1).toInt();
-      _endMs=_endMs.clamp(_startMs+1,duration).toInt();
-      if (_endMs - _startMs < 500) { _endMs = (_startMs + 500).clamp(500, duration).toInt(); }
+      final duration = controller.value.duration.inMilliseconds;
+      if (duration < 500) {
+        throw StateError('مدة الفيديو أقصر من أن تسمح بإنشاء مقطع صالح.');
+      }
+      _startMs = _startMs.clamp(0, duration - 1).toInt();
+      _endMs = _endMs.clamp(_startMs + 1, duration).toInt();
+      if (_endMs - _startMs < 500) {
+        _startMs = (_endMs - 500).clamp(0, duration - 500).toInt();
+        _endMs = _startMs + 500;
+      }
       controller.addListener(_handlePlaybackBoundary);
-      await controller.seekTo(Duration(milliseconds:_startMs));
-      if(!mounted){await controller.dispose();return;}
-      setState(()=>_player=controller);
-      setState(()=>_loading=false);
-    }catch(error){
+      await controller.seekTo(Duration(milliseconds: _startMs));
+      if (!mounted) {
+        await controller.dispose();
+        return;
+      }
+      setState(() {
+        _player = controller;
+        _loading = false;
+        _rebuildPreviewCues();
+      });
+    } catch (error) {
       await controller?.dispose();
-      if (!mounted) { return; }
-      setState(()=>_error=error.toString());
-      setState(()=>_loading=false);
+      if (!mounted) return;
+      setState(() {
+        _error = error.toString();
+        _loading = false;
+      });
     }
   }
 
-  void _handlePlaybackBoundary(){
-    final player=_player;
-    if (!mounted || player == null || !player.value.isInitialized || !player.value.isPlaying || _handlingBoundary) { return; }
-    if (player.value.position.inMilliseconds < _endMs) { return; }
-    _handlingBoundary=true;
-    unawaited(player.pause().then((_)=>player.seekTo(Duration(milliseconds:_startMs))).whenComplete(()=>_handlingBoundary=false));
-  }
-
-  Future<void> _togglePlayback() async{
-    final player=_player;
-    if (player == null || !player.value.isInitialized) { return; }
-    if(player.value.isPlaying){await player.pause();}
-    else{
-      final position=player.value.position.inMilliseconds;
-      if (position < _startMs || position >= _endMs) { await player.seekTo(Duration(milliseconds: _startMs)); }
-      await player.play();
+  Future<void> _loadEditorArtifacts() async {
+    try {
+      final transcript = await widget.repository.loadTranscript(widget.project.id);
+      final plan = await widget.repository.loadReframePlan(widget.project.id);
+      final overrides = await widget.repository.loadClipEditOverrides(
+        widget.project.id,
+        widget.candidate.id,
+      );
+      if (!mounted) return;
+      setState(() {
+        _transcript = transcript;
+        _reframePlan = plan;
+        if (overrides != null) {
+          _framingMode = overrides.framingMode;
+          _focusX = overrides.focusX;
+          _focusY = overrides.focusY;
+        }
+        _loadingArtifacts = false;
+      });
+      _rebuildPreviewCues();
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _loadingArtifacts = false;
+        _artifactLoadFailed = true;
+        _captionPreviewError = 'تعذّر تحميل أدلة الترجمة أو التأطير: ' + error.toString();
+      });
     }
   }
 
-  Future<void> _seekTo(int milliseconds) async{
-    final player=_player;
-    if (player == null || !player.value.isInitialized) { return; }
-    await player.seekTo(Duration(milliseconds:milliseconds.clamp(_startMs,_endMs).toInt()));
-  }
-
-  void _updateTrim(RangeValues values){
-    final player=_player;
-    if (player == null || !player.value.isInitialized) { return; }
-    final duration=player.value.duration.inMilliseconds;
-    if (duration < 500) { return; }
-    var start=values.start.round().clamp(0,duration-1).toInt();
-    var end=values.end.round().clamp(1,duration).toInt();
-    if(end-start<500){
-      if(start+500<=duration){end=start+500;}
-      else{start=(end-500).clamp(0,duration-1).toInt();}
-    }
-    setState(() { _startMs = start; _endMs = end; });
-  }
-
-  double _targetAspectRatio()=>switch(_aspectRatio){
-    ClipAspectRatio.portrait916=>9/16,
-    ClipAspectRatio.square11=>1,
-    ClipAspectRatio.landscape169=>16/9,
-    ClipAspectRatio.original=>_player?.value.aspectRatio??9/16,
-  };
-
-  Future<void> _saveEdits() async{
-    if (_saving) { return; }
-    final player=_player;
-    if (player == null || !player.value.isInitialized) { return; }
-    final duration=player.value.duration.inMilliseconds;
-    if(_startMs<0||_endMs<=_startMs||_endMs>duration||_endMs-_startMs<500){
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('نطاق القص غير صالح.')));
+  void _rebuildPreviewCues() {
+    final transcript = _transcript;
+    if (transcript == null ||
+        !transcript.wordTimingReliable ||
+        !_draftPreferences.captionsEnabled) {
+      _previewCues = const [];
+      _captionPreviewError = null;
       return;
     }
-    setState(()=>_saving=true);
-    try{
-      final title=_titleController.text.trim();
-      final editedCandidate=widget.candidate.copyWith(
-        startMs:_startMs,endMs:_endMs,
-        title:title.isEmpty?widget.candidate.title:title,
+    try {
+      final candidate = widget.candidate.copyWith(
+        startMs: _startMs,
+        endMs: _endMs,
       );
-      final editedSet=widget.candidateSet.copyWith(
-        candidates:widget.candidateSet.candidates.map((item)=>item.id==editedCandidate.id?editedCandidate:item).toList(growable:false),
+      final generated = const CaptionSidecarGenerator().generate(
+        transcript: transcript,
+        candidate: candidate,
+        style: _resolvedCaptionStyle,
+        aspectRatio: _targetAspectRatio(),
+        animationId: _draftPreferences.captionAnimationId,
+        timingOffsetMs: _draftPreferences.captionTimingOffsetMs,
       );
-      editedSet.validate();
-      final updatedProject=widget.project.copyWith(
-        preferences:widget.project.preferences.copyWith(aspectRatio:_aspectRatio),
-        updatedAtUtc:DateTime.now().toUtc(),
-      );
-      await widget.repository.saveCandidates(widget.project.id,editedSet);
-      await widget.repository.save(updatedProject);
-      await widget.onSaved();
-      if (!mounted) { return; }
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('حُفظت حدود المقطع ونسبة الإخراج. أعد تشغيل مسار المعالجة لتحديث التصدير.')));
-      Navigator.of(context).pop();
-    }catch(error){
-      if (mounted) { ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تعذّر حفظ تعديلات المقطع: $error'))); }
-    }finally{
-      if (mounted) { setState(() => _saving = false); }
+      _previewCues = generated.cues;
+      _captionPreviewError = generated.cues.isEmpty
+          ? 'لا توجد كلمات ذات توقيت موثوق داخل نطاق هذا المقطع.'
+          : null;
+    } catch (error) {
+      _previewCues = const [];
+      _captionPreviewError = 'تعذّرت معاينة الترجمة: ' + error.toString();
     }
   }
 
-  String _formatTime(int milliseconds){
-    final value=milliseconds<0?0:milliseconds;
-    final minutes=value~/60000;
-    final seconds=(value%60000)~/1000;
-    final tenths=(value%1000)~/100;
-    return '${minutes.toString().padLeft(2,'0')}:${seconds.toString().padLeft(2,'0')}.$tenths';
+  CaptionStylePreset get _baseCaptionStyle => captionStylePresets.firstWhere(
+        (style) => style.id == _draftPreferences.captionStyleId,
+        orElse: () => captionStylePresets.first,
+      );
+
+  CaptionStylePreset get _resolvedCaptionStyle {
+    final base = _baseCaptionStyle;
+    return CaptionStylePreset(
+      id: base.id,
+      name: base.name,
+      fontFamily: _draftPreferences.captionFontFamily ?? base.fontFamily,
+      fontScale: _draftPreferences.captionFontScale > 0
+          ? _draftPreferences.captionFontScale
+          : base.fontScale,
+      uppercase: _draftPreferences.captionUppercase ?? base.uppercase,
+      textColor: _draftPreferences.mainTextColor,
+      highlightColor: _draftPreferences.highlightColor,
+      highlightBoxColor: base.highlightBoxColor,
+      outlineColor: base.outlineColor,
+      outlineWidth: base.outlineWidth,
+      shadow: base.shadow,
+      bold: _draftPreferences.captionBold ?? base.bold,
+      positionY: _draftPreferences.captionPositionY >= 0
+          ? _draftPreferences.captionPositionY
+          : base.positionY,
+      wordsPerGroup: base.wordsPerGroup,
+    );
+  }
+
+  void _updatePreferences(ClipPreferences preferences) {
+    setState(() {
+      _draftPreferences = preferences;
+      _rebuildPreviewCues();
+    });
+  }
+
+  void _handlePlaybackBoundary() {
+    final player = _player;
+    if (!mounted ||
+        player == null ||
+        !player.value.isInitialized ||
+        !player.value.isPlaying ||
+        _handlingBoundary) {
+      return;
+    }
+    if (player.value.position.inMilliseconds < _endMs) return;
+    _handlingBoundary = true;
+    unawaited(
+      player
+          .pause()
+          .then((_) => player.seekTo(Duration(milliseconds: _startMs)))
+          .catchError((Object _) {})
+          .whenComplete(() => _handlingBoundary = false),
+    );
+  }
+
+  Future<void> _togglePlayback() async {
+    final player = _player;
+    if (player == null || !player.value.isInitialized) return;
+    if (player.value.isPlaying) {
+      await player.pause();
+      return;
+    }
+    final position = player.value.position.inMilliseconds;
+    if (position < _startMs || position >= _endMs) {
+      await player.seekTo(Duration(milliseconds: _startMs));
+    }
+    await player.play();
+  }
+
+  Future<void> _seekTo(int milliseconds) async {
+    final player = _player;
+    if (player == null || !player.value.isInitialized) return;
+    await player.seekTo(
+      Duration(milliseconds: milliseconds.clamp(_startMs, _endMs).toInt()),
+    );
+  }
+
+  void _updateTrim(RangeValues values) {
+    final player = _player;
+    if (player == null || !player.value.isInitialized) return;
+    final duration = player.value.duration.inMilliseconds;
+    if (duration < 500) return;
+    var start = values.start.round().clamp(0, duration - 1).toInt();
+    var end = values.end.round().clamp(1, duration).toInt();
+    if (end - start < 500) {
+      if (start + 500 <= duration) {
+        end = start + 500;
+      } else {
+        start = (end - 500).clamp(0, duration - 1).toInt();
+      }
+    }
+    setState(() {
+      _startMs = start;
+      _endMs = end;
+      _rebuildPreviewCues();
+    });
+  }
+
+  Future<void> _markTrimStart() async {
+    final player = _player;
+    if (player == null) return;
+    final value = player.value.position.inMilliseconds.clamp(0, _endMs - 500).toInt();
+    setState(() {
+      _startMs = value;
+      _rebuildPreviewCues();
+    });
+    await _seekTo(_startMs);
+  }
+
+  Future<void> _markTrimEnd() async {
+    final player = _player;
+    if (player == null) return;
+    final duration = player.value.duration.inMilliseconds;
+    final value = player.value.position.inMilliseconds
+        .clamp(_startMs + 500, duration)
+        .toInt();
+    setState(() {
+      _endMs = value;
+      _rebuildPreviewCues();
+    });
+    await _seekTo(_endMs);
+  }
+
+  double _targetAspectRatio() => switch (_draftPreferences.aspectRatio) {
+        ClipAspectRatio.portrait916 => 9 / 16,
+        ClipAspectRatio.square11 => 1,
+        ClipAspectRatio.landscape169 => 16 / 9,
+        ClipAspectRatio.original => _player?.value.aspectRatio ?? 9 / 16,
+      };
+
+  ReframeShot? _activeAutomaticShot(int sourcePositionMs) {
+    final plan = _reframePlan;
+    if (plan == null ||
+        (plan.aspectRatio - _targetAspectRatio()).abs() > _targetAspectRatio() * 0.03) {
+      return null;
+    }
+    for (final shot in plan.shots) {
+      if (sourcePositionMs >= shot.startMs && sourcePositionMs < shot.endMs) {
+        return shot;
+      }
+    }
+    return null;
+  }
+
+  BoxFit _previewFit(int sourcePositionMs) {
+    if (_framingMode == ClipFramingMode.fullFrame) return BoxFit.contain;
+    if (_framingMode == ClipFramingMode.manualFocus) return BoxFit.cover;
+    final shot = _activeAutomaticShot(sourcePositionMs);
+    if (shot == null || shot.mode == 'fit') return BoxFit.contain;
+    return BoxFit.cover;
+  }
+
+  Alignment _previewAlignment(int sourcePositionMs) {
+    if (_framingMode == ClipFramingMode.manualFocus) {
+      return Alignment(_focusX * 2 - 1, _focusY * 2 - 1);
+    }
+    final shot = _framingMode == ClipFramingMode.automatic
+        ? _activeAutomaticShot(sourcePositionMs)
+        : null;
+    final region = shot?.region;
+    if (region == null) return Alignment.center;
+    final centerX = region.x + region.width / 2;
+    final centerY = region.y + region.height / 2;
+    return Alignment(centerX * 2 - 1, centerY * 2 - 1);
+  }
+
+  Map<String, Object?>? _activeCaptionCue(int sourcePositionMs) {
+    final clipPosition = sourcePositionMs - _startMs;
+    for (final cue in _previewCues) {
+      final start = cue['startMs'];
+      final end = cue['endMs'];
+      if (start is int && end is int && clipPosition >= start && clipPosition < end) {
+        return cue;
+      }
+    }
+    return null;
+  }
+
+  Widget _captionOverlay(int sourcePositionMs, BuildContext context) {
+    if (!_draftPreferences.captionsEnabled) return const SizedBox.shrink();
+    final cue = _activeCaptionCue(sourcePositionMs);
+    if (cue == null) return const SizedBox.shrink();
+    final text = cue['text'] as String? ?? '';
+    final rawWords = cue['words'];
+    if (text.isEmpty || rawWords is! List) return const SizedBox.shrink();
+
+    final style = _resolvedCaptionStyle;
+    final localPosition = sourcePositionMs - _startMs;
+    final spans = <TextSpan>[];
+    var cursor = 0;
+    final words = rawWords.whereType<Map>().toList(growable: false)
+      ..sort((a, b) => ((a['startOffset'] as num?)?.toInt() ?? 0)
+          .compareTo((b['startOffset'] as num?)?.toInt() ?? 0));
+    for (final word in words) {
+      final startOffset = (word['startOffset'] as num?)?.toInt() ?? -1;
+      final endOffset = (word['endOffset'] as num?)?.toInt() ?? -1;
+      final startMs = (word['startMs'] as num?)?.toInt() ?? -1;
+      final endMs = (word['endMs'] as num?)?.toInt() ?? -1;
+      if (startOffset < cursor ||
+          endOffset <= startOffset ||
+          endOffset > text.length) {
+        continue;
+      }
+      if (startOffset > cursor) {
+        spans.add(TextSpan(text: text.substring(cursor, startOffset)));
+      }
+      final active = localPosition >= startMs && localPosition < endMs;
+      spans.add(TextSpan(
+        text: text.substring(startOffset, endOffset),
+        style: TextStyle(
+          color: active ? _parseColor(style.highlightColor) : _parseColor(style.textColor),
+          fontWeight: style.bold ? FontWeight.w900 : FontWeight.w600,
+        ),
+      ));
+      cursor = endOffset;
+    }
+    if (cursor < text.length) {
+      spans.add(TextSpan(text: text.substring(cursor)));
+    }
+
+    final arabic = (_transcript?.language.toLowerCase().startsWith('ar') ?? false) ||
+        RegExp(r'[\u0600-\u06FF]').hasMatch(text);
+    final fontSize = (MediaQuery.sizeOf(context).width * style.fontScale * 1.45)
+        .clamp(13.0, 34.0)
+        .toDouble();
+    final background = style.highlightBoxColor == null
+        ? Colors.black.withValues(alpha: 0.62)
+        : _parseColor(style.highlightBoxColor!).withValues(alpha: 0.90);
+    return Align(
+      alignment: Alignment(
+        0,
+        (style.positionY.clamp(0.55, 0.93) * 2) - 1,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: background,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+            child: Directionality(
+              textDirection: arabic ? TextDirection.rtl : TextDirection.ltr,
+              child: RichText(
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                text: TextSpan(
+                  style: TextStyle(
+                    fontFamily: style.fontFamily,
+                    fontSize: fontSize,
+                    fontWeight: style.bold ? FontWeight.w900 : FontWeight.w600,
+                    color: _parseColor(style.textColor),
+                    shadows: const [
+                      Shadow(color: Colors.black54, blurRadius: 4, offset: Offset(0, 2)),
+                    ],
+                  ),
+                  children: spans,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Color _parseColor(String hex) {
+    final value = hex.replaceFirst('#', '');
+    return Color(int.parse('FF' + value, radix: 16));
+  }
+
+  String _formatTime(int milliseconds) {
+    final value = milliseconds < 0 ? 0 : milliseconds;
+    final minutes = value ~/ 60000;
+    final seconds = (value % 60000) ~/ 1000;
+    final tenths = (value % 1000) ~/ 100;
+    return minutes.toString().padLeft(2, '0') +
+        ':' +
+        seconds.toString().padLeft(2, '0') +
+        '.' +
+        tenths.toString();
+  }
+
+  String _ratioLabel(ClipAspectRatio ratio) => switch (ratio) {
+        ClipAspectRatio.portrait916 => '9:16',
+        ClipAspectRatio.square11 => '1:1',
+        ClipAspectRatio.landscape169 => '16:9',
+        ClipAspectRatio.original => 'الأصلية',
+      };
+
+  String _framingLabel(ClipFramingMode mode) => switch (mode) {
+        ClipFramingMode.automatic => 'تلقائي',
+        ClipFramingMode.fullFrame => 'الإطار كاملاً',
+        ClipFramingMode.manualFocus => 'تركيز يدوي',
+      };
+
+  Future<void> _saveEdits() async {
+    if (_saving) return;
+    final player = _player;
+    if (player == null || !player.value.isInitialized) return;
+    final duration = player.value.duration.inMilliseconds;
+    if (_startMs < 0 ||
+        _endMs <= _startMs ||
+        _endMs > duration ||
+        _endMs - _startMs < 500) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('نطاق القص غير صالح.')),
+      );
+      return;
+    }
+
+    final editedCandidate = widget.candidate.copyWith(
+      startMs: _startMs,
+      endMs: _endMs,
+      title: _titleController.text.trim().isEmpty
+          ? widget.candidate.title
+          : _titleController.text.trim(),
+    );
+    final editedSet = widget.candidateSet.copyWith(
+      candidates: widget.candidateSet.candidates
+          .map((item) => item.id == editedCandidate.id ? editedCandidate : item)
+          .toList(growable: false),
+    );
+    final preferences = _draftPreferences.copyWith(
+      aspectRatio: _draftPreferences.aspectRatio,
+    );
+    final preferencesError = preferences.validate();
+    if (preferencesError != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('إعدادات التصدير غير صالحة: ' + preferencesError)),
+      );
+      return;
+    }
+    editedSet.validate();
+    final overrides = ClipEditOverrides(
+      clipId: widget.candidate.id,
+      framingMode: _framingMode,
+      focusX: _focusX,
+      focusY: _focusY,
+    );
+    overrides.validate();
+
+    setState(() => _saving = true);
+    try {
+      final updatedProject = widget.project.copyWith(
+        preferences: preferences,
+        updatedAtUtc: DateTime.now().toUtc(),
+      );
+      await widget.repository.saveCandidates(widget.project.id, editedSet);
+      await widget.repository.saveClipEditOverrides(widget.project.id, overrides);
+      await widget.repository.save(updatedProject);
+      await widget.onSaved();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('حُفظت تعديلات المقطع والتأطير والترجمة. أعد تشغيل المعالجة لتحديث ملف التصدير.'),
+        ),
+      );
+      Navigator.of(context).pop();
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('تعذّر حفظ تعديلات المقطع: ' + error.toString())),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  Widget _sectionPanel({
+    required BuildContext context,
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required Widget child,
+  }) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    return Container(
+      margin: const EdgeInsets.only(top: 14),
+      padding: const EdgeInsets.all(15),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.75)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: scheme.primary.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: scheme.primary, size: 19),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w900)),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          child,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPreview(BuildContext context, VideoPlayerValue value) {
+    final player = _player!;
+    final size = value.size;
+    final sourcePosition = value.position.inMilliseconds;
+    return _sectionPanel(
+      context: context,
+      title: 'معاينة المقطع',
+      subtitle: 'المقطع المحدد · ' + _formatTime(_startMs) + ' — ' + _formatTime(_endMs),
+      icon: Icons.play_circle_outline_rounded,
+      child: Column(
+        children: [
+          Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 420),
+              child: AspectRatio(
+                aspectRatio: _targetAspectRatio(),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: ColoredBox(
+                    color: Colors.black,
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        FittedBox(
+                          fit: _previewFit(sourcePosition),
+                          alignment: _previewAlignment(sourcePosition),
+                          child: SizedBox(
+                            width: size.width > 0 ? size.width : 16,
+                            height: size.height > 0 ? size.height : 9,
+                            child: VideoPlayer(player),
+                          ),
+                        ),
+                        _captionOverlay(sourcePosition, context),
+                        Positioned(
+                          top: 10,
+                          right: 10,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.58),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              _ratioLabel(_draftPreferences.aspectRatio),
+                              style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w800),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              IconButton.filledTonal(
+                tooltip: value.isPlaying ? 'إيقاف مؤقت' : 'تشغيل',
+                onPressed: _togglePlayback,
+                icon: Icon(value.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  _formatTime(sourcePosition.clamp(_startMs, _endMs).toInt()) +
+                      ' / ' +
+                      _formatTime(_endMs),
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w800),
+                ),
+              ),
+              IconButton(
+                tooltip: 'العودة إلى بداية المقطع',
+                onPressed: () => _seekTo(_startMs),
+                icon: const Icon(Icons.first_page_rounded),
+              ),
+              IconButton(
+                tooltip: 'الانتقال إلى نهاية المقطع',
+                onPressed: () => _seekTo(_endMs),
+                icon: const Icon(Icons.last_page_rounded),
+              ),
+            ],
+          ),
+          Slider(
+            value: sourcePosition.clamp(_startMs, _endMs).toDouble(),
+            min: _startMs.toDouble(),
+            max: _endMs.toDouble(),
+            onChanged: (value) => _seekTo(value.round()),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTrimPanel(BuildContext context, int duration) {
+    final theme = Theme.of(context);
+    return _sectionPanel(
+      context: context,
+      title: 'تحديد المدة',
+      subtitle: 'اسحب نقطتي البداية والنهاية أو ثبّتهما من موضع التشغيل الحالي.',
+      icon: Icons.content_cut_rounded,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          RangeSlider(
+            values: RangeValues(_startMs.toDouble(), _endMs.toDouble()),
+            min: 0,
+            max: duration.toDouble(),
+            divisions: (duration ~/ 250).clamp(1, 1200).toInt(),
+            labels: RangeLabels(_formatTime(_startMs), _formatTime(_endMs)),
+            onChangeStart: (_) {
+              final player = _player;
+              if (player?.value.isPlaying ?? false) unawaited(player!.pause());
+            },
+            onChanged: _updateTrim,
+            onChangeEnd: (_) {
+              final current = _player?.value.position.inMilliseconds ?? _startMs;
+              if (current < _startMs || current > _endMs) {
+                unawaited(_seekTo(_startMs));
+              }
+            },
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('البداية  ' + _formatTime(_startMs), style: theme.textTheme.labelMedium),
+              Text('النهاية  ' + _formatTime(_endMs), style: theme.textTheme.labelMedium),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              OutlinedButton.icon(
+                onPressed: _markTrimStart,
+                icon: const Icon(Icons.flag_outlined, size: 17),
+                label: const Text('تعيين البداية هنا'),
+              ),
+              OutlinedButton.icon(
+                onPressed: _markTrimEnd,
+                icon: const Icon(Icons.flag_rounded, size: 17),
+                label: const Text('تعيين النهاية هنا'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'مدة المقطع الناتجة: ' + _formatTime(_endMs - _startMs),
+            style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w800),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFramingPanel(BuildContext context) {
+    final theme = Theme.of(context);
+    final ratios = <ClipAspectRatio, String>{
+      ClipAspectRatio.portrait916: 'عمودي 9:16',
+      ClipAspectRatio.square11: 'مربع 1:1',
+      ClipAspectRatio.landscape169: 'أفقي 16:9',
+      ClipAspectRatio.original: 'أصلية',
+    };
+    return _sectionPanel(
+      context: context,
+      title: 'التأطير ونقطة التركيز',
+      subtitle: 'تحكّم في طريقة ملاءمة المشهد داخل إطار الإخراج.',
+      icon: Icons.crop_free_rounded,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('نسبة الإخراج', style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w800)),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 7,
+            runSpacing: 7,
+            children: ratios.entries.map((entry) => ChoiceChip(
+              label: Text(entry.value),
+              selected: _draftPreferences.aspectRatio == entry.key,
+              onSelected: (_) {
+                _updatePreferences(_draftPreferences.copyWith(aspectRatio: entry.key));
+              },
+            )).toList(growable: false),
+          ),
+          const SizedBox(height: 14),
+          Text('طريقة التأطير', style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w800)),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 7,
+            runSpacing: 7,
+            children: ClipFramingMode.values.map((mode) => ChoiceChip(
+              label: Text(_framingLabel(mode)),
+              selected: _framingMode == mode,
+              onSelected: (_) => setState(() => _framingMode = mode),
+            )).toList(growable: false),
+          ),
+          if (_framingMode == ClipFramingMode.manualFocus) ...[
+            const SizedBox(height: 12),
+            Text('مركز القص الأفقي · ' + (_focusX * 100).round().toString() + '%'),
+            Slider(
+              value: _focusX,
+              min: 0,
+              max: 1,
+              divisions: 100,
+              onChanged: (value) => setState(() => _focusX = value),
+            ),
+            Text('مركز القص العمودي · ' + (_focusY * 100).round().toString() + '%'),
+            Slider(
+              value: _focusY,
+              min: 0,
+              max: 1,
+              divisions: 100,
+              onChanged: (value) => setState(() => _focusY = value),
+            ),
+          ],
+          const SizedBox(height: 6),
+          Text(
+            _framingMode == ClipFramingMode.automatic
+                ? 'يستخدم التصدير مسار التأطير المحفوظ من تحليل المشهد. إذا غُيّرت النسبة فسيعاد التحليل عند تشغيل المعالجة.'
+                : _framingMode == ClipFramingMode.fullFrame
+                    ? 'يحافظ التصدير على المشهد كاملاً مع ملاءمته داخل النسبة المختارة.'
+                    : 'يُطبّق التصدير قصّاً ثابتاً حول نقطة التركيز التي حددتها أعلاه.',
+            style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+          ),
+          if (_loadingArtifacts)
+            const Padding(
+              padding: EdgeInsets.only(top: 8),
+              child: LinearProgressIndicator(minHeight: 2),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildColorSwatches({
+    required String selected,
+    required ValueChanged<String> onSelected,
+  }) {
+    const colors = [
+      '#FFFFFF',
+      '#FFD400',
+      '#EF4444',
+      '#22D3EE',
+      '#4ADE80',
+      '#F472B6',
+      '#A78BFA',
+      '#111827',
+    ];
+    return Wrap(
+      spacing: 10,
+      runSpacing: 8,
+      children: colors.map((hex) {
+        final color = _parseColor(hex);
+        final active = selected.toUpperCase() == hex;
+        return Semantics(
+          button: true,
+          selected: active,
+          label: 'لون ' + hex,
+          child: InkWell(
+            customBorder: const CircleBorder(),
+            onTap: () => onSelected(hex),
+            child: Container(
+              width: 30,
+              height: 30,
+              decoration: BoxDecoration(
+                color: color,
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: active ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.outlineVariant,
+                  width: active ? 3 : 1,
+                ),
+              ),
+              child: active
+                  ? Icon(Icons.check_rounded, size: 16, color: color.computeLuminance() > 0.55 ? Colors.black : Colors.white)
+                  : null,
+            ),
+          ),
+        );
+      }).toList(growable: false),
+    );
+  }
+
+  Widget _buildCaptionsPanel(BuildContext context) {
+    final theme = Theme.of(context);
+    final style = _resolvedCaptionStyle;
+    final animation = captionAnimationPresets.firstWhere(
+      (item) => item.id == _draftPreferences.captionAnimationId,
+      orElse: () => captionAnimationPresets.first,
+    );
+    final fontScale = _draftPreferences.captionFontScale > 0
+        ? _draftPreferences.captionFontScale
+        : _baseCaptionStyle.fontScale;
+    final position = _draftPreferences.captionPositionY >= 0
+        ? _draftPreferences.captionPositionY
+        : _baseCaptionStyle.positionY;
+    return _sectionPanel(
+      context: context,
+      title: 'الترجمة والمظهر',
+      subtitle: 'معاينة الكلمات بتوقيتها، ثم تخصيص الهوية والحركة.',
+      icon: Icons.closed_caption_rounded,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SwitchListTile.adaptive(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('إظهار الترجمة في التصدير'),
+            subtitle: const Text('يتم توليد الترجمة من توقيتات Whisper المحفوظة.'),
+            value: _draftPreferences.captionsEnabled,
+            onChanged: (value) => _updatePreferences(
+              _draftPreferences.copyWith(captionsEnabled: value),
+            ),
+          ),
+          if (_draftPreferences.captionsEnabled) ...[
+            const SizedBox(height: 8),
+            Text('أنماط النص', style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w800)),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 7,
+              runSpacing: 7,
+              children: captionStylePresets.map((preset) => ChoiceChip(
+                label: Text(preset.name),
+                selected: preset.id == _draftPreferences.captionStyleId,
+                onSelected: (_) => _updatePreferences(_draftPreferences.copyWith(
+                  captionStyleId: preset.id,
+                  mainTextColor: preset.textColor,
+                  highlightColor: preset.highlightColor,
+                  captionFontFamily: preset.fontFamily,
+                  captionFontScale: preset.fontScale,
+                  captionPositionY: preset.positionY,
+                  captionUppercase: preset.uppercase,
+                  captionBold: preset.bold,
+                )),
+              )).toList(growable: false),
+            ),
+            const SizedBox(height: 14),
+            DropdownButtonFormField<String>(
+              initialValue: animation.id,
+              isExpanded: true,
+              decoration: const InputDecoration(
+                labelText: 'حركة الكلمات',
+                prefixIcon: Icon(Icons.animation_rounded),
+              ),
+              items: captionAnimationPresets.map((item) => DropdownMenuItem(
+                value: item.id,
+                child: Text(item.name),
+              )).toList(growable: false),
+              onChanged: (value) {
+                if (value != null) {
+                  _updatePreferences(_draftPreferences.copyWith(captionAnimationId: value));
+                }
+              },
+            ),
+            const SizedBox(height: 14),
+            Text('لون النص', style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w800)),
+            const SizedBox(height: 8),
+            _buildColorSwatches(
+              selected: style.textColor,
+              onSelected: (value) => _updatePreferences(
+                _draftPreferences.copyWith(mainTextColor: value),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text('لون الكلمة النشطة', style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w800)),
+            const SizedBox(height: 8),
+            _buildColorSwatches(
+              selected: style.highlightColor,
+              onSelected: (value) => _updatePreferences(
+                _draftPreferences.copyWith(highlightColor: value),
+              ),
+            ),
+            const SizedBox(height: 14),
+            Text('حجم النص · ' + (fontScale * 100).toStringAsFixed(1) + '%'),
+            Slider(
+              value: fontScale.clamp(0.03, 0.075).toDouble(),
+              min: 0.03,
+              max: 0.075,
+              divisions: 45,
+              onChanged: (value) => _updatePreferences(
+                _draftPreferences.copyWith(captionFontScale: value),
+              ),
+            ),
+            Text('موضع الترجمة · ' + (position * 100).round().toString() + '% من ارتفاع الإطار'),
+            Slider(
+              value: position.clamp(0.55, 0.92).toDouble(),
+              min: 0.55,
+              max: 0.92,
+              divisions: 37,
+              onChanged: (value) => _updatePreferences(
+                _draftPreferences.copyWith(captionPositionY: value),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'مزامنة التوقيت · ' +
+                  (_draftPreferences.captionTimingOffsetMs > 0 ? '+' : '') +
+                  _draftPreferences.captionTimingOffsetMs.toString() +
+                  ' ms',
+              style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w800),
+            ),
+            Slider(
+              value: _draftPreferences.captionTimingOffsetMs.toDouble(),
+              min: -2000,
+              max: 2000,
+              divisions: 80,
+              onChanged: (value) => _updatePreferences(
+                _draftPreferences.copyWith(captionTimingOffsetMs: value.round()),
+              ),
+            ),
+            if (_captionPreviewError != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Text(
+                  _captionPreviewError!,
+                  style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                ),
+              ),
+            if (_transcript == null || !_transcript!.wordTimingReliable)
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Text(
+                  'لا توجد توقيتات كلمات موثوقة لهذا المشروع؛ لن تُنشأ ترجمة متزامنة حتى يكتمل التفريغ المحلي.',
+                  style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.error),
+                ),
+              ),
+          ],
+        ],
+      ),
+    );
   }
 
   @override
-  void dispose(){
+  void dispose() {
     _titleController.dispose();
-    final player=_player;
-    if(player!=null){player.removeListener(_handlePlaybackBoundary);unawaited(player.dispose());}
+    final player = _player;
+    if (player != null) {
+      player.removeListener(_handlePlaybackBoundary);
+      unawaited(player.dispose());
+    }
     super.dispose();
   }
 
   @override
-  Widget build(BuildContext context){
-    final theme=Theme.of(context);final scheme=theme.colorScheme;final player=_player;
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
     return Scaffold(
-      appBar:AppBar(title:const Text('محرر المقطع'),actions:[
-        IconButton(tooltip:'حفظ التعديلات',onPressed:_saving||_loading||_error!=null?null:_saveEdits,icon:const Icon(Icons.save_outlined)),
-      ]),
-      body:_loading?const Center(child:CircularProgressIndicator()):
-        _error!=null||player==null?_PlaybackError(message:_error??'مشغل الفيديو غير متاح.'):
-        ValueListenableBuilder<VideoPlayerValue>(
-          valueListenable:player,
-          builder:(context,value,_){
-            if (!value.isInitialized) { return const Center(child: CircularProgressIndicator()); }
-            final duration=value.duration.inMilliseconds;
-            final position=value.position.inMilliseconds.clamp(_startMs,_endMs).toInt();
-            final size=value.size;
-            return ListView(padding:const EdgeInsets.fromLTRB(16,10,16,32),children:[
-              Text('معاينة وتعديل',style:theme.textTheme.titleLarge?.copyWith(fontWeight:FontWeight.w900)),
-              const SizedBox(height:5),
-              Text('شغّل المصدر، حدّد بداية المقطع ونهايته، ثم احفظ التغييرات داخل المشروع.',style:theme.textTheme.bodySmall?.copyWith(color:scheme.onSurfaceVariant)),
-              const SizedBox(height:14),
-              Center(child:ConstrainedBox(
-                constraints:const BoxConstraints(maxHeight:430),
-                child:AspectRatio(
-                  aspectRatio:_targetAspectRatio(),
-                  child:ClipRRect(
-                    borderRadius:BorderRadius.circular(22),
-                    child:ColoredBox(color:Colors.black,child:FittedBox(
-                      fit:BoxFit.cover,
-                      child:SizedBox(width:size.width>0?size.width:16,height:size.height>0?size.height:9,child:VideoPlayer(player)),
-                    )),
-                  ),
+      appBar: AppBar(
+        title: const Text('محرر المقطع'),
+        actions: [
+          IconButton(
+            tooltip: 'حفظ التعديلات',
+            onPressed: _saving || _loading || _error != null || _loadingArtifacts || _artifactLoadFailed
+                ? null
+                : _saveEdits,
+            icon: const Icon(Icons.save_outlined),
+          ),
+        ],
+      ),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : _error != null || _player == null
+              ? _PlaybackError(message: _error ?? 'مشغل الفيديو غير متاح.')
+              : ValueListenableBuilder<VideoPlayerValue>(
+                  valueListenable: _player!,
+                  builder: (context, value, _) {
+                    if (!value.isInitialized) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    final duration = value.duration.inMilliseconds;
+                    return ListView(
+                      padding: const EdgeInsets.fromLTRB(14, 8, 14, 120),
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'تحرير المقطع المحدد',
+                                    style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
+                                  ),
+                                  const SizedBox(height: 3),
+                                  Text(
+                                    widget.project.title,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                              decoration: BoxDecoration(
+                                color: scheme.primary.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                widget.candidate.score.round().toString() + '/100',
+                                style: TextStyle(color: scheme.primary, fontWeight: FontWeight.w900),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'معرّف المقطع: ' + widget.candidate.id,
+                          style: theme.textTheme.labelSmall?.copyWith(color: scheme.onSurfaceVariant),
+                        ),
+                        _buildPreview(context, value),
+                        _buildTrimPanel(context, duration),
+                        _buildFramingPanel(context),
+                        _sectionPanel(
+                          context: context,
+                          title: 'بيانات المقطع',
+                          subtitle: 'يُحفظ العنوان مع نتيجة هذا المقطع فقط.',
+                          icon: Icons.title_rounded,
+                          child: TextField(
+                            controller: _titleController,
+                            maxLength: 80,
+                            decoration: const InputDecoration(
+                              labelText: 'اسم المقطع',
+                              prefixIcon: Icon(Icons.edit_outlined),
+                            ),
+                          ),
+                        ),
+                        _buildCaptionsPanel(context),
+                        const SizedBox(height: 18),
+                        FilledButton.icon(
+                          onPressed: _saving || _loadingArtifacts || _artifactLoadFailed ? null : _saveEdits,
+                          icon: _saving
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                )
+                              : const Icon(Icons.save_rounded),
+                          label: Text(_saving ? 'جارٍ حفظ التعديلات…' : 'حفظ والعودة إلى المراجعة'),
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          'الإعدادات النصية ونسبة الإخراج مشتركة على مستوى المشروع، أما القص ونقطة التركيز فمحفوظان لهذا المقطع وحده.',
+                          textAlign: TextAlign.center,
+                          style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+                        ),
+                      ],
+                    );
+                  },
                 ),
-              )),
-              const SizedBox(height:8),
-              Text('المعاينة تعرض قصّاً مركزياً حسب النسبة المختارة. خطة التأطير المتغيرة تُعاد معالجتها في التصدير.',style:theme.textTheme.bodySmall?.copyWith(color:scheme.onSurfaceVariant)),
-              const SizedBox(height:12),
-              Row(children:[
-                IconButton.filledTonal(tooltip:value.isPlaying?'إيقاف مؤقت':'تشغيل',onPressed:_togglePlayback,icon:Icon(value.isPlaying?Icons.pause_rounded:Icons.play_arrow_rounded)),
-                const SizedBox(width:10),
-                Expanded(child:Text('${_formatTime(position)} / ${_formatTime(_endMs)}',style:theme.textTheme.bodySmall?.copyWith(fontWeight:FontWeight.w700))),
-              ]),
-              Slider(value:position.toDouble(),min:_startMs.toDouble(),max:_endMs.toDouble(),onChanged:(v)=>_seekTo(v.round())),
-              const SizedBox(height:6),
-              Text('نطاق القص',style:theme.textTheme.titleSmall?.copyWith(fontWeight:FontWeight.w900)),
-              RangeSlider(
-                values:RangeValues(_startMs.toDouble(),_endMs.toDouble()),min:0,max:duration.toDouble(),
-                divisions:(duration~/250).clamp(1,1200).toInt(),
-                labels:RangeLabels(_formatTime(_startMs),_formatTime(_endMs)),
-                onChanged:_updateTrim,
-                onChangeEnd: (_) { final current = player.value.position.inMilliseconds; if (current < _startMs || current > _endMs) { unawaited(_seekTo(_startMs)); } },
-              ),
-              Row(mainAxisAlignment:MainAxisAlignment.spaceBetween,children:[
-                Text('البداية: ${_formatTime(_startMs)}'),Text('النهاية: ${_formatTime(_endMs)}'),
-              ]),
-              const SizedBox(height:18),
-              TextField(controller:_titleController,maxLength:80,decoration:const InputDecoration(labelText:'اسم المقطع',prefixIcon:Icon(Icons.title_rounded))),
-              const SizedBox(height:10),
-              DropdownButtonFormField<ClipAspectRatio>(
-                initialValue:_aspectRatio,isExpanded:true,
-                decoration:const InputDecoration(labelText:'نسبة أبعاد الإخراج',prefixIcon:Icon(Icons.aspect_ratio_rounded)),
-                items:ClipAspectRatio.values.map((ratio)=>DropdownMenuItem(value:ratio,child:Text(switch(ratio){
-                  ClipAspectRatio.portrait916=>'عمودي 9:16',
-                  ClipAspectRatio.square11=>'مربع 1:1',
-                  ClipAspectRatio.landscape169=>'أفقي 16:9',
-                  ClipAspectRatio.original=>'الأصلية',
-                }))).toList(growable:false),
-                onChanged:(value){if (value != null) { setState(() => _aspectRatio = value); }},
-              ),
-              const SizedBox(height:18),
-              FilledButton.icon(
-                onPressed:_saving?null:_saveEdits,
-                icon:_saving?const SizedBox(width:18,height:18,child:CircularProgressIndicator(strokeWidth:2)):const Icon(Icons.save_rounded),
-                label:Text(_saving?'جارٍ حفظ التعديلات…':'حفظ تعديلات المقطع'),
-              ),
-            ]);
-          },
-        ),
     );
   }
 }
 
-class _PlaybackError extends StatelessWidget{
+class _PlaybackError extends StatelessWidget {
   const _PlaybackError({required this.message});
+
   final String message;
+
   @override
-  Widget build(BuildContext context){
-    final scheme=Theme.of(context).colorScheme;
-    return Center(child:Padding(
-      padding:const EdgeInsets.all(24),
-      child:Column(mainAxisSize:MainAxisSize.min,children:[
-        Icon(Icons.video_file_outlined,size:38,color:scheme.error),
-        const SizedBox(height:12),
-        const Text('تعذّر فتح معاينة الفيديو',style:TextStyle(fontWeight:FontWeight.w800)),
-        const SizedBox(height:8),
-        Text(message,textAlign:TextAlign.center),
-      ]),
-    ));
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.video_file_outlined, size: 38, color: scheme.error),
+            const SizedBox(height: 12),
+            const Text(
+              'تعذّر فتح معاينة الفيديو',
+              style: TextStyle(fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 8),
+            Text(message, textAlign: TextAlign.center),
+          ],
+        ),
+      ),
+    );
   }
 }

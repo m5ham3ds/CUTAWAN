@@ -34,6 +34,7 @@ class ClipPreferences {
     this.captionPositionY = -1,
     this.captionUppercase,
     this.captionBold,
+    this.captionTimingOffsetMs = 0,
   });
 
   final int requestedClipCount;
@@ -54,9 +55,22 @@ class ClipPreferences {
   final double captionPositionY;
   final bool? captionUppercase;
   final bool? captionBold;
+  final int captionTimingOffsetMs;
 
   ClipPreferences copyWith({
     ClipAspectRatio? aspectRatio,
+    bool? captionsEnabled,
+    String? captionStyleId,
+    String? captionAnimationId,
+    String? mainTextColor,
+    String? highlightColor,
+    String? captionBackgroundColor,
+    String? captionFontFamily,
+    double? captionFontScale,
+    double? captionPositionY,
+    bool? captionUppercase,
+    bool? captionBold,
+    int? captionTimingOffsetMs,
   }) =>
       ClipPreferences(
         requestedClipCount: requestedClipCount,
@@ -65,18 +79,19 @@ class ClipPreferences {
         customMaximumSeconds: customMaximumSeconds,
         aspectRatio: aspectRatio ?? this.aspectRatio,
         resolution: resolution,
-        captionsEnabled: captionsEnabled,
+        captionsEnabled: captionsEnabled ?? this.captionsEnabled,
         speakerTrackingEnabled: speakerTrackingEnabled,
-        captionStyleId: captionStyleId,
-        captionAnimationId: captionAnimationId,
-        mainTextColor: mainTextColor,
-        highlightColor: highlightColor,
-        captionBackgroundColor: captionBackgroundColor,
-        captionFontFamily: captionFontFamily,
-        captionFontScale: captionFontScale,
-        captionPositionY: captionPositionY,
-        captionUppercase: captionUppercase,
-        captionBold: captionBold,
+        captionStyleId: captionStyleId ?? this.captionStyleId,
+        captionAnimationId: captionAnimationId ?? this.captionAnimationId,
+        mainTextColor: mainTextColor ?? this.mainTextColor,
+        highlightColor: highlightColor ?? this.highlightColor,
+        captionBackgroundColor: captionBackgroundColor ?? this.captionBackgroundColor,
+        captionFontFamily: captionFontFamily ?? this.captionFontFamily,
+        captionFontScale: captionFontScale ?? this.captionFontScale,
+        captionPositionY: captionPositionY ?? this.captionPositionY,
+        captionUppercase: captionUppercase ?? this.captionUppercase,
+        captionBold: captionBold ?? this.captionBold,
+        captionTimingOffsetMs: captionTimingOffsetMs ?? this.captionTimingOffsetMs,
       );
 
   String? validate() {
@@ -105,6 +120,9 @@ class ClipPreferences {
     if (!captionPositionY.isFinite || captionPositionY < -1 || captionPositionY > 1) {
       return 'Caption vertical position must be -1 (preset) or between 0 and 1.';
     }
+    if (captionTimingOffsetMs < -5000 || captionTimingOffsetMs > 5000) {
+      return 'Caption timing offset must be between -5000 and 5000 milliseconds.';
+    }
     if (captionStyleId.isEmpty || captionAnimationId.isEmpty) {
       return 'Caption style and animation IDs must not be empty.';
     }
@@ -130,6 +148,7 @@ class ClipPreferences {
         'captionPositionY': captionPositionY,
         'captionUppercase': captionUppercase,
         'captionBold': captionBold,
+        'captionTimingOffsetMs': captionTimingOffsetMs,
       };
 
   factory ClipPreferences.fromJson(Map<String, dynamic> json) {
@@ -172,6 +191,7 @@ class ClipPreferences {
       captionPositionY: (json['captionPositionY'] as num?)?.toDouble() ?? -1,
       captionUppercase: json['captionUppercase'] as bool?,
       captionBold: json['captionBold'] as bool?,
+      captionTimingOffsetMs: (json['captionTimingOffsetMs'] as num?)?.toInt() ?? 0,
     );
     final error = preferences.validate();
     if (error != null) throw FormatException(error);

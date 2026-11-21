@@ -27,23 +27,26 @@ class CaptionSidecarGenerator {
     required double aspectRatio,
     String animationId = 'static',
     int canvasWidth = 1080,
+    int timingOffsetMs = 0,
   }) {
     if (candidate.startMs < 0 ||
         candidate.endMs <= candidate.startMs ||
         candidate.endMs > transcript.sourceDurationMs ||
         !aspectRatio.isFinite ||
         aspectRatio <= 0 ||
-        canvasWidth < 240) {
+        canvasWidth < 240 || timingOffsetMs < -5000 || timingOffsetMs > 5000) {
       throw const FormatException('Subtitle clip range or aspect ratio is invalid.');
     }
     final timings = transcript.words
-        .where((word) =>
-            word.endMs > candidate.startMs && word.startMs < candidate.endMs)
-        .map((word) => CaptionWordTiming(
-              text: word.text,
-              startMs: math.max(candidate.startMs, word.startMs),
-              endMs: math.min(candidate.endMs, word.endMs),
-            ))
+        .map((word) {
+          final shiftedStart = word.startMs + timingOffsetMs;
+          final shiftedEnd = word.endMs + timingOffsetMs;
+          return CaptionWordTiming(
+            text: word.text,
+            startMs: math.max(candidate.startMs, shiftedStart),
+            endMs: math.min(candidate.endMs, shiftedEnd),
+          );
+        })
         .where((word) => word.endMs > word.startMs)
         .toList(growable: false);
     if (timings.isEmpty) {
