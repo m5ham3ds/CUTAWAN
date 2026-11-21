@@ -20,7 +20,7 @@ Ssemble was used only as a reference for workflow sequencing: source → configu
 - Removed the inactive speaker-tracking switch and stale copy claiming that transcription/discovery engines were not connected.
 
 ### Accepted source and evidence
-- Final Create commit: `4b91efb9ad587bd8395f580af05b8695f5805a1d` (see canonical full commit at `4b91efb9ad587bd8395f580af05b8695f5805a1d`).
+- Final Create commit: `4b91efb9ad587bd839b8ff44667a05fe18f4b189` (see canonical full commit at `4b91efb9ad587bd839b8ff44667a05fe18f4b189`).
 - Mobile Android run: [44909044979](https://github.com/m5ham3ds/CUTAWAN/actions/runs/44909044979).
 - Results: format, strict Dart analysis, 142/142 tests, ARM64 APK, ARM64-only ABI and duplicate-library checks succeeded.
 - APK artifact ID: `14709735177`; ZIP size 59,029,749 bytes; archive SHA-256 `44c79fdc95e5922f543cea35e04c2b614f520985bc1a821cff6539c94c4a9582`.
