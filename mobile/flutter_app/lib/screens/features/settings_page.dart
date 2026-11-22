@@ -1,14 +1,39 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
-class SettingsPage extends StatelessWidget {
+import '../../domain/app_preferences.dart';
+import '../../services/app_preferences_store.dart';
+
+class SettingsPage extends StatefulWidget {
   const SettingsPage({
+    required this.store,
     required this.onDiagnostics,
     required this.onModels,
     super.key,
   });
 
+  final AppPreferencesStore store;
   final VoidCallback onDiagnostics;
   final VoidCallback onModels;
+
+  @override
+  State<SettingsPage> createState() => _SettingsPageState();
+}
+
+class _SettingsPageState extends State<SettingsPage> {
+  Future<void> _save(AppPreferences preferences) async {
+    try {
+      await widget.store.update(preferences);
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('تعذّر حفظ التفضيل على هذا الجهاز. لم يتغير الإعداد.'),
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -74,7 +99,7 @@ class SettingsPage extends StatelessWidget {
                 title: 'تشخيص وقبول Android',
                 subtitle:
                     'الذاكرة والبطارية والحرارة والتخزين وأدلة الاختبارات الميدانية',
-                onTap: onDiagnostics,
+                onTap: widget.onDiagnostics,
               ),
               const SizedBox(height: 8),
               _SettingsActionTile(
@@ -82,37 +107,109 @@ class SettingsPage extends StatelessWidget {
                 title: 'مركز النماذج والاتصالات',
                 subtitle:
                     'النماذج المحلية والمزوّدون والمفاتيح وموافقة الإرسال السحابي',
-                onTap: onModels,
+                onTap: widget.onModels,
               ),
               const SizedBox(height: 22),
               const _SettingsSectionTitle(
                 title: 'المظهر وإمكانية الوصول',
-                subtitle: 'خيارات يتبعها التطبيق من إعدادات Android',
+                subtitle: 'تفضيلات محفوظة محلياً على هذا الجهاز',
               ),
               const SizedBox(height: 9),
-              Card(
-                child: ListTile(
-                  minVerticalPadding: 12,
-                  leading: Icon(Icons.dark_mode_outlined, color: scheme.primary),
-                  title: const Text('وضع الألوان'),
-                  subtitle: const Text(
-                    'يتبع CUTAWAN تلقائياً وضع المظهر الفاتح أو الداكن الذي يحدده نظام Android.',
-                  ),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Card(
-                child: ListTile(
-                  minVerticalPadding: 12,
-                  leading: Icon(
-                    Icons.motion_photos_off_outlined,
-                    color: scheme.primary,
-                  ),
-                  title: const Text('تقليل الحركة'),
-                  subtitle: const Text(
-                    'يُحترم إعداد تقليل الحركة وإمكانية الوصول من نظام Android.',
-                  ),
-                  trailing: const Icon(Icons.settings_suggest_outlined),
+              ValueListenableBuilder<AppPreferences>(
+                valueListenable: widget.store.preferences,
+                builder: (context, preferences, _) => Column(
+                  children: [
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(14),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(Icons.dark_mode_outlined, color: scheme.primary),
+                                const SizedBox(width: 9),
+                                Text(
+                                  'وضع الألوان',
+                                  style: theme.textTheme.titleSmall?.copyWith(
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'يُحفظ اختيارك محلياً ويُطبّق على التطبيق.',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: scheme.onSurfaceVariant,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: [
+                                ChoiceChip(
+                                  key: const ValueKey('settings-theme-system'),
+                                  label: const Text('النظام'),
+                                  selected: preferences.themeMode == AppThemeMode.system,
+                                  onSelected: (selected) {
+                                    if (selected) {
+                                      unawaited(_save(
+                                        preferences.copyWith(themeMode: AppThemeMode.system),
+                                      ));
+                                    }
+                                  },
+                                ),
+                                ChoiceChip(
+                                  key: const ValueKey('settings-theme-light'),
+                                  label: const Text('فاتح'),
+                                  selected: preferences.themeMode == AppThemeMode.light,
+                                  onSelected: (selected) {
+                                    if (selected) {
+                                      unawaited(_save(
+                                        preferences.copyWith(themeMode: AppThemeMode.light),
+                                      ));
+                                    }
+                                  },
+                                ),
+                                ChoiceChip(
+                                  key: const ValueKey('settings-theme-dark'),
+                                  label: const Text('داكن'),
+                                  selected: preferences.themeMode == AppThemeMode.dark,
+                                  onSelected: (selected) {
+                                    if (selected) {
+                                      unawaited(_save(
+                                        preferences.copyWith(themeMode: AppThemeMode.dark),
+                                      ));
+                                    }
+                                  },
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Card(
+                      child: SwitchListTile(
+                        key: const ValueKey('settings-reduce-motion'),
+                        value: preferences.reduceMotion,
+                        onChanged: (value) => unawaited(
+                          _save(preferences.copyWith(reduceMotion: value)),
+                        ),
+                        secondary: Icon(
+                          Icons.motion_photos_off_outlined,
+                          color: scheme.primary,
+                        ),
+                        title: const Text('تقليل الحركة'),
+                        subtitle: const Text(
+                          'يقلل انتقالات التنقل المتحركة داخل CUTAWAN.',
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 22),

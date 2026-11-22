@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../domain/project_contract.dart';
 import '../services/android_video_picker.dart';
+import '../services/app_preferences_store.dart';
 import '../services/direct_video_downloader.dart';
 import '../services/local_project_repository.dart';
 import '../services/processing_job_service.dart';
@@ -17,15 +20,18 @@ import 'features/caption_studio_page.dart';
 
 
 class HomeShell extends StatefulWidget {
-  const HomeShell({super.key, this.repository, this.storageUsageBytes});
+  const HomeShell({super.key, this.repository, this.storageUsageBytes, this.settingsStore});
   final LocalProjectRepository? repository;
   final Future<int> Function()? storageUsageBytes;
+  final AppPreferencesStore? settingsStore;
   @override
   State<HomeShell> createState() => _HomeShellState();
 }
 
 class _HomeShellState extends State<HomeShell> with SingleTickerProviderStateMixin {
   late final LocalProjectRepository _repository;
+  late final AppPreferencesStore _settingsStore;
+  late final bool _ownsSettingsStore;
   final ValueNotifier<List<CutawanProject>> _projects = ValueNotifier<List<CutawanProject>>([]);
   late final AnimationController _navigationGlow;
   int _selectedIndex = 0;
@@ -44,6 +50,9 @@ class _HomeShellState extends State<HomeShell> with SingleTickerProviderStateMix
   void initState() {
     super.initState();
     _repository = widget.repository ?? LocalProjectRepository();
+    _ownsSettingsStore = widget.settingsStore == null;
+    _settingsStore = widget.settingsStore ?? AppPreferencesStore.inMemory();
+    unawaited(_settingsStore.load());
     _navigationGlow = AnimationController(vsync: this, duration: const Duration(milliseconds: 360), value: 1);
     _reloadProjects();
   }
@@ -56,13 +65,19 @@ class _HomeShellState extends State<HomeShell> with SingleTickerProviderStateMix
   Future<int> _readStorageUsage() =>
       (widget.storageUsageBytes ?? _downloader().storageUsageBytes)();
 
+  bool get _reduceMotion => MediaQuery.of(context).disableAnimations;
+
+  void _animateNavigation() {
+    if (!_reduceMotion) _navigationGlow.forward(from: 0);
+  }
+
   void _openProjectInReview(CutawanProject project) {
     HapticFeedback.selectionClick();
     setState(() {
       _requestedReviewProjectId = project.id;
       _selectedIndex = 3;
     });
-    _navigationGlow.forward(from: 0);
+    _animateNavigation();
   }
 
   Future<void> _reloadProjects() async {
@@ -91,7 +106,7 @@ class _HomeShellState extends State<HomeShell> with SingleTickerProviderStateMix
     if (index == _selectedIndex) return;
     HapticFeedback.selectionClick();
     setState(() => _selectedIndex = index);
-    _navigationGlow.forward(from: 0);
+    _animateNavigation();
   }
 
   void _openDeviceDiagnostics() {
@@ -105,6 +120,7 @@ class _HomeShellState extends State<HomeShell> with SingleTickerProviderStateMix
   void _openSettings() {
     Navigator.of(context).push(MaterialPageRoute<void>(
       builder: (_) => SettingsPage(
+        store: _settingsStore,
         onDiagnostics: _openDeviceDiagnostics,
         onModels: _openModels,
       ),
@@ -113,8 +129,8 @@ class _HomeShellState extends State<HomeShell> with SingleTickerProviderStateMix
 
   void _openModels() {
     Navigator.of(context).push(PageRouteBuilder<void>(
-      transitionDuration: const Duration(milliseconds: 360),
-      reverseTransitionDuration: const Duration(milliseconds: 260),
+      transitionDuration: _reduceMotion ? Duration.zero : const Duration(milliseconds: 360),
+      reverseTransitionDuration: _reduceMotion ? Duration.zero : const Duration(milliseconds: 260),
       pageBuilder: (_, animation, secondaryAnimation) => const ModelsPage(),
       transitionsBuilder: (_, animation, secondaryAnimation, child) {
         final curved = CurvedAnimation(parent: animation, curve: Curves.easeOutCubic);
@@ -130,6 +146,7 @@ class _HomeShellState extends State<HomeShell> with SingleTickerProviderStateMix
   void dispose() {
     _navigationGlow.dispose();
     _projects.dispose();
+    if (_ownsSettingsStore) _settingsStore.dispose();
     super.dispose();
   }
 
@@ -185,8 +202,8 @@ class _HomeShellState extends State<HomeShell> with SingleTickerProviderStateMix
         body: SafeArea(bottom: false, child: Column(children: [
           CutawanTopBar(onModels: _openModels, onRefresh: _reloadProjects, onDiagnostics: _openDeviceDiagnostics, onSettings: _openSettings),
           Expanded(child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 280),
-            reverseDuration: const Duration(milliseconds: 210),
+            duration: _reduceMotion ? Duration.zero : const Duration(milliseconds: 280),
+            reverseDuration: _reduceMotion ? Duration.zero : const Duration(milliseconds: 210),
             switchInCurve: Curves.easeOutCubic,
             switchOutCurve: Curves.easeInCubic,
             transitionBuilder: (child, animation) {
