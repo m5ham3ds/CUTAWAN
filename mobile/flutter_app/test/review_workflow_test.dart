@@ -130,18 +130,21 @@ void main() {
 
       final openButton = find.byKey(const ValueKey('open-export-clip_gallery_1'));
       await tester.ensureVisible(openButton);
+      await tester.pumpAndSettle();
       await tester.tap(openButton);
-      await tester.pump();
+      await tester.pumpAndSettle();
       expect(nativeCalls.map((call) => call.method), contains('openExport'));
 
       final shareButton = find.byKey(const ValueKey('share-export-clip_gallery_1'));
       await tester.ensureVisible(shareButton);
+      await tester.pumpAndSettle();
       await tester.tap(shareButton);
-      await tester.pump();
+      await tester.pumpAndSettle();
       expect(nativeCalls.map((call) => call.method), contains('shareExport'));
 
       final deleteButton = find.byKey(const ValueKey('delete-export-clip_gallery_1'));
       await tester.ensureVisible(deleteButton);
+      await tester.pumpAndSettle();
       await tester.tap(deleteButton);
       await tester.pumpAndSettle();
       expect(find.text('حذف الفيديو المصدّر؟'), findsOneWidget);
