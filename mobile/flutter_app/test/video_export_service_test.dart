@@ -56,6 +56,10 @@ void main() {
           };
         case 'cancelRender':
           return true;
+        case 'getCompletedRender':
+          return null;
+        case 'acknowledgeCompletedRender':
+          return true;
         default:
           return null;
       }
@@ -162,6 +166,59 @@ void main() {
     expect(arguments['captionStyle'], isA<Map<dynamic, dynamic>>());
     final sentStyle = arguments['captionStyle'] as Map<dynamic, dynamic>;
     expect(sentStyle['positionY'], 0.74);
+  });
+
+  test('recovers a durable render completion and acknowledges it after persistence', () async {
+    final recoveredCalls = <MethodCall>[];
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, (call) async {
+      recoveredCalls.add(call);
+      if (call.method == 'getCompletedRender') {
+        return {
+          'renderId': 'render_recovered_1',
+          'result': exportPayload(),
+        };
+      }
+      if (call.method == 'acknowledgeCompletedRender') return true;
+      return null;
+    });
+
+    final service = VideoExportService(channel: channel);
+    final recovered = await service.consumeCompletedRender(
+      renderKey: expectedHash,
+    );
+    expect(recovered, isNotNull);
+    expect(recovered!.renderId, 'render_recovered_1');
+    expect(recovered.outputUri, startsWith('content://'));
+    expect(recovered.fullyDecodeValidated, isTrue);
+    expect(
+      await service.acknowledgeCompletedRender(
+        renderKey: expectedHash,
+        sha256: recovered.sha256,
+      ),
+      isTrue,
+    );
+    expect(recoveredCalls.map((call) => call.method), [
+      'getCompletedRender',
+      'acknowledgeCompletedRender',
+    ]);
+    expect(
+      recoveredCalls.last.arguments,
+      containsPair('renderKey', expectedHash),
+    );
+    expect(
+      recoveredCalls.last.arguments,
+      containsPair('sha256', expectedHash),
+    );
+  });
+
+  test('rejects malformed durable render identities before parsing payloads', () async {
+    final service = VideoExportService(channel: channel);
+    await expectLater(
+      service.consumeCompletedRender(renderKey: 'not-a-fingerprint'),
+      throwsA(isA<FormatException>()),
+    );
+    expect(calls, isEmpty);
   });
 
   test('rejects reframe segments that do not cover the complete clip', () async {

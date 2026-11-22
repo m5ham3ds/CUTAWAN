@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:convert';
 
+import 'package:crypto/crypto.dart';
 import 'package:flutter/services.dart';
 
 import 'processing_job_service.dart';
@@ -96,6 +98,7 @@ class VideoExportService {
     List<Map<String, Object?>> captionCues = const [],
     Map<String, Object?>? captionStyle,
     String captionAnimationId = 'static',
+    String? renderKey,
     required String outputPath,
     void Function(double progress)? onProgress,
     void Function(String renderId)? onStarted,
@@ -121,9 +124,21 @@ class VideoExportService {
         (captionCues.isNotEmpty && !_validCaptionStyle(captionStyle))) {
       throw const FormatException('Video export arguments are incomplete or invalid.');
     }
+    final stableRenderKey = renderKey ??
+        sha256
+            .convert(
+              utf8.encode(
+                '$clipId|$sourceUri|$startMs|$endMs|${DateTime.now().microsecondsSinceEpoch}',
+              ),
+            )
+            .toString();
+    if (!ProcessingJobService.isSha256(stableRenderKey)) {
+      throw const FormatException('The render fingerprint must be a SHA-256 value.');
+    }
     final start = await _channel.invokeMapMethod<String, dynamic>(
       'startRender',
       <String, Object?>{
+        'renderKey': stableRenderKey,
         'clipId': clipId,
         'uri': sourceUri,
         'startMs': startMs,
@@ -172,7 +187,7 @@ class VideoExportService {
             snapshot['error'] as String? ?? 'Android video export failed.',
           );
         }
-        if (state != 'running') {
+        if (state != 'running' && state != 'queued') {
           throw StateError('Unknown Android export status: $state');
         }
         await Future<void>.delayed(const Duration(milliseconds: 700));
@@ -188,6 +203,51 @@ class VideoExportService {
       } on PlatformException {
         // The native Activity may have been recreated while exporting.
       }
+    }
+  }
+
+  /// Reads a render that WorkManager finished while the Flutter process was absent.
+  /// The caller must persist the export record and stage checkpoint before acknowledging it.
+  Future<VideoExportResult?> consumeCompletedRender({
+    required String renderKey,
+  }) async {
+    if (!ProcessingJobService.isSha256(renderKey)) {
+      throw const FormatException('The render fingerprint must be a SHA-256 value.');
+    }
+    final payload = await _channel.invokeMapMethod<String, dynamic>(
+      'getCompletedRender',
+      <String, Object?>{'renderKey': renderKey},
+    );
+    if (payload == null) return null;
+    final renderId = payload['renderId'];
+    final raw = payload['result'];
+    if (renderId is! String || renderId.isEmpty || raw is! Map) {
+      throw const FormatException('The durable render completion is malformed.');
+    }
+    return VideoExportResult.fromJson(
+      renderId,
+      Map<String, dynamic>.from(raw),
+    );
+  }
+
+  /// Deletes the durable completion only after the caller has persisted its
+  /// export record and stage checkpoint.
+  Future<bool> acknowledgeCompletedRender({
+    required String renderKey,
+    required String sha256,
+  }) async {
+    if (!ProcessingJobService.isSha256(renderKey) ||
+        !ProcessingJobService.isSha256(sha256)) {
+      return false;
+    }
+    try {
+      return await _channel.invokeMethod<bool>(
+            'acknowledgeCompletedRender',
+            <String, Object?>{'renderKey': renderKey, 'sha256': sha256},
+          ) ??
+          false;
+    } on PlatformException {
+      return false;
     }
   }
 

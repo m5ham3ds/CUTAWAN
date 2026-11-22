@@ -68,6 +68,14 @@ import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
 import java.util.concurrent.Executors
+import androidx.core.content.ContextCompat
+import androidx.work.Data
+import androidx.work.ExistingWorkPolicy
+import androidx.work.OneTimeWorkRequest
+import androidx.work.WorkInfo
+import androidx.work.WorkManager
+import java.util.UUID
+import java.util.concurrent.TimeUnit
 
 @OptIn(UnstableApi::class)
 class MainActivity : FlutterActivity() {
@@ -76,18 +84,6 @@ class MainActivity : FlutterActivity() {
     private val ioExecutor = Executors.newSingleThreadExecutor()
     private val mainHandler = Handler(Looper.getMainLooper())
     private var pendingPickerResult: MethodChannel.Result? = null
-    private data class RenderSession(
-        val id: String,
-        val transformer: Transformer,
-        val progressHolder: ProgressHolder,
-        val outputFile: File,
-        var status: String = "running",
-        var progress: Int = 0,
-        var error: String? = null,
-        var result: Map<String, Any>? = null,
-        var cancelRequested: Boolean = false
-    )
-    private val renderSessions = mutableMapOf<String, RenderSession>()
     private data class ReframeSegment(
         val startMs: Long,
         val endMs: Long,
@@ -194,53 +190,11 @@ class MainActivity : FlutterActivity() {
                         }
                     }
                     "startRender" -> startRender(call, result)
-                    "getRenderProgress" -> {
-                        val id = call.argument<String>("renderId")
-                        val session = if (id.isNullOrBlank()) null else renderSessions[id]
-                        if (session == null) {
-                            result.error("RENDER_NOT_FOUND", "The render job was not found.", id)
-                        } else {
-                            if (session.status == "running") {
-                                try {
-                                    if (session.transformer.getProgress(session.progressHolder) ==
-                                        Transformer.PROGRESS_STATE_AVAILABLE
-                                    ) {
-                                        session.progress = session.progressHolder.progress.coerceIn(0, 99)
-                                    }
-                                } catch (_: IllegalStateException) { }
-                            }
-                            result.success(
-                                mapOf(
-                                    "renderId" to session.id,
-                                    "status" to session.status,
-                                    "progress" to session.progress,
-                                    "error" to (session.error ?: ""),
-                                    "result" to (session.result ?: emptyMap<String, Any>())
-                                )
-                            )
-                        }
-                    }
-                    "cancelRender" -> {
-                        val id = call.argument<String>("renderId")
-                        val session = if (id.isNullOrBlank()) null else renderSessions[id]
-                        if (session == null) {
-                            result.success(false)
-                        } else {
-                            session.cancelRequested = true
-                            if (session.status == "running") {
-                                session.status = "cancelled"
-                                session.error = "Cancelled by user."
-                                try { session.transformer.cancel() } catch (_: Exception) { }
-                                if (session.outputFile.exists()) session.outputFile.delete()
-                            }
-                            result.success(true)
-                        }
-                    }
-                    "releaseRender" -> {
-                        val id = call.argument<String>("renderId")
-                        if (id != null) renderSessions.remove(id)
-                        result.success(null)
-                    }
+                    "getRenderProgress" -> getRenderProgress(call, result)
+                    "cancelRender" -> cancelBackgroundRender(call, result)
+                    "releaseRender" -> result.success(null)
+                    "getCompletedRender" -> getCompletedRender(call, result)
+                    "acknowledgeCompletedRender" -> acknowledgeCompletedRender(call, result)
                     "getDeviceAcceptanceDiagnostics" -> {
                         try {
                             result.success(readDeviceAcceptanceDiagnostics())
@@ -1081,173 +1035,190 @@ class MainActivity : FlutterActivity() {
     }
 
     private fun startRender(call: io.flutter.plugin.common.MethodCall, reply: MethodChannel.Result) {
-        try {
-            val rawUri = call.argument<String>("uri")
-                ?: throw IllegalArgumentException("A source URI is required.")
-            val clipId = call.argument<String>("clipId")
-                ?: throw IllegalArgumentException("A clip ID is required.")
-            val outputPath = call.argument<String>("outputPath")
-                ?: throw IllegalArgumentException("An output path is required.")
-            val startMs = call.argument<Number>("startMs")?.toLong()
-                ?: throw IllegalArgumentException("A clip start time is required.")
-            val endMs = call.argument<Number>("endMs")?.toLong()
-                ?: throw IllegalArgumentException("A clip end time is required.")
-            val aspectRatio = call.argument<Number>("aspectRatio")?.toFloat()
-                ?: throw IllegalArgumentException("An output aspect ratio is required.")
-            val sourceAspectRatio = call.argument<Number>("sourceAspectRatio")?.toFloat()
-                ?: throw IllegalArgumentException("A source aspect ratio is required.")
-            if (!clipId.matches(Regex("^[A-Za-z0-9_-]{1,160}$")) ||
-                startMs < 0 || endMs <= startMs ||
-                !aspectRatio.isFinite() || aspectRatio <= 0f || aspectRatio > 4f ||
-                !sourceAspectRatio.isFinite() || sourceAspectRatio <= 0f || sourceAspectRatio > 8f
-            ) {
-                throw IllegalArgumentException("Clip ID, range or aspect ratio is invalid.")
+        val rawArguments = call.arguments as? Map<*, *>
+        if (rawArguments == null) {
+            reply.error("INVALID_RENDER", "Render arguments are missing.", null)
+            return
+        }
+        val request = linkedMapOf<String, Any?>()
+        for ((key, value) in rawArguments) {
+            val name = key as? String
+            if (name == null) {
+                reply.error("INVALID_RENDER", "Render argument names must be strings.", null)
+                return
             }
-            val reframeSegments = parseReframeSegments(
-                call.argument<List<*>>("reframeShots"),
-                endMs - startMs
-            )
-            val captionCues = parseCaptionCues(
-                call.argument<List<*>>("captionCues"),
-                endMs - startMs
-            )
-            val captionStyle = if (captionCues.isEmpty()) {
-                null
-            } else {
-                parseCaptionStyle(call.argument<Map<*, *>>("captionStyle"))
-            }
-            val captionAnimationId = call.argument<String>("captionAnimationId") ?: "static"
-            if (renderSessions.values.any { it.status == "running" }) {
-                throw IllegalStateException("Another video export is already running.")
-            }
-            val sourceUri = Uri.parse(rawUri)
-            validateReadableSource(sourceUri)
-            val outputFile = File(outputPath)
-            val canonicalOutput = outputFile.canonicalPath
-            val filesBase = filesDir.canonicalPath + File.separator
-            if (!canonicalOutput.startsWith(filesBase) ||
-                !canonicalOutput.endsWith(".mp4", ignoreCase = true)
-            ) {
-                throw SecurityException("Export output must remain inside Cutawan's private storage.")
-            }
-            val parent = outputFile.parentFile
-                ?: throw IllegalArgumentException("Export output directory is missing.")
-            if (!parent.exists() && !parent.mkdirs()) {
-                throw IllegalStateException("Could not create the export directory.")
-            }
-            if (outputFile.exists() && !outputFile.delete()) {
-                throw IllegalStateException("Could not replace the previous partial export.")
-            }
+            request[name] = value
+        }
+        val renderKey = request["renderKey"] as? String
+        if (renderKey == null || !renderKey.matches(Regex("^[a-f0-9]{64}$"))) {
+            reply.error("INVALID_RENDER_KEY", "A SHA-256 render fingerprint is required.", null)
+            return
+        }
+        val workManager = WorkManager.getInstance(applicationContext)
+        ioExecutor.execute {
+            try {
+                val completed = NativeRenderStore.readCompletion(applicationContext, renderKey)
+                if (completed != null) {
+                    val existingId = completed["renderId"] as? String
+                        ?: throw IllegalStateException("Completed render has no identity.")
+                    mainHandler.post { reply.success(mapOf("renderId" to existingId)) }
+                    return@execute
+                }
 
-            val renderId = "render_" + java.util.UUID.randomUUID().toString().replace("-", "")
-            val mediaItem = MediaItem.Builder()
-                .setUri(sourceUri)
-                .setClippingConfiguration(
-                    MediaItem.ClippingConfiguration.Builder()
-                        .setStartPositionMs(startMs)
-                        .setEndPositionMs(endMs)
-                        .build()
-                )
-                .build()
-            val reframeTransformation = createReframeTransformation(
-                reframeSegments,
-                sourceAspectRatio,
-                aspectRatio
-            )
-            val presentation = Presentation.createForAspectRatio(
-                aspectRatio,
-                Presentation.LAYOUT_STRETCH_TO_FIT
-            )
-            val videoEffects = mutableListOf<androidx.media3.common.Effect>(
-                reframeTransformation,
-                presentation
-            )
-            if (captionStyle != null && captionCues.isNotEmpty()) {
-                videoEffects.add(
-                    OverlayEffect(
-                        listOf(
-                            TimedCaptionOverlay(
-                                captionCues,
-                                captionStyle,
-                                captionAnimationId
-                            )
+                val uniqueName = NativeRenderStore.uniqueWorkName(renderKey)
+                val previousId = NativeRenderStore.readKey(applicationContext, renderKey)
+                if (previousId != null) {
+                    val previousWork = workManager.getWorkInfoById(UUID.fromString(previousId))
+                        .get(20, TimeUnit.SECONDS)
+                    if (previousWork != null &&
+                        previousWork.state in setOf(
+                            WorkInfo.State.RUNNING,
+                            WorkInfo.State.ENQUEUED,
+                            WorkInfo.State.BLOCKED,
+                            WorkInfo.State.SUCCEEDED
+                        )
+                    ) {
+                        mainHandler.post { reply.success(mapOf("renderId" to previousId)) }
+                        return@execute
+                    }
+                    NativeRenderStore.cleanFailedRequest(applicationContext, renderKey, previousId)
+                }
+
+                val renderId = UUID.randomUUID()
+                NativeRenderStore.writeRequest(applicationContext, renderId.toString(), request)
+                NativeRenderStore.writeKey(applicationContext, renderKey, renderId.toString())
+                val workRequest = OneTimeWorkRequest.Builder(NativeRenderWorker::class.java)
+                    .setId(renderId)
+                    .setInputData(
+                        Data.Builder()
+                            .putString(NativeRenderWorker.KEY_RENDER_ID, renderId.toString())
+                            .putString(NativeRenderWorker.KEY_RENDER_KEY, renderKey)
+                            .build()
+                    )
+                    .addTag("cutawan-video-render")
+                    .build()
+                try {
+                    workManager.enqueueUniqueWork(
+                        uniqueName,
+                        ExistingWorkPolicy.APPEND_OR_REPLACE,
+                        workRequest
+                    ).result.get(20, TimeUnit.SECONDS)
+                } catch (error: Exception) {
+                    NativeRenderStore.cleanFailedRequest(applicationContext, renderKey, renderId.toString())
+                    throw error
+                }
+                mainHandler.post { reply.success(mapOf("renderId" to renderId.toString())) }
+            } catch (error: Exception) {
+                mainHandler.post {
+                    reply.error(
+                        "RENDER_START_FAILED",
+                        error.message ?: "Could not queue the background render.",
+                        null
+                    )
+                }
+            }
+        }
+    }
+
+    private fun getRenderProgress(call: io.flutter.plugin.common.MethodCall, reply: MethodChannel.Result) {
+        val rawId = call.argument<String>("renderId")
+        val renderId = try {
+            UUID.fromString(rawId ?: throw IllegalArgumentException("Render identity is missing."))
+        } catch (error: Exception) {
+            reply.error("INVALID_RENDER_ID", error.message, rawId)
+            return
+        }
+        val future = WorkManager.getInstance(applicationContext).getWorkInfoById(renderId)
+        future.addListener(
+            {
+                try {
+                    val info = future.get()
+                        ?: throw IllegalStateException("The background render record was not found.")
+                    val state = when (info.state) {
+                        WorkInfo.State.ENQUEUED, WorkInfo.State.BLOCKED -> "queued"
+                        WorkInfo.State.RUNNING -> "running"
+                        WorkInfo.State.SUCCEEDED -> "completed"
+                        WorkInfo.State.CANCELLED -> "cancelled"
+                        WorkInfo.State.FAILED -> "failed"
+                    }
+                    val resultJson = info.outputData.getString(NativeRenderWorker.KEY_RESULT_JSON)
+                    val payload = if (resultJson.isNullOrBlank()) {
+                        emptyMap<String, Any?>()
+                    } else {
+                        NativeRenderStore.decodeJson(resultJson)
+                    }
+                    val progress = if (state == "completed") 100 else
+                        info.progress.getInt(NativeRenderWorker.KEY_PROGRESS, 0).coerceIn(0, 99)
+                    val error = info.outputData.getString(NativeRenderWorker.KEY_ERROR) ?: ""
+                    reply.success(
+                        mapOf(
+                            "renderId" to renderId.toString(),
+                            "status" to state,
+                            "progress" to progress,
+                            "error" to error,
+                            "result" to payload
                         )
                     )
-                )
-            }
-            val editedItem = EditedMediaItem.Builder(mediaItem)
-                .setEffects(
-                    Effects(
-                        emptyList(),
-                        videoEffects
-                    )
-                )
-                .build()
+                } catch (error: Exception) {
+                    reply.error("RENDER_STATUS_FAILED", error.message, rawId)
+                }
+            },
+            ContextCompat.getMainExecutor(this)
+        )
+    }
 
-            val transformer = Transformer.Builder(this)
-                .setVideoMimeType(MimeTypes.VIDEO_H264)
-                .setAudioMimeType(MimeTypes.AUDIO_AAC)
-                .addListener(object : Transformer.Listener {
-                    override fun onCompleted(
-                        composition: androidx.media3.transformer.Composition,
-                        exportResult: ExportResult
-                    ) {
-                        val session = renderSessions[renderId] ?: return
-                        if (session.cancelRequested || session.status == "cancelled") {
-                            if (outputFile.exists()) outputFile.delete()
-                            session.status = "cancelled"
-                            return
-                        }
-                        try {
-                            val validated = validateRenderedVideo(outputFile, endMs - startMs)
-                            val published = publishRenderedVideo(outputFile, clipId)
-                            session.result = mapOf(
-                                "outputUri" to published.first.toString(),
-                                "displayName" to published.second,
-                                "sha256" to validated.sha256,
-                                "sizeBytes" to validated.sizeBytes,
-                                "durationMs" to validated.durationMs,
-                                "width" to validated.width,
-                                "height" to validated.height,
-                                "hasAudio" to validated.hasAudio,
-                                "fullyDecodeValidated" to true,
-                                "decodedVideoBuffers" to validated.decodedVideoBuffers,
-                                "decodedAudioBuffers" to validated.decodedAudioBuffers,
-                                "validated" to true
-                            )
-                            session.progress = 100
-                            session.status = "completed"
-                            if (outputFile.exists()) outputFile.delete()
-                        } catch (error: Exception) {
-                            if (outputFile.exists()) outputFile.delete()
-                            session.status = "failed"
-                            session.error = error.message ?: "Rendered video validation failed."
-                        }
-                    }
-
-                    override fun onError(
-                        composition: androidx.media3.transformer.Composition,
-                        exportResult: ExportResult,
-                        exportException: ExportException
-                    ) {
-                        val session = renderSessions[renderId] ?: return
-                        session.status = if (session.cancelRequested) "cancelled" else "failed"
-                        session.error = if (session.cancelRequested) "Cancelled by user."
-                            else (exportException.message ?: "Media3 export failed.")
-                        if (outputFile.exists()) outputFile.delete()
-                    }
-                })
-                .build()
-            renderSessions[renderId] = RenderSession(
-                id = renderId,
-                transformer = transformer,
-                progressHolder = ProgressHolder(),
-                outputFile = outputFile
-            )
-            transformer.start(editedItem, outputFile.absolutePath)
-            reply.success(mapOf("renderId" to renderId))
+    private fun cancelBackgroundRender(call: io.flutter.plugin.common.MethodCall, reply: MethodChannel.Result) {
+        val rawId = call.argument<String>("renderId")
+        val renderId = try {
+            UUID.fromString(rawId ?: throw IllegalArgumentException("Render identity is missing."))
         } catch (error: Exception) {
-            reply.error("RENDER_START_FAILED", error.message, null)
+            reply.error("INVALID_RENDER_ID", error.message, rawId)
+            return
+        }
+        WorkManager.getInstance(applicationContext).cancelWorkById(renderId)
+        reply.success(true)
+    }
+
+    private fun getCompletedRender(call: io.flutter.plugin.common.MethodCall, reply: MethodChannel.Result) {
+        val renderKey = call.argument<String>("renderKey")
+        if (renderKey.isNullOrBlank() || !renderKey.matches(Regex("^[a-f0-9]{64}$"))) {
+            reply.error("INVALID_RENDER_KEY", "A SHA-256 render fingerprint is required.", null)
+            return
+        }
+        ioExecutor.execute {
+            try {
+                val payload = NativeRenderStore.readCompletion(applicationContext, renderKey)
+                if (payload == null) {
+                    mainHandler.post { reply.success(null) }
+                } else {
+                    val renderId = payload["renderId"] as? String
+                        ?: throw IllegalStateException("Completed render has no identity.")
+                    mainHandler.post {
+                        reply.success(mapOf("renderId" to renderId, "result" to payload))
+                    }
+                }
+            } catch (error: Exception) {
+                mainHandler.post {
+                    reply.error("COMPLETED_RENDER_READ_FAILED", error.message, null)
+                }
+            }
+        }
+    }
+
+    private fun acknowledgeCompletedRender(call: io.flutter.plugin.common.MethodCall, reply: MethodChannel.Result) {
+        val renderKey = call.argument<String>("renderKey")
+        val sha256 = call.argument<String>("sha256")
+        if (renderKey.isNullOrBlank() || sha256.isNullOrBlank()) {
+            reply.error("INVALID_RENDER_ACK", "Render fingerprint and SHA-256 are required.", null)
+            return
+        }
+        ioExecutor.execute {
+            val acknowledged = try {
+                NativeRenderStore.acknowledgeCompletion(applicationContext, renderKey, sha256)
+            } catch (_: Exception) {
+                false
+            }
+            mainHandler.post { reply.success(acknowledged) }
         }
     }
 
@@ -2110,12 +2081,9 @@ class MainActivity : FlutterActivity() {
     }
 
     override fun onDestroy() {
+        // Media3 export is owned by NativeRenderWorker/WorkManager, not this Activity.
+        // Destroying or recreating the UI must not cancel an in-flight user-initiated export.
         pendingPickerResult = null
-        renderSessions.values.filter { it.status == "running" }.forEach { session ->
-            try { session.transformer.cancel() } catch (_: Exception) { }
-            if (session.outputFile.exists()) session.outputFile.delete()
-        }
-        renderSessions.clear()
         ioExecutor.shutdown()
         super.onDestroy()
     }

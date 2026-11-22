@@ -380,6 +380,10 @@ class ProcessingPipelineService {
                   height: height.toInt(),
                 )) {
               records.add(existing);
+              await _exporter.acknowledgeCompletedRender(
+                renderKey: fingerprint,
+                sha256: hash,
+              );
               skipped++;
               onProgress?.call(
                 'rendering',
@@ -405,39 +409,65 @@ class ProcessingPipelineService {
         );
         onProgress?.call('rendering', progress);
 
-        final freeBytes = await AndroidVideoPicker.availableStorageBytes();
-        final estimatedBytes = (
-          project.source.sizeBytes *
-              (candidate.durationMs / project.source.durationMs) *
-              2.2
-        ).round() + 32 * 1024 * 1024;
-        if (freeBytes < estimatedBytes) {
-          throw StateError(
-            'Insufficient free storage for ${candidate.id}: '
-            '$freeBytes bytes available; approximately $estimatedBytes required.',
+        // A WorkManager render may have completed while the Flutter process
+        // was absent. Adopt and verify it before scheduling any new native work.
+        var rendered = await _exporter.consumeCompletedRender(
+          renderKey: fingerprint,
+        );
+        if (rendered != null) {
+          final completionIsValid = await _exporter.verifyExport(
+            outputUri: rendered.outputUri,
+            sha256: rendered.sha256,
+            sizeBytes: rendered.sizeBytes,
+            durationMs: rendered.durationMs,
+            width: rendered.width,
+            height: rendered.height,
           );
+          if (!completionIsValid) {
+            await _exporter.acknowledgeCompletedRender(
+              renderKey: fingerprint,
+              sha256: rendered.sha256,
+            );
+            rendered = null;
+          }
         }
 
-        final rendered = await _exporter.renderClip(
-          clipId: candidate.id,
-          sourceUri: project.source.uri,
-          startMs: candidate.startMs,
-          endMs: candidate.endMs,
-          aspectRatio: _aspectRatio(project),
-          sourceAspectRatio: sourceAspectRatio,
-          reframeShots: clipReframeShots,
-          captionCues: captionCuesByClip[candidate.id] ?? const [],
-          captionStyle: captionStylePayload,
-          captionAnimationId: project.preferences.captionAnimationId,
-          outputPath: outputPath,
-          shouldCancel: () => _jobs.isCancellationRequested(projectId),
-          onStarted: onRenderStarted,
-          onProgress: (fraction) {
-            final value = 0.62 + 0.28 * (index + fraction) / total;
-            onProgress?.call('rendering', value);
-            _persistProgress(projectId, 'rendering_${candidate.id}', value);
-          },
-        );
+        if (rendered == null) {
+          final freeBytes = await AndroidVideoPicker.availableStorageBytes();
+          final estimatedBytes = (
+            project.source.sizeBytes *
+                (candidate.durationMs / project.source.durationMs) *
+                2.2
+          ).round() + 32 * 1024 * 1024;
+          if (freeBytes < estimatedBytes) {
+            throw StateError(
+              'Insufficient free storage for ${candidate.id}: '
+              '$freeBytes bytes available; approximately $estimatedBytes required.',
+            );
+          }
+
+          rendered = await _exporter.renderClip(
+            clipId: candidate.id,
+            sourceUri: project.source.uri,
+            startMs: candidate.startMs,
+            endMs: candidate.endMs,
+            aspectRatio: _aspectRatio(project),
+            sourceAspectRatio: sourceAspectRatio,
+            reframeShots: clipReframeShots,
+            captionCues: captionCuesByClip[candidate.id] ?? const [],
+            captionStyle: captionStylePayload,
+            captionAnimationId: project.preferences.captionAnimationId,
+            renderKey: fingerprint,
+            outputPath: outputPath,
+            shouldCancel: () => _jobs.isCancellationRequested(projectId),
+            onStarted: onRenderStarted,
+            onProgress: (fraction) {
+              final value = 0.62 + 0.28 * (index + fraction) / total;
+              onProgress?.call('rendering', value);
+              _persistProgress(projectId, 'rendering_${candidate.id}', value);
+            },
+          );
+        }
         if (!rendered.validated ||
             rendered.outputUri.isEmpty ||
             rendered.sizeBytes < 2048 ||
@@ -480,6 +510,12 @@ class ProcessingPipelineService {
           stage: stageName,
           fingerprint: fingerprint,
           artifactPaths: artifacts,
+        );
+        // Only now may the durable native result be deleted. If the process
+        // dies before both writes finish, the same clip can be adopted again.
+        await _exporter.acknowledgeCompletedRender(
+          renderKey: fingerprint,
+          sha256: rendered.sha256,
         );
         records.add(record);
         exported++;

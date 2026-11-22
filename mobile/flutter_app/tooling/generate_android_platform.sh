@@ -16,6 +16,8 @@ flutter create --platforms=android --org com.m5ham3ds --project-name cutawan_mob
 MAIN_ACTIVITY_DIR="android/app/src/main/kotlin/com/m5ham3ds/cutawan_mobile"
 mkdir -p "$MAIN_ACTIVITY_DIR"
 install -m 0644 "$SCRIPT_DIR/android/MainActivity.kt" "$MAIN_ACTIVITY_DIR/MainActivity.kt"
+install -m 0644 "$SCRIPT_DIR/android/NativeRenderEngine.kt" "$MAIN_ACTIVITY_DIR/NativeRenderEngine.kt"
+install -m 0644 "$SCRIPT_DIR/android/NativeRenderWorker.kt" "$MAIN_ACTIVITY_DIR/NativeRenderWorker.kt"
 
 # Direct HTTP/HTTPS media import needs INTERNET in the release manifest, too.
 MAIN_MANIFEST="android/app/src/main/AndroidManifest.xml"
@@ -45,10 +47,56 @@ if re.search(r'android:allowBackup\s*=', tag):
 else:
     tag = tag[:-1] + ' android:allowBackup="false">'
 source = source[:match.start()] + tag + source[match.end():]
+# WorkManager's long-running worker owns Media3 rendering and declares
+# the required foreground-service capabilities in the merged application manifest.
+root_match = re.search(r"<manifest\b[^>]*>", source, flags=re.S)
+if not root_match:
+    raise SystemExit("Could not locate the Android manifest root element.")
+root_tag = root_match.group(0)
+if "xmlns:tools=" not in root_tag:
+    root_tag = root_tag[:-1] + ' xmlns:tools="http://schemas.android.com/tools">'
+    source = source[:root_match.start()] + root_tag + source[root_match.end():]
+
+permissions = [
+    "android.permission.FOREGROUND_SERVICE",
+    "android.permission.FOREGROUND_SERVICE_DATA_SYNC",
+    "android.permission.FOREGROUND_SERVICE_MEDIA_PROCESSING",
+    "android.permission.POST_NOTIFICATIONS",
+]
+for permission in permissions:
+    if permission not in source:
+        root_match = re.search(r"<manifest\b[^>]*>", source, flags=re.S)
+        source = source[:root_match.end()] + f'\n    <uses-permission android:name="{permission}" />' + source[root_match.end():]
+
+service = (
+    '<service android:name="androidx.work.impl.foreground.SystemForegroundService" '
+    'android:foregroundServiceType="dataSync|mediaProcessing" '
+    'tools:node="merge" tools:replace="android:foregroundServiceType" />'
+)
+service_match = re.search(
+    r'<service\b[^>]*android:name="androidx\.work\.impl\.foreground\.SystemForegroundService"[^>]*/?>',
+    source,
+    flags=re.S,
+)
+if service_match:
+    source = source[:service_match.start()] + service + source[service_match.end():]
+else:
+    application_end = source.find("</application>")
+    if application_end < 0:
+        raise SystemExit("Could not locate the Android application closing element.")
+    source = source[:application_end] + "        " + service + "\n    " + source[application_end:]
+
 manifest.write_text(source)
-if 'android:allowBackup="false"' not in manifest.read_text():
+verified = manifest.read_text()
+if 'android:allowBackup="false"' not in verified:
     raise SystemExit("Android backup restriction was not applied.")
-print("Verified Android allowBackup=false for Keystore-backed AI credentials.")
+for permission in permissions:
+    if permission not in verified:
+        raise SystemExit(f"Missing foreground/notification permission: {permission}")
+if "androidx.work.impl.foreground.SystemForegroundService" not in verified:
+    raise SystemExit("WorkManager foreground service declaration was not added.")
+print("Verified Android backup restriction and WorkManager foreground-service manifest.")
+
 PY
 
 # The mobile artifact is intentionally ARM64-only.
@@ -168,6 +216,7 @@ if kts.is_file():
         '    implementation("androidx.media3:media3-transformer:1.11.1")',
         '    implementation("androidx.media3:media3-effect:1.11.1")',
         '    implementation("androidx.media3:media3-common:1.11.1")',
+        '    implementation("androidx.work:work-runtime:2.12.0")',
     ]
 elif groovy.is_file():
     path = groovy
@@ -175,6 +224,7 @@ elif groovy.is_file():
         '    implementation "androidx.media3:media3-transformer:1.11.1"',
         '    implementation "androidx.media3:media3-effect:1.11.1"',
         '    implementation "androidx.media3:media3-common:1.11.1"',
+        '    implementation "androidx.work:work-runtime:2.12.0"',
     ]
 else:
     raise SystemExit('Flutter did not generate an Android Gradle file.')
@@ -186,8 +236,11 @@ if block_index is None:
     lines.extend(['', 'dependencies {', *dependencies, '}'])
 else:
     for dependency in reversed(dependencies):
-        coordinate = dependency.split('androidx.media3:')[1].split(':')[0]
-        expected = 'androidx.media3:' + coordinate + ':1.11.1'
+        if 'androidx.media3:' in dependency:
+            coordinate = dependency.split('androidx.media3:')[1].split(':')[0]
+            expected = 'androidx.media3:' + coordinate + ':1.11.1'
+        else:
+            expected = 'androidx.work:work-runtime:2.12.0'
         if expected not in source:
             lines.insert(block_index + 1, dependency)
 source = '\n'.join(lines) + '\n'
@@ -195,8 +248,10 @@ for artifact in ('transformer', 'effect', 'common'):
     expected = 'androidx.media3:media3-' + artifact + ':1.11.1'
     if expected not in source:
         raise SystemExit('Missing Media3 dependency: ' + expected)
+if 'androidx.work:work-runtime:2.12.0' not in source:
+    raise SystemExit('Missing WorkManager 2.12.0 dependency.')
 path.write_text(source)
-print('Verified Media3 Transformer/effect/common 1.11.1 dependencies.')
+print('Verified Media3 and WorkManager 2.12.0 dependencies.')
 PY
 # whisper.cpp defaults BUILD_SHARED_LIBS=ON on Android. llama.cpp exports
 # the same libggml-*.so names, so compile Whisper's private GGML as static
