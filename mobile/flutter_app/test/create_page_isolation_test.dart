@@ -16,9 +16,11 @@ void main() {
       MaterialApp(
         home: Directionality(
           textDirection: TextDirection.rtl,
-          child: CreatePage(
-            repository: LocalProjectRepository(),
-            onProjectSaved: () async {},
+          child: Scaffold(
+            body: CreatePage(
+              repository: LocalProjectRepository(),
+              onProjectSaved: () async {},
+            ),
           ),
         ),
       ),
