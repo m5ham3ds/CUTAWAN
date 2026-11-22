@@ -46,8 +46,6 @@ Future<void> _scrollSettingsUntilFound(
 }
 
 
-
-
 void main() {
   testWidgets(
     'CUTAWAN settings fit narrow and wide screens with enlarged text',
@@ -149,7 +147,7 @@ void main() {
   });
 
   testWidgets(
-    'theme mode and reduced motion controls persist on this device',
+    'theme mode and reduced motion controls update stored preferences',
     (tester) async {
       tester.view.physicalSize = const Size(390, 844);
       tester.view.devicePixelRatio = 1;
@@ -189,8 +187,6 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 50));
       expect(store.preferences.value.reduceMotion, isTrue);
-
-
     },
   );
 
