@@ -21,13 +21,13 @@ Future<T> _traceSettingsStep<T>(
   String label,
   Future<T> Function() action,
 ) async {
-  print('[settings-test] $label:START');
+  debugPrint('[settings-test] $label:START');
   try {
     final result = await action().timeout(const Duration(seconds: 30));
-    print('[settings-test] $label:DONE');
+    debugPrint('[settings-test] $label:DONE');
     return result;
   } catch (error) {
-    print('[settings-test] $label:ERROR $error');
+    debugPrint('[settings-test] $label:ERROR $error');
     rethrow;
   }
 }
@@ -38,7 +38,7 @@ Future<void> _scrollSettingsUntilFound(
   double distance = 480,
   int maxSwipes = 12,
 }) async {
-  print('[settings-scroll] START ${target.description}');
+  debugPrint('[settings-scroll] START target');
   final list = find.byKey(const ValueKey('cutawan-settings-list'));
   final scrollableFinder = find.descendant(
     of: list,
@@ -49,7 +49,7 @@ Future<void> _scrollSettingsUntilFound(
 
   for (var attempt = 0; attempt < maxSwipes; attempt++) {
     if (tester.any(target) && tester.getRect(target).overlaps(viewport)) {
-      print('[settings-scroll] VISIBLE ${target.description}');
+      debugPrint('[settings-scroll] VISIBLE target');
       return;
     }
 
@@ -60,12 +60,12 @@ Future<void> _scrollSettingsUntilFound(
 
     // jumpTo is synchronous; pump the frame before inspecting lazy children.
     // Awaiting ensureVisible before pumping can deadlock a widget test.
-    print('[settings-scroll] step=$attempt from=${position.pixels} to=$nextOffset max=${position.maxScrollExtent}');
+    debugPrint('[settings-scroll] step=$attempt from=${position.pixels} to=$nextOffset max=${position.maxScrollExtent}');
     position.jumpTo(nextOffset);
     await _traceSettingsStep('scroll-pump-$attempt', () => tester.pump());
   }
 
-  print('[settings-scroll] EXHAUSTED ${target.description}');
+  debugPrint('[settings-scroll] EXHAUSTED target');
   expect(
     target,
     findsOneWidget,
@@ -83,7 +83,7 @@ void main() {
   testWidgets(
     'CUTAWAN settings fit narrow and wide screens with enlarged text',
     (tester) async {
-      print('[settings-layout] START');
+      debugPrint('[settings-layout] START');
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
       final directory = await _traceSettingsStep('layout-create-temp', () => Directory.systemTemp.createTemp('cutawan-settings-layout-'));
@@ -155,7 +155,7 @@ void main() {
 
   testWidgets('settings routes open diagnostics and the models center',
       (tester) async {
-    print('[settings-routes] START');
+    debugPrint('[settings-routes] START');
     var diagnostics = 0;
     var models = 0;
     final directory = await _traceSettingsStep('routes-create-temp', () => Directory.systemTemp.createTemp('cutawan-settings-routes-'));
@@ -189,7 +189,7 @@ void main() {
   testWidgets(
     'theme mode and reduced motion controls persist on this device',
     (tester) async {
-      print('[settings-persistence] START');
+      debugPrint('[settings-persistence] START');
       tester.view.physicalSize = const Size(390, 844);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.resetPhysicalSize);
