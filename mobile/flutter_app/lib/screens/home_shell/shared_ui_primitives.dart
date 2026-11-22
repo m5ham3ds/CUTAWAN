@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../domain/project_contract.dart';
+
 String formatCutawanBytes(int bytes) {
   if (bytes <= 0) return 'غير متاح';
   if (bytes < 1024 * 1024) {
@@ -148,7 +150,6 @@ class CutawanSummaryLine extends StatelessWidget {
   }
 }
 
-import '../../domain/project_contract.dart';
 
 String cutawanJobStatusLabel(ProjectJobStatus status) => switch (status) {
   ProjectJobStatus.prepared => 'جاهز للبدء',
