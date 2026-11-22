@@ -1,8 +1,8 @@
 # CUTAWAN Mobile — Phase Register
 
 **Repository:** `m5ham3ds/CUTAWAN`  
-**Working branch:** `main` only.  
-**Rule:** Continue from the last accepted commit; do not re-run completed implementation phases without a specific regression or acceptance reason.
+**Allowed branches:** `main` and `CUTAWAN-TEST` only.  
+**Rule:** Continue from the last accepted commit; do not re-run completed implementation phases without a specific regression or acceptance reason. Implement product changes directly on `main`; use `CUTAWAN-TEST` only for automated validation and device-test runs.
 
 ## Baseline and latest verified Android state
 
@@ -39,7 +39,7 @@
 ## Global engineering constraints
 
 1. Root Electron desktop remains intact. Flutter Android is a sibling application.
-2. No new Git branch. Every source update is committed directly to `main`.
+2. Only `main` and `CUTAWAN-TEST` are allowed. Product source is committed directly to `main`; the branch-policy workflow synchronizes `CUTAWAN-TEST` to each main commit and dispatches Mobile Android + desktop CI there. No feature branches are to be created.
 3. No API key in source, assets, project JSON, logs, screenshots, analytics, or GitHub Actions output.
 4. Cloud calls need explicit consent. Send only the minimum text needed; do not upload a user's video by default.
 5. Provider model lists are account-scoped and not a universal guarantee of cost, quota, availability, or task compatibility.

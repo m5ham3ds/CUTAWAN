@@ -2,12 +2,12 @@ name: Mobile Android (Flutter)
 
 on:
   push:
-    branches: [main]
+    branches: [CUTAWAN-TEST]
     paths:
       - "mobile/flutter_app/**"
       - ".github/workflows/mobile-android.yml"
   pull_request:
-    branches: [main]
+    branches: [CUTAWAN-TEST]
     paths:
       - "mobile/flutter_app/**"
       - ".github/workflows/mobile-android.yml"

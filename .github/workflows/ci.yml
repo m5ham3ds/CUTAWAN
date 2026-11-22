@@ -2,10 +2,12 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [CUTAWAN-TEST]
   pull_request:
+    branches: [CUTAWAN-TEST]
     # labeled/unlabeled so adding "no release notes" re-runs the check.
     types: [opened, synchronize, reopened, labeled, unlabeled]
+  workflow_dispatch:
 
 jobs:
   release-notes:
