@@ -96,7 +96,6 @@ void main() {
       addTearDown(tester.view.resetDevicePixelRatio);
 
       final semantics = tester.ensureSemantics();
-      addTearDown(semantics.dispose);
       for (final brightness in [Brightness.light, Brightness.dark]) {
         for (final direction in [TextDirection.rtl, TextDirection.ltr]) {
           await tester.pumpWidget(
@@ -140,6 +139,7 @@ void main() {
           expect(tester.takeException(), isNull);
         }
       }
+      semantics.dispose();
     },
   );
 
