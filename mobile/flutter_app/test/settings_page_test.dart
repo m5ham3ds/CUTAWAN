@@ -24,18 +24,40 @@ Future<void> _scrollSettingsUntilFound(
   int maxSwipes = 12,
 }) async {
   final list = find.byKey(const ValueKey('cutawan-settings-list'));
-  for (var attempt = 0; attempt < maxSwipes && !tester.any(target); attempt++) {
-    await tester.drag(list, Offset(0, -distance));
-    await tester.pump(const Duration(milliseconds: 100));
+  final scrollableFinder = find.descendant(
+    of: list,
+    matching: find.byType(Scrollable),
+  ).first;
+  final position = tester.state<ScrollableState>(scrollableFinder).position;
+  final viewport = tester.getRect(list);
+
+  for (var attempt = 0; attempt < maxSwipes; attempt++) {
+    if (tester.any(target) && tester.getRect(target).overlaps(viewport)) {
+      return;
+    }
+
+    final nextOffset =
+        (position.pixels + distance).clamp(0.0, position.maxScrollExtent);
+    if (nextOffset <= position.pixels) break;
+
+    // jumpTo is synchronous; pump the frame before inspecting lazy children.
+    // Awaiting ensureVisible before pumping can deadlock a widget test.
+    position.jumpTo(nextOffset);
+    await tester.pump();
   }
+
   expect(
     target,
     findsOneWidget,
-    reason: 'Settings list did not reveal the target within $maxSwipes swipes.',
+    reason: 'Settings list did not build the target within $maxSwipes scroll steps.',
   );
-  await tester.ensureVisible(target);
-  await tester.pump();
+  expect(
+    tester.getRect(target).overlaps(viewport),
+    isTrue,
+    reason: 'Settings target was built but remained outside the visible list viewport.',
+  );
 }
+
 
 void main() {
   testWidgets(
