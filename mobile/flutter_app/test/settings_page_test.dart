@@ -76,7 +76,8 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
 
         expect(find.text('إعدادات CUTAWAN'), findsOneWidget);
         await tester.scrollUntilVisible(
@@ -84,14 +85,14 @@ void main() {
           220,
           scrollable: find.byType(Scrollable).first,
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
         expect(find.text('الخصوصية والمعالجة'), findsOneWidget);
         await tester.scrollUntilVisible(
           find.text('المعلومات القانونية'),
           220,
           scrollable: find.byType(Scrollable).first,
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
         expect(find.text('المعلومات القانونية'), findsOneWidget);
         expect(tester.takeException(), isNull);
         await tester.pumpWidget(const SizedBox.shrink());
@@ -119,7 +120,7 @@ void main() {
         ),
       ),
     );
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     final diagnosticsTile = find.text('تشخيص وقبول Android');
     await tester.scrollUntilVisible(
@@ -127,7 +128,7 @@ void main() {
       200,
       scrollable: find.byType(Scrollable).first,
     );
-    await tester.pumpAndSettle();
+    await tester.pump();
     await tester.tap(diagnosticsTile);
     final modelsTile = find.text('مركز النماذج والاتصالات');
     await tester.scrollUntilVisible(
@@ -135,7 +136,7 @@ void main() {
       200,
       scrollable: find.byType(Scrollable).first,
     );
-    await tester.pumpAndSettle();
+    await tester.pump();
     await tester.tap(modelsTile);
 
     expect(diagnostics, 1);
@@ -169,7 +170,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       final darkTheme = find.byKey(
         const ValueKey('settings-theme-dark'),
@@ -179,9 +180,10 @@ void main() {
         180,
         scrollable: find.byType(Scrollable).first,
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
       await tester.tap(darkTheme);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
       expect(store.preferences.value.themeMode, AppThemeMode.dark);
 
       final reduceMotion = find.byKey(
@@ -192,9 +194,10 @@ void main() {
         180,
         scrollable: find.byType(Scrollable).first,
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
       await tester.tap(reduceMotion);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
       expect(store.preferences.value.reduceMotion, isTrue);
 
       final restoredStore = AppPreferencesStore(
