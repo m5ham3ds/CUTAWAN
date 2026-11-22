@@ -147,3 +147,168 @@ class CutawanSummaryLine extends StatelessWidget {
     );
   }
 }
+
+import '../../domain/project_contract.dart';
+
+String cutawanJobStatusLabel(ProjectJobStatus status) => switch (status) {
+  ProjectJobStatus.prepared => 'جاهز للبدء',
+  ProjectJobStatus.running => 'قيد التنفيذ',
+  ProjectJobStatus.completed => 'مكتمل',
+  ProjectJobStatus.cancelled => 'متوقف',
+  ProjectJobStatus.failed => 'فشل',
+};
+
+class CutawanMetricCard extends StatelessWidget {
+  const CutawanMetricCard({
+    super.key,
+    required this.label,
+    required this.value,
+    required this.icon,
+    this.tint,
+  });
+
+  final String label;
+  final String value;
+  final IconData icon;
+  final Color? tint;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final color = tint ?? theme.colorScheme.primary;
+    return CutawanPanel(
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 18, color: color),
+          const SizedBox(height: 12),
+          Text(
+            value,
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontSize: 21,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 3),
+          Text(
+            label,
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class CutawanStatusBadge extends StatelessWidget {
+  const CutawanStatusBadge({
+    super.key,
+    required this.label,
+    required this.status,
+  });
+
+  final String label;
+  final ProjectJobStatus status;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final color = switch (status) {
+      ProjectJobStatus.completed => theme.colorScheme.secondary,
+      ProjectJobStatus.running => theme.colorScheme.primary,
+      ProjectJobStatus.failed => theme.colorScheme.error,
+      ProjectJobStatus.cancelled => theme.colorScheme.onSurfaceVariant,
+      ProjectJobStatus.prepared => theme.colorScheme.tertiary,
+    };
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.11),
+        borderRadius: BorderRadius.circular(99),
+        border: Border.all(color: color.withValues(alpha: 0.27)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 6,
+            height: 6,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 7),
+          Text(
+            label,
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: color,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class CutawanEmptyState extends StatelessWidget {
+  const CutawanEmptyState({
+    super.key,
+    required this.icon,
+    required this.title,
+    required this.description,
+    this.action,
+    this.onAction,
+  });
+
+  final IconData icon;
+  final String title;
+  final String description;
+  final String? action;
+  final VoidCallback? onAction;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return CutawanPanel(
+      padding: const EdgeInsets.fromLTRB(24, 30, 24, 28),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 66,
+            height: 66,
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primary.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(22),
+            ),
+            child: Icon(icon, size: 30, color: theme.colorScheme.primary),
+          ),
+          const SizedBox(height: 17),
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: theme.textTheme.titleLarge,
+          ),
+          const SizedBox(height: 7),
+          Text(
+            description,
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          if (action != null && onAction != null) ...[
+            const SizedBox(height: 19),
+            FilledButton.tonal(
+              onPressed: onAction,
+              child: Text(action!),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}

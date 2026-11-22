@@ -1,13 +1,5 @@
 part of '../home_shell.dart';
 
-String _jobStatusLabel(ProjectJobStatus status) => switch (status) {
-  ProjectJobStatus.prepared => 'جاهز للبدء',
-  ProjectJobStatus.running => 'قيد التنفيذ',
-  ProjectJobStatus.completed => 'مكتمل',
-  ProjectJobStatus.cancelled => 'متوقف',
-  ProjectJobStatus.failed => 'فشل',
-};
-
 String _formatDuration(int milliseconds) {
   final seconds = milliseconds ~/ 1000;
   final minutes = seconds ~/ 60;

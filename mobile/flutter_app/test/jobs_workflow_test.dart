@@ -1,6 +1,6 @@
 import 'package:cutawan_mobile/domain/clip_preferences.dart';
 import 'package:cutawan_mobile/domain/project_contract.dart';
-import 'package:cutawan_mobile/screens/home_shell.dart';
+import 'package:cutawan_mobile/screens/home_shell/jobs_page.dart';
 import 'package:cutawan_mobile/services/local_project_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';

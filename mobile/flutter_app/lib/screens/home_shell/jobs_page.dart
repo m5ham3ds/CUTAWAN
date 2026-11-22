@@ -1,5 +1,12 @@
-part of '../home_shell.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 
+import '../../domain/project_contract.dart';
+import '../../services/android_video_picker.dart';
+import '../../services/direct_video_downloader.dart';
+import '../../services/local_project_repository.dart';
+import '../../services/processing_job_service.dart';
+import 'shared_ui_primitives.dart';
 enum _JobsFilter { all, active, completed, attention }
 
 class JobsPage extends StatefulWidget {
@@ -104,7 +111,7 @@ class _JobsPageState extends State<JobsPage> {
         _JobsFilter.attention => 'تحتاج متابعة',
       };
 
-  String _statusLabel(ProjectJobStatus status) => _jobStatusLabel(status);
+  String _statusLabel(ProjectJobStatus status) => cutawanJobStatusLabel(status);
 
   String _stageLabel(String stage) {
     if (stage.startsWith('interrupted_after_process_death:')) {
@@ -267,7 +274,7 @@ class _JobsPageState extends State<JobsPage> {
           children: [
             SizedBox(
               width: width,
-              child: _MetricCard(
+              child: CutawanMetricCard(
                 label: 'قيد التنفيذ',
                 value: '$running',
                 icon: Icons.play_circle_outline_rounded,
@@ -276,7 +283,7 @@ class _JobsPageState extends State<JobsPage> {
             ),
             SizedBox(
               width: width,
-              child: _MetricCard(
+              child: CutawanMetricCard(
                 label: 'جاهزة',
                 value: '$ready',
                 icon: Icons.hourglass_empty_rounded,
@@ -285,7 +292,7 @@ class _JobsPageState extends State<JobsPage> {
             ),
             SizedBox(
               width: width,
-              child: _MetricCard(
+              child: CutawanMetricCard(
                 label: 'مكتملة',
                 value: '$completed',
                 icon: Icons.check_circle_outline_rounded,
@@ -294,7 +301,7 @@ class _JobsPageState extends State<JobsPage> {
             ),
             SizedBox(
               width: width,
-              child: _MetricCard(
+              child: CutawanMetricCard(
                 label: 'تحتاج متابعة',
                 value: '$attention',
                 icon: Icons.error_outline_rounded,
@@ -343,7 +350,7 @@ class _JobsPageState extends State<JobsPage> {
           title: const Text('مساحة تنزيلات Cutawan'),
           subtitle: Text(
             snapshot.hasData
-                ? _formatBytes(snapshot.data!)
+                ? formatCutawanBytes(snapshot.data!)
                 : snapshot.hasError
                     ? 'تعذّر قراءة مساحة التخزين'
                     : 'جارٍ حساب المساحة…',
@@ -417,7 +424,7 @@ class _JobsPageState extends State<JobsPage> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                _StatusBadge(
+                CutawanStatusBadge(
                   label: _statusLabel(status),
                   status: status,
                 ),
@@ -537,7 +544,7 @@ class _JobsPageState extends State<JobsPage> {
               children: [
                 _JobMeta(
                   icon: Icons.timer_outlined,
-                  label: _formatDuration(project.source.durationMs),
+                  label: formatCutawanDuration(project.source.durationMs),
                 ),
                 _JobMeta(
                   icon: Icons.high_quality_outlined,
@@ -545,7 +552,7 @@ class _JobsPageState extends State<JobsPage> {
                 ),
                 _JobMeta(
                   icon: Icons.storage_outlined,
-                  label: _formatBytes(project.source.sizeBytes),
+                  label: formatCutawanBytes(project.source.sizeBytes),
                 ),
               ],
             ),
@@ -589,7 +596,7 @@ class _JobsPageState extends State<JobsPage> {
           key: const ValueKey('jobs-workspace-list'),
           padding: const EdgeInsets.fromLTRB(14, 20, 14, 124),
           children: [
-            const _Eyebrow(
+            const CutawanEyebrow(
               'مركز المهام',
               icon: Icons.grid_view_rounded,
             ),
@@ -653,7 +660,7 @@ class _JobsPageState extends State<JobsPage> {
               ],
             ),
             if (items.isEmpty)
-              _EmptyState(
+              CutawanEmptyState(
                 icon: Icons.video_collection_outlined,
                 title: 'لا توجد مهام بعد',
                 description:
@@ -662,7 +669,7 @@ class _JobsPageState extends State<JobsPage> {
                 onAction: widget.onOpenCreate,
               )
             else if (visible.isEmpty)
-              _Panel(
+              CutawanPanel(
                 child: Column(
                   children: [
                     const Icon(Icons.search_off_rounded, size: 30),
