@@ -1,5 +1,25 @@
-part of '../home_shell.dart';
+import 'dart:async';
 
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
+import '../../domain/clip_candidate.dart';
+import '../../domain/clip_preferences.dart';
+import '../../domain/project_contract.dart';
+import '../../domain/reframe_contract.dart';
+import '../../domain/transcript_contract.dart';
+import '../../services/ai_model_gateway.dart';
+import '../../services/android_reframe_analysis_service.dart';
+import '../../services/android_video_picker.dart';
+import '../../services/candidate_discovery_service.dart';
+import '../../services/local_editorial_annotation_service.dart';
+import '../../services/local_project_repository.dart';
+import '../../services/processing_pipeline_service.dart';
+import '../../services/qwen_model_manager.dart';
+import '../../services/whisper_transcription_service.dart';
+import '../features/clip_editor_page.dart';
+import 'shared_ui_primitives.dart';
 class ReviewPage extends StatefulWidget {
   const ReviewPage({
     required this.projects,
@@ -483,7 +503,7 @@ class _ReviewPageState extends State<ReviewPage> {
         : active
             ? scheme.primary
             : scheme.onSurfaceVariant;
-    return _Panel(
+    return CutawanPanel(
       padding: const EdgeInsets.all(11),
       accent: active && !complete,
       child: Row(
@@ -595,11 +615,11 @@ class _ReviewPageState extends State<ReviewPage> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                _StatusBadge(label: compactStatusLabel, status: project.job.status),
+                CutawanStatusBadge(label: compactStatusLabel, status: project.job.status),
               ],
             ),
             const SizedBox(height: 12),
-            _Panel(
+            CutawanPanel(
               accent: true,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -616,7 +636,7 @@ class _ReviewPageState extends State<ReviewPage> {
                                 style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800)),
                             const SizedBox(height: 4),
                             Text(
-                              '${project.source.width} × ${project.source.height} · ${_formatDuration(project.source.durationMs)} · ${_formatBytes(project.source.sizeBytes)}',
+                              '${project.source.width} × ${project.source.height} · ${formatCutawanDuration(project.source.durationMs)} · ${formatCutawanBytes(project.source.sizeBytes)}',
                               style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
                             ),
                           ],
@@ -642,7 +662,7 @@ class _ReviewPageState extends State<ReviewPage> {
               const LinearProgressIndicator(minHeight: 4),
             ],
             const SizedBox(height: 16),
-            const _Eyebrow('مسار المشروع', icon: Icons.route_outlined),
+            const CutawanEyebrow('مسار المشروع', icon: Icons.route_outlined),
             const SizedBox(height: 9),
             LayoutBuilder(
               builder: (context, constraints) {
@@ -690,7 +710,7 @@ class _ReviewPageState extends State<ReviewPage> {
               },
             ),
             const SizedBox(height: 12),
-            _Panel(
+            CutawanPanel(
               padding: const EdgeInsets.all(14),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -850,7 +870,7 @@ class _ReviewPageState extends State<ReviewPage> {
               ),
             ),
             const SizedBox(height: 18),
-            const _Eyebrow('مراجعة المقاطع', icon: Icons.movie_filter_rounded),
+            const CutawanEyebrow('مراجعة المقاطع', icon: Icons.movie_filter_rounded),
             const SizedBox(height: 8),
             Row(
               children: [
@@ -867,12 +887,12 @@ class _ReviewPageState extends State<ReviewPage> {
               ],
             ),
             if (candidateSet == null)
-              _Panel(
+              CutawanPanel(
                 child: Text('ستظهر المقاطع هنا بعد اكتمال التفريغ واكتشاف اللحظات المناسبة.',
                     style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
               )
             else if (candidateSet.candidates.isEmpty)
-              _Panel(
+              CutawanPanel(
                 child: Text('لم يعثر التحليل على مقاطع مكتملة ضمن المدة المحددة. لم تتم إضافة مقاطع وهمية.',
                     style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
               )
@@ -907,7 +927,7 @@ class _ReviewPageState extends State<ReviewPage> {
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          '${_formatDuration(candidate.startMs)} – ${_formatDuration(candidate.endMs)} · ${candidate.durationMs ~/ 1000} ثانية'
+                          '${formatCutawanDuration(candidate.startMs)} – ${formatCutawanDuration(candidate.endMs)} · ${candidate.durationMs ~/ 1000} ثانية'
                           '${candidate.modelAnnotated ? ' · تعليق النموذج' : ''}',
                           style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
                         ),
@@ -934,12 +954,12 @@ class _ReviewPageState extends State<ReviewPage> {
                 ),
             ],
             const SizedBox(height: 18),
-            const _Eyebrow('ملفات الإخراج', icon: Icons.video_file_rounded),
+            const CutawanEyebrow('ملفات الإخراج', icon: Icons.video_file_rounded),
             const SizedBox(height: 8),
             Text('الفيديوهات المصدّرة',
                 style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900)),
             if (exports.isEmpty)
-              _Panel(
+              CutawanPanel(
                 child: Text('ستظهر هنا ملفات MP4 التي اجتازت فحص التحقق الكامل بعد التصدير.',
                     style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
               )
@@ -974,8 +994,8 @@ class _ReviewPageState extends State<ReviewPage> {
                               const SizedBox(height: 4),
                               Text(
                                 '${export['width']} × ${export['height']} · '
-                                '${_formatDuration((export['durationMs'] as num? ?? 0).toInt())} · '
-                                '${_formatBytes((export['sizeBytes'] as num? ?? 0).toInt())}',
+                                '${formatCutawanDuration((export['durationMs'] as num? ?? 0).toInt())} · '
+                                '${formatCutawanBytes((export['sizeBytes'] as num? ?? 0).toInt())}',
                                 style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
                               ),
                               const SizedBox(height: 4),
@@ -1011,7 +1031,7 @@ class _ReviewPageState extends State<ReviewPage> {
           key: const ValueKey('review-workflow-list'),
           padding: const EdgeInsets.fromLTRB(16, 20, 16, 132),
           children: [
-            const _Eyebrow('مساحة العمل / المراجعة', icon: Icons.movie_filter_rounded),
+            const CutawanEyebrow('مساحة العمل / المراجعة', icon: Icons.movie_filter_rounded),
             const SizedBox(height: 8),
             Text('راجع النتائج قبل إخراجها',
                 style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900)),
@@ -1034,9 +1054,9 @@ class _ReviewPageState extends State<ReviewPage> {
                     spacing: gap,
                     runSpacing: gap,
                     children: [
-                      SizedBox(width: width, child: _MetricCard(label: 'المشاريع', value: '${items.length}', icon: Icons.video_library_outlined)),
-                      SizedBox(width: width, child: _MetricCard(label: 'للمراجعة', value: '$reviewable', icon: Icons.movie_filter_outlined)),
-                      SizedBox(width: width, child: _MetricCard(label: 'مكتملة', value: '$completed', icon: Icons.check_circle_outline_rounded)),
+                      SizedBox(width: width, child: CutawanMetricCard(label: 'المشاريع', value: '${items.length}', icon: Icons.video_library_outlined)),
+                      SizedBox(width: width, child: CutawanMetricCard(label: 'للمراجعة', value: '$reviewable', icon: Icons.movie_filter_outlined)),
+                      SizedBox(width: width, child: CutawanMetricCard(label: 'مكتملة', value: '$completed', icon: Icons.check_circle_outline_rounded)),
                     ],
                   );
                 },
@@ -1044,7 +1064,7 @@ class _ReviewPageState extends State<ReviewPage> {
             ],
             const SizedBox(height: 18),
             if (items.isEmpty)
-              const _EmptyState(
+              const CutawanEmptyState(
                 icon: Icons.video_collection_outlined,
                 title: 'لا توجد مشاريع للمراجعة',
                 description: 'أنشئ مشروعًا أولاً. ستظهر هنا مراحل التحليل والمقاطع والملفات الناتجة.',

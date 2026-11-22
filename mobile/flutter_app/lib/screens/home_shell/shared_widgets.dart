@@ -1,18 +1,5 @@
 part of '../home_shell.dart';
 
-String _formatDuration(int milliseconds) {
-  final seconds = milliseconds ~/ 1000;
-  final minutes = seconds ~/ 60;
-  final remainder = seconds % 60;
-  return '${minutes.toString().padLeft(2, '0')}:${remainder.toString().padLeft(2, '0')}';
-}
-
-String _formatBytes(int bytes) {
-  if (bytes <= 0) return 'غير متاح';
-  if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(0)} KB';
-  return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
-}
-
 class _Eyebrow extends StatelessWidget {
   const _Eyebrow(this.text, {this.icon});
   final String text;
@@ -73,48 +60,6 @@ class _Panel extends StatelessWidget {
   }
 }
 
-class _MetricCard extends StatelessWidget {
-  const _MetricCard({
-    required this.label,
-    required this.value,
-    required this.icon,
-  });
-
-  final String label;
-  final String value;
-  final IconData icon;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return _Panel(
-      padding: const EdgeInsets.all(14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, size: 18, color: theme.colorScheme.primary),
-          const SizedBox(height: 12),
-          Text(
-            value,
-            style: theme.textTheme.titleLarge?.copyWith(
-              fontSize: 21,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-          const SizedBox(height: 3),
-          Text(
-            label,
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-
 class _EmptyState extends StatelessWidget {
   const _EmptyState({
     required this.icon,
@@ -155,51 +100,6 @@ class _EmptyState extends StatelessWidget {
             textAlign: TextAlign.center,
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _StatusBadge extends StatelessWidget {
-  const _StatusBadge({required this.label, required this.status});
-  final String label;
-  final ProjectJobStatus status;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final color = switch (status) {
-      ProjectJobStatus.completed => theme.colorScheme.secondary,
-      ProjectJobStatus.running => theme.colorScheme.primary,
-      ProjectJobStatus.failed => theme.colorScheme.error,
-      ProjectJobStatus.cancelled => theme.colorScheme.onSurfaceVariant,
-      ProjectJobStatus.prepared => theme.colorScheme.tertiary,
-    };
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.11),
-        borderRadius: BorderRadius.circular(99),
-        border: Border.all(color: color.withValues(alpha: 0.27)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 6,
-            height: 6,
-            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-          ),
-          const SizedBox(width: 7),
-          Text(
-            label,
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: color,
-              fontWeight: FontWeight.w800,
             ),
           ),
         ],
