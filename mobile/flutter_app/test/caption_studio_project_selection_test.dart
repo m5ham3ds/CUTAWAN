@@ -1,7 +1,7 @@
 import 'package:cutawan_mobile/domain/clip_preferences.dart';
 import 'package:cutawan_mobile/domain/project_contract.dart';
 import 'package:cutawan_mobile/domain/transcript_contract.dart';
-import 'package:cutawan_mobile/screens/home_shell.dart';
+import 'package:cutawan_mobile/screens/features/caption_studio_page.dart';
 import 'package:cutawan_mobile/services/local_project_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';

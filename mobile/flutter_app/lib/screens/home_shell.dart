@@ -1,13 +1,7 @@
-import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../domain/caption_catalog.dart';
-import '../domain/caption_animation.dart';
-import '../domain/caption_layout.dart';
-import '../domain/clip_preferences.dart';
 import '../domain/project_contract.dart';
-import '../domain/transcript_contract.dart';
 import '../services/local_project_repository.dart';
 import '../services/processing_job_service.dart';
 import 'device_acceptance_page.dart';
@@ -18,10 +12,8 @@ import 'home_shell/models_page.dart';
 import 'home_shell/create_page.dart';
 import 'home_shell/jobs_page.dart';
 import 'home_shell/review_page.dart';
-import 'home_shell/shared_ui_primitives.dart';
+import 'features/caption_studio_page.dart';
 
-part 'home_shell/caption_studio_page.dart';
-part 'home_shell/shared_widgets.dart';
 
 class HomeShell extends StatefulWidget {
   const HomeShell({super.key, this.repository, this.storageUsageBytes});

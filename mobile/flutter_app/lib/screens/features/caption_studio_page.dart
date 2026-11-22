@@ -1,5 +1,16 @@
-part of '../home_shell.dart';
+import 'dart:async';
 
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+
+import '../../domain/caption_animation.dart';
+import '../../domain/caption_catalog.dart';
+import '../../domain/caption_layout.dart';
+import '../../domain/clip_preferences.dart';
+import '../../domain/project_contract.dart';
+import '../../domain/transcript_contract.dart';
+import '../../services/local_project_repository.dart';
+import '../home_shell/shared_ui_primitives.dart';
 class CaptionStudioPage extends StatefulWidget {
   const CaptionStudioPage({
     required this.projects,
@@ -488,12 +499,12 @@ class _CaptionStudioPageState extends State<CaptionStudioPage>
   ) {
     final theme = Theme.of(context);
     final selected = _selectedProject;
-    return _Panel(
+    return CutawanPanel(
       accent: selected != null,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const _Eyebrow(
+          const CutawanEyebrow(
             'المشروع المستهدف',
             icon: Icons.folder_open_rounded,
           ),
@@ -580,7 +591,7 @@ class _CaptionStudioPageState extends State<CaptionStudioPage>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _Eyebrow(
+        const CutawanEyebrow(
           'معاينة متزامنة مع الكلمات',
           icon: Icons.play_circle_outline_rounded,
         ),
@@ -659,7 +670,7 @@ class _CaptionStudioPageState extends State<CaptionStudioPage>
                             ),
                             decoration: BoxDecoration(
                               color: showBackground
-                                  ? _colorFromHex(
+                                  ? _captionColorFromHex(
                                       _backgroundColor.toUpperCase() == '#000000' &&
                                               style.highlightBoxColor != null
                                           ? style.highlightBoxColor!
@@ -670,7 +681,7 @@ class _CaptionStudioPageState extends State<CaptionStudioPage>
                               boxShadow: frame.glow > 0
                                   ? [
                                       BoxShadow(
-                                        color: _colorFromHex(_highlightColor)
+                                        color: _captionColorFromHex(_highlightColor)
                                             .withValues(
                                           alpha: 0.25 * frame.glow,
                                         ),
@@ -737,7 +748,7 @@ class _CaptionStudioPageState extends State<CaptionStudioPage>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _Eyebrow('الأنماط البصرية', icon: Icons.palette_outlined),
+        const CutawanEyebrow('الأنماط البصرية', icon: Icons.palette_outlined),
         const SizedBox(height: 8),
         Wrap(
           key: const ValueKey('caption-style-presets'),
@@ -770,7 +781,7 @@ class _CaptionStudioPageState extends State<CaptionStudioPage>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _Eyebrow(
+        const CutawanEyebrow(
           'الحركة ومعاينة الدخول',
           icon: Icons.motion_photos_on_outlined,
         ),
@@ -794,7 +805,7 @@ class _CaptionStudioPageState extends State<CaptionStudioPage>
               .toList(growable: false),
         ),
         const SizedBox(height: 8),
-        _Panel(
+        CutawanPanel(
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -838,7 +849,7 @@ class _CaptionStudioPageState extends State<CaptionStudioPage>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _Eyebrow('الخط والتنسيق', icon: Icons.text_fields_rounded),
+        const CutawanEyebrow('الخط والتنسيق', icon: Icons.text_fields_rounded),
         const SizedBox(height: 10),
         DropdownButtonFormField<String>(
           key: const ValueKey('caption-font-family'),
@@ -907,7 +918,7 @@ class _CaptionStudioPageState extends State<CaptionStudioPage>
           onChanged: (value) => setState(() => _showSafeFrame = value),
         ),
         const SizedBox(height: 6),
-        const _Eyebrow('ألوان الترجمة', icon: Icons.color_lens_outlined),
+        const CutawanEyebrow('ألوان الترجمة', icon: Icons.color_lens_outlined),
         const SizedBox(height: 8),
         _buildColorField(
           label: 'لون النص',
@@ -934,7 +945,7 @@ class _CaptionStudioPageState extends State<CaptionStudioPage>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _Eyebrow(
+        const CutawanEyebrow(
           'مزامنة الكلمات',
           icon: Icons.sync_alt_rounded,
         ),
@@ -976,7 +987,7 @@ class _CaptionStudioPageState extends State<CaptionStudioPage>
       key: const ValueKey('caption-studio-list'),
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 120),
       children: [
-        const _Eyebrow(
+        const CutawanEyebrow(
           'CAPTION STUDIO',
           icon: Icons.closed_caption_rounded,
         ),
@@ -999,14 +1010,14 @@ class _CaptionStudioPageState extends State<CaptionStudioPage>
         _buildProjectSelector(context, projects),
         if (projects.isEmpty) ...[
           const SizedBox(height: 12),
-          const _EmptyState(
+          const CutawanEmptyState(
             icon: Icons.movie_creation_outlined,
             title: 'لا توجد مشاريع بعد',
             description: 'يمكنك استكشاف المعاينة والأنماط الآن، ثم اختيار مشروع لحفظ إعدادات الترجمة داخله.',
           ),
         ],
         const SizedBox(height: 18),
-        _Panel(
+        CutawanPanel(
           padding: const EdgeInsets.all(14),
           child: _buildPreview(context),
         ),
@@ -1086,14 +1097,14 @@ class _CaptionStudioPageState extends State<CaptionStudioPage>
         partial,
         textAlign: TextAlign.center,
         style: TextStyle(
-          color: _colorFromHex(_textColor),
+          color: _captionColorFromHex(_textColor),
           fontFamily: _fontFamily,
           fontSize: (250 * _fontScale).clamp(10.0, 36.0).toDouble(),
           fontWeight: (_bold || style.bold) ? FontWeight.bold : FontWeight.w600,
           shadows: [
             if (style.outlineWidth > 0)
               Shadow(
-                color: _colorFromHex(style.outlineColor),
+                color: _captionColorFromHex(style.outlineColor),
                 blurRadius: style.outlineWidth * 1.6,
               ),
           ],
@@ -1111,15 +1122,15 @@ class _CaptionStudioPageState extends State<CaptionStudioPage>
           text: '$word ',
           style: TextStyle(
             color: active
-                ? _colorFromHex(_highlightColor)
-                : _colorFromHex(_textColor),
+                ? _captionColorFromHex(_highlightColor)
+                : _captionColorFromHex(_textColor),
             fontFamily: _fontFamily,
             fontSize: (250 * _fontScale).clamp(10.0, 36.0).toDouble(),
             fontWeight: (_bold || style.bold) ? FontWeight.bold : FontWeight.w600,
             shadows: [
               if (style.outlineWidth > 0)
                 Shadow(
-                  color: _colorFromHex(style.outlineColor),
+                  color: _captionColorFromHex(style.outlineColor),
                   blurRadius: style.outlineWidth * 1.6,
                 ),
               if (style.shadow > 0)
@@ -1195,7 +1206,7 @@ class _CaptionColorFieldState extends State<_CaptionColorField> {
             prefixIcon: Padding(
               padding: const EdgeInsets.all(12),
               child: CircleAvatar(
-                backgroundColor: _colorFromHex(widget.value),
+                backgroundColor: _captionColorFromHex(widget.value),
                 radius: 10,
               ),
             ),
@@ -1231,4 +1242,10 @@ class _PreviewSafeFramePainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _PreviewSafeFramePainter oldDelegate) =>
       oldDelegate.showFrame != showFrame;
+}
+
+
+Color _captionColorFromHex(String hex) {
+  final parsed = int.tryParse(hex.replaceFirst('#', ''), radix: 16) ?? 0xFFFFFF;
+  return Color(0xFF000000 | parsed);
 }
