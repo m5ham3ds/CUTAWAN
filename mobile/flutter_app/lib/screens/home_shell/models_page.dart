@@ -721,6 +721,7 @@ class _ModelsPageState extends State<ModelsPage> {
             onPressed: _busy || _remoteBusy ? null : _refreshModels,
             icon: const Icon(Icons.refresh),
             label: const Text('إعادة فحص النماذج المحلية'),
+          ),
                 ],
               ),
             ),
