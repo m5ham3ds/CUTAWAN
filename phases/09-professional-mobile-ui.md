@@ -151,4 +151,19 @@ This page-by-page delivery uses Ssemble as a **workflow reference only**. No vis
 - Coverage artifact [14726905907](https://github.com/m5ham3ds/CUTAWAN/actions/runs/44953830473/artifacts/14726905907): 16,294 bytes; archive SHA-256 `13b8639dab36826fd00e3a20f61ef94ad8b2df28e167df63af4c8b66f21119f3`.
 - Root/desktop CI [44953830478](https://github.com/m5ham3ds/CUTAWAN/actions/runs/44953830478) — **success**. The packaging, Xvfb UI smoke, typecheck/lint/tests and offline video/caption pipeline jobs passed.
 - **Known limits:** the preview animates transcript groups but is not synchronized with live video playback. Export supports only Static and Karaoke Fill; other effects are preview-only, not falsely claimed as rendered in MP4. Caption preview/native overlay parity and physical-device appearance still require visual acceptance.
-- **Next page:** Jobs only. Do not repeat Create, Review, Clip Editor or Caption Studio.
+- **Jobs workflow delivery — 2026-11-22**
+
+- The Jobs screen is now the project/task control centre with status metrics and filters (all, active, completed, attention), search, persisted stage/progress, project identity, storage usage/refresh, open-review/resume routing, cancellation feedback and safe deletion.
+- Running tasks cannot be deleted. This is an explicit UI guard; repository deletion is not presented as a way to stop an active render.
+- The page uses the existing repository/job contract. It does not claim that rendering continues after Activity/process death, that notifications cancel a live render, or that per-clip retry already exists.
+- Added widget coverage for state filters/search, narrow 320dp empty state, running-job cancellation, and active-job delete protection. Updated the import/reopen workflow test to assert the redesigned job status copy.
+- Final accepted source head: `580879b5f29ffcbdbe1d2c06a2fc0136b19f180a`.
+- Mobile Android run [44963196882](https://github.com/m5ham3ds/CUTAWAN/actions/runs/44963196882), run 261 — **success**: format and strict analysis passed, **157/157 Flutter tests passed**, ARM64 debug APK built, ABI check passed (exactly `arm64-v8a`), 10 unique native libraries verified, APK uploaded.
+- APK artifact [14730139932](https://github.com/m5ham3ds/CUTAWAN/actions/runs/44963196882/artifacts/14730139932): 59,106,125 bytes; archive SHA-256 `1d88ab0a23253ed1fe44a0b2de88698baf8924bd8dcf27edc99400d8f888383e`.
+- Coverage artifact [14730412759](https://github.com/m5ham3ds/CUTAWAN/actions/runs/44963196882/artifacts/14730412759): 16,873 bytes.
+- Root/desktop CI [44963196902](https://github.com/m5ham3ds/CUTAWAN/actions/runs/44963196902), run 303 — **success** across all jobs.
+- Jobs is accepted as a **UI workflow slice only**. Phase 8 still owns durable background rendering, process-death recovery of live render work, per-clip retry and output-management acceptance; no background capability is claimed from this page pass.
+
+### Current continuation
+
+The next engineering work returns to **Phase 8** before any further Phase 9 page expansion. Full MediaCodec decode and checkpoint-based deterministic resume are implemented, but live render sessions remain in `MainActivity` memory and are cancelled by `onDestroy`. Implement durable foreground rendering and render-session reconstruction (using WorkManager/foreground execution where supported), then add process-death, notification, cancellation and retry acceptance. Do not repeat Create, Review, Clip Editor, Caption Studio or the accepted Jobs UI slice.

@@ -6,6 +6,12 @@
 
 ## Baseline and latest verified Android state
 
+- Latest Mobile Android run: [44963196882](https://github.com/m5ham3ds/CUTAWAN/actions/runs/44963196882), run 261, SHA `580879b5f29ffcbdbe1d2c06a2fc0136b19f180a` — **success**. Dart format, strict analysis, **157/157 Flutter tests**, ARM64 debug APK build, ARM64-only ABI check, unique native-library check and APK upload all passed.
+- APK artifact: [cutawan-mobile-arm64-debug, artifact 14730139932](https://github.com/m5ham3ds/CUTAWAN/actions/runs/44963196882/artifacts/14730139932), 59,106,125 bytes; ZIP SHA-256 `1d88ab0a23253ed1fe44a0b2de88698baf8924bd8dcf27edc99400d8f888383e`. It contains exactly `arm64-v8a`, 10 unique native libraries, and the required Whisper/llama/GGML libraries.
+- Coverage artifact: [14730412759](https://github.com/m5ham3ds/CUTAWAN/actions/runs/44963196882/artifacts/14730412759), 16,873 bytes.
+- Root/desktop CI run [44963196902](https://github.com/m5ham3ds/CUTAWAN/actions/runs/44963196902), run 303 — **success** across checks, UI smoke, offline video/caption pipeline and Apple Silicon package validation.
+- Jobs workflow page slice is accepted on this SHA. Its cancel/delete/review actions are tested; this acceptance does **not** claim durable background rendering, process-death reconstruction or per-clip retry are complete. Those remain in Phase 8.
+
 - Latest accepted Mobile Android run: [44953830473](https://github.com/m5ham3ds/CUTAWAN/actions/runs/44953830473), run number 257, SHA `e2d3c08e9f2d4559cd931f4b461607f6012a2a95` — **success**.
 - It passed Dart format, `flutter analyze --fatal-infos` (`No issues found!`), **154/154 Flutter tests**, ARM64 debug APK build, ARM64-only ABI verification, duplicate-native-library verification, and APK upload.
 - APK artifact: [`cutawan-mobile-arm64-debug`, artifact 14727205792](https://github.com/m5ham3ds/CUTAWAN/actions/runs/44953830473/artifacts/14727205792), size 59,094,264 bytes; archive SHA-256 `366a66f02d012135b0bec933492642c6a487bdd9b1a7a532cd1978b5b5fb1adf`.
@@ -26,7 +32,7 @@
 | 6 | Caption Studio visual presets, motion preview, RTL and preference persistence | Studio preview now loads saved transcript words/timing and groups them using live style/font/scale settings | Not synchronized to actual video playback; Studio and Android overlay are not yet pixel-identical |
 | 7 | Multi-provider model selection, secure user credentials, consented cloud editorial annotations | Provider-scoped model/key storage, consent gates on outbound requests, local fallback on key deletion; latest Android CI passed | Physical Keystore/backup/rotation tests, real provider account/model compatibility, billing and policy acceptance remain open |
 | 8 | End-to-end pipeline, job orchestration and clip export | Media3 Transformer pipeline consumes time-ranged reframe segments and timed caption cues; native overlay burns captions into MP4; metadata/hash verification exists | Full decode validation, physical visual/media fixtures, render recovery after process death, background execution/notifications and per-clip retry remain open |
-| 9 | Professional UI redesign and navigation/component architecture | Dashboard, Settings route, Create, Review, Clip Editor and Caption Studio workflow slices delivered; still in progress | Latest Android run 44953830473 passed 154/154 tests and ARM64 packaging; Jobs page pass is next. Job-state workflow, export gallery/delivery, preview/export parity, accessibility/golden/device matrix remain open |
+| 9 | Professional UI redesign and navigation/component architecture | Dashboard, Settings route, Create, Review, Clip Editor, Caption Studio and the Jobs workflow page slice delivered; still in progress | Android run 44963196882 passed 157/157 tests and ARM64 packaging. Broader job lifecycle, export gallery/delivery, preview/export parity, accessibility/golden/device matrix and physical-device acceptance remain open |
 | 10 | Physical-device quality, security, performance and Arabic/English acceptance | Responsive diagnostic workbench, baseline gate and missing-evidence reporting implemented; physical acceptance incomplete | 142/142 Flutter tests and ARM64-only APK pass in run 44870965616; still needs handset confirmation, real media corpus, WER/timing, full-decode and lifecycle/thermal evidence |
 
 ## Global engineering constraints
