@@ -510,6 +510,20 @@ class LocalProjectRepository {
     return records;
   }
 
+  Future<void> deleteExportRecord(String projectId, String clipId) async {
+    _validateId(projectId);
+    if (!_isSafeToken(clipId, maxLength: 160)) {
+      throw const FormatException('Clip ID is invalid.');
+    }
+    final directory = await _exportDirectory(projectId);
+    final record = File(
+      '${directory.path}${Platform.pathSeparator}$clipId.json',
+    );
+    if (await record.exists()) {
+      await record.delete();
+    }
+  }
+
   Future<void> saveExportManifest(
     String projectId,
     Map<String, Object?> manifest,

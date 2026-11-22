@@ -175,6 +175,37 @@ void main() {
     );
   });
 
+  test('validated export records can be removed without deleting project state', () async {
+    final project = makeProject();
+    await repository.save(project);
+    final digest = List<String>.filled(64, 'a').join();
+    await repository.saveExportRecord(project.id, {
+      'clipId': 'clip_1',
+      'outputUri': 'content://media/external/video/media/9001',
+      'sha256': digest,
+      'sizeBytes': 8192,
+      'durationMs': 15000,
+      'width': 1080,
+      'height': 1920,
+      'validated': true,
+      'fullyDecodeValidated': true,
+    });
+
+    expect(await repository.loadExportRecords(project.id), hasLength(1));
+    await repository.deleteExportRecord(project.id, 'clip_1');
+    expect(await repository.loadExportRecords(project.id), isEmpty);
+    expect(await repository.load(project.id), isNotNull);
+  });
+
+  test('export record deletion rejects unsafe clip identifiers', () async {
+    final project = makeProject();
+    await repository.save(project);
+    await expectLater(
+      repository.deleteExportRecord(project.id, '../clip'),
+      throwsA(isA<FormatException>()),
+    );
+  });
+
   test('repository rejects an unsafe project ID', () async {
     await expectLater(
       repository.load('../secrets'),

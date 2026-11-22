@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:cutawan_mobile/app.dart';
@@ -8,12 +9,18 @@ import 'package:cutawan_mobile/domain/transcript_contract.dart';
 import 'package:cutawan_mobile/domain/clip_candidate.dart';
 import 'package:cutawan_mobile/domain/reframe_contract.dart';
 import 'package:cutawan_mobile/services/local_project_repository.dart';
+import 'package:cutawan_mobile/screens/home_shell/review_page.dart';
 
 class _ReviewMemoryRepository extends LocalProjectRepository {
   final Map<String, CutawanProject> _projects = {};
+  final Map<String, List<Map<String, dynamic>>> _exports = {};
 
   void seed(CutawanProject project) {
     _projects[project.id] = project;
+  }
+
+  void seedExport(String projectId, Map<String, dynamic> export) {
+    _exports[projectId] = [Map<String, dynamic>.from(export)];
   }
 
   @override
@@ -41,11 +48,112 @@ class _ReviewMemoryRepository extends LocalProjectRepository {
   Future<ReframePlan?> loadReframePlan(String projectId) async => null;
 
   @override
-  Future<List<Map<String, dynamic>>> loadExportRecords(String projectId) async => [];
+  Future<List<Map<String, dynamic>>> loadExportRecords(String projectId) async =>
+      List<Map<String, dynamic>>.from(_exports[projectId] ?? const []);
+
+  @override
+  Future<void> deleteExportRecord(String projectId, String clipId) async {
+    _exports[projectId]?.removeWhere((record) => record['clipId'] == clipId);
+  }
 }
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  testWidgets(
+    'validated export gallery opens, shares and deletes only the selected CUTAWAN video',
+    (tester) async {
+      const channel = MethodChannel('com.cutawan.mobile/media');
+      final nativeCalls = <MethodCall>[];
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, (call) async {
+        nativeCalls.add(call);
+        return true;
+      });
+      addTearDown(() {
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(channel, null);
+      });
+
+      tester.view.physicalSize = const Size(320, 720);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final repository = _ReviewMemoryRepository();
+      final project = CutawanProject.create(
+        source: VideoAssetMetadata(
+          uri: 'content://media/external/video/media/71',
+          displayName: 'review-workflow.mp4',
+          mimeType: 'video/mp4',
+          sizeBytes: 18000000,
+          durationMs: 94000,
+          width: 1920,
+          height: 1080,
+          rotationDegrees: 0,
+          importedAtUtc: DateTime.utc(2026, 11, 21),
+        ),
+        preferences: const ClipPreferences(),
+        now: DateTime.utc(2026, 11, 21),
+      );
+      repository.seed(project);
+      repository.seedExport(project.id, {
+        'clipId': 'clip_gallery_1',
+        'outputUri': 'content://media/external/video/media/9001',
+        'displayName': 'CUTAWAN_clip_gallery_1.mp4',
+        'sha256': List<String>.filled(64, 'a').join(),
+        'sizeBytes': 8192,
+        'durationMs': 15000,
+        'width': 1080,
+        'height': 1920,
+        'validated': true,
+        'fullyDecodeValidated': true,
+        'createdAtUtc': DateTime.utc(2026, 11, 22).toIso8601String(),
+      });
+
+      final projects = ValueNotifier<List<CutawanProject>>([project]);
+      addTearDown(projects.dispose);
+      await tester.pumpWidget(MaterialApp(
+        home: Scaffold(
+          body: Directionality(
+            textDirection: TextDirection.rtl,
+            child: ReviewPage(
+              projects: projects,
+              repository: repository,
+              onProjectsChanged: () async {},
+            ),
+          ),
+        ),
+      ));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 150));
+
+      final openButton = find.byKey(const ValueKey('open-export-clip_gallery_1'));
+      await tester.ensureVisible(openButton);
+      await tester.tap(openButton);
+      await tester.pump();
+      expect(nativeCalls.map((call) => call.method), contains('openExport'));
+
+      final shareButton = find.byKey(const ValueKey('share-export-clip_gallery_1'));
+      await tester.ensureVisible(shareButton);
+      await tester.tap(shareButton);
+      await tester.pump();
+      expect(nativeCalls.map((call) => call.method), contains('shareExport'));
+
+      final deleteButton = find.byKey(const ValueKey('delete-export-clip_gallery_1'));
+      await tester.ensureVisible(deleteButton);
+      await tester.tap(deleteButton);
+      await tester.pumpAndSettle();
+      expect(find.text('حذف الفيديو المصدّر؟'), findsOneWidget);
+      await tester.tap(find.text('حذف الملف'));
+      await tester.pumpAndSettle();
+
+      expect(nativeCalls.map((call) => call.method), contains('deleteExport'));
+      expect(repository._exports[project.id], isEmpty);
+      expect(find.byKey(const ValueKey('export-card-clip_gallery_1')), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets(
     'review page presents the staged source-analysis-clips-export workflow on a narrow phone',

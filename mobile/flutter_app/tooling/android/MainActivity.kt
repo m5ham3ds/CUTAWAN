@@ -1,6 +1,7 @@
 package com.m5ham3ds.cutawan_mobile
 
 import android.content.ContentValues
+import android.content.ClipData
 import android.os.Build
 import android.os.BatteryManager
 import android.os.Debug
@@ -69,6 +70,7 @@ import java.util.Locale
 import java.util.TimeZone
 import java.util.concurrent.Executors
 import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import androidx.work.Data
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequest
@@ -208,6 +210,9 @@ class MainActivity : FlutterActivity() {
                             )
                         }
                     }
+                    "openExport" -> openExport(call, result)
+                    "shareExport" -> shareExport(call, result)
+                    "deleteExport" -> deleteExport(call, result)
                     "verifyExport" -> verifyExport(call, result)
                     else -> result.notImplemented()
                 }
@@ -1949,6 +1954,169 @@ class MainActivity : FlutterActivity() {
         return Pair(Uri.fromFile(target), displayName)
     }
 
+
+    private data class OwnedExportTarget(val uri: Uri, val file: File?)
+
+    private fun resolveOwnedExportTarget(rawUri: String): OwnedExportTarget {
+        val parsed = Uri.parse(rawUri)
+        return when (parsed.scheme) {
+            "content" -> {
+                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q ||
+                    parsed.authority != MediaStore.AUTHORITY
+                ) {
+                    throw SecurityException("Export URI is not owned by Android MediaStore.")
+                }
+                val cursor = contentResolver.query(
+                    parsed,
+                    arrayOf(
+                        MediaStore.MediaColumns.RELATIVE_PATH,
+                        MediaStore.MediaColumns.IS_PENDING,
+                        MediaStore.MediaColumns.MIME_TYPE,
+                        MediaStore.MediaColumns.DISPLAY_NAME,
+                        MediaStore.MediaColumns.OWNER_PACKAGE_NAME
+                    ),
+                    null,
+                    null,
+                    null
+                ) ?: throw IllegalStateException("Export is no longer available in MediaStore.")
+                val owned = cursor.use {
+                    if (!it.moveToFirst()) false
+                    else {
+                        val pathIndex = it.getColumnIndex(MediaStore.MediaColumns.RELATIVE_PATH)
+                        val pendingIndex = it.getColumnIndex(MediaStore.MediaColumns.IS_PENDING)
+                        val mimeIndex = it.getColumnIndex(MediaStore.MediaColumns.MIME_TYPE)
+                        val nameIndex = it.getColumnIndex(MediaStore.MediaColumns.DISPLAY_NAME)
+                        val ownerIndex = it.getColumnIndex(MediaStore.MediaColumns.OWNER_PACKAGE_NAME)
+                        if (pathIndex < 0 || pendingIndex < 0 || mimeIndex < 0 ||
+                            nameIndex < 0 || ownerIndex < 0
+                        ) {
+                            false
+                        } else {
+                            val relativePath = it.getString(pathIndex)
+                            val pending = it.getInt(pendingIndex)
+                            val mime = it.getString(mimeIndex)
+                            val name = it.getString(nameIndex)
+                            val owner = it.getString(ownerIndex)
+                            relativePath?.startsWith(Environment.DIRECTORY_MOVIES + "/CUTAWAN/") == true &&
+                                pending == 0 &&
+                                mime == "video/mp4" &&
+                                name?.endsWith(".mp4", ignoreCase = true) == true &&
+                                owner == packageName
+                        }
+                    }
+                }
+                if (!owned) {
+                    throw SecurityException("Export URI is not a published CUTAWAN MP4.")
+                }
+                OwnedExportTarget(parsed, null)
+            }
+            "file" -> {
+                val file = File(parsed.path ?: "").canonicalFile
+                val directory = File(
+                    getExternalFilesDir(Environment.DIRECTORY_MOVIES) ?: filesDir,
+                    "CUTAWAN"
+                ).canonicalFile
+                val prefix = directory.path + File.separator
+                if (!file.isFile ||
+                    !file.path.startsWith(prefix) ||
+                    !file.name.endsWith(".mp4", ignoreCase = true)
+                ) {
+                    throw SecurityException("Export file is outside CUTAWAN's app-owned export folder.")
+                }
+                val sharedUri = FileProvider.getUriForFile(
+                    this,
+                    "$packageName.fileprovider",
+                    file
+                )
+                OwnedExportTarget(sharedUri, file)
+            }
+            else -> throw IllegalArgumentException("Unsupported exported video URI scheme.")
+        }
+    }
+
+    private fun openExport(call: io.flutter.plugin.common.MethodCall, reply: MethodChannel.Result) {
+        val rawUri = call.argument<String>("outputUri")
+        if (rawUri.isNullOrBlank()) {
+            reply.error("INVALID_EXPORT_URI", "An exported video URI is required.", null)
+            return
+        }
+        ioExecutor.execute {
+            try {
+                val target = resolveOwnedExportTarget(rawUri)
+                val intent = Intent(Intent.ACTION_VIEW).apply {
+                    setDataAndType(target.uri, "video/mp4")
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    clipData = ClipData.newUri(contentResolver, "CUTAWAN video", target.uri)
+                }
+                mainHandler.post {
+                    try {
+                        startActivity(intent)
+                        reply.success(true)
+                    } catch (error: Exception) {
+                        reply.error("EXPORT_OPEN_FAILED", error.message ?: "Could not open the exported video.", rawUri)
+                    }
+                }
+            } catch (error: Exception) {
+                mainHandler.post {
+                    reply.error("EXPORT_OPEN_FAILED", error.message ?: "Could not open the exported video.", rawUri)
+                }
+            }
+        }
+    }
+
+    private fun shareExport(call: io.flutter.plugin.common.MethodCall, reply: MethodChannel.Result) {
+        val rawUri = call.argument<String>("outputUri")
+        if (rawUri.isNullOrBlank()) {
+            reply.error("INVALID_EXPORT_URI", "An exported video URI is required.", null)
+            return
+        }
+        ioExecutor.execute {
+            try {
+                val target = resolveOwnedExportTarget(rawUri)
+                val sendIntent = Intent(Intent.ACTION_SEND).apply {
+                    type = "video/mp4"
+                    putExtra(Intent.EXTRA_STREAM, target.uri)
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    clipData = ClipData.newUri(contentResolver, "CUTAWAN video", target.uri)
+                }
+                mainHandler.post {
+                    try {
+                        startActivity(Intent.createChooser(sendIntent, "مشاركة فيديو CUTAWAN"))
+                        reply.success(true)
+                    } catch (error: Exception) {
+                        reply.error("EXPORT_SHARE_FAILED", error.message ?: "Could not share the exported video.", rawUri)
+                    }
+                }
+            } catch (error: Exception) {
+                mainHandler.post {
+                    reply.error("EXPORT_SHARE_FAILED", error.message ?: "Could not share the exported video.", rawUri)
+                }
+            }
+        }
+    }
+
+    private fun deleteExport(call: io.flutter.plugin.common.MethodCall, reply: MethodChannel.Result) {
+        val rawUri = call.argument<String>("outputUri")
+        if (rawUri.isNullOrBlank()) {
+            reply.error("INVALID_EXPORT_URI", "An exported video URI is required.", null)
+            return
+        }
+        ioExecutor.execute {
+            try {
+                val target = resolveOwnedExportTarget(rawUri)
+                val deleted = if (target.file != null) {
+                    target.file.exists() && target.file.delete()
+                } else {
+                    contentResolver.delete(target.uri, null, null) > 0
+                }
+                mainHandler.post { reply.success(deleted) }
+            } catch (error: Exception) {
+                mainHandler.post {
+                    reply.error("EXPORT_DELETE_FAILED", error.message ?: "Could not delete the exported video.", rawUri)
+                }
+            }
+        }
+    }
 
     private fun verifyExport(call: io.flutter.plugin.common.MethodCall, reply: MethodChannel.Result) {
         val rawUri = call.argument<String>("outputUri")

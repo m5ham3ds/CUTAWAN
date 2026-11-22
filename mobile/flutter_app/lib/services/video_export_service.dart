@@ -476,6 +476,30 @@ class VideoExportService {
     }
   }
 
+  Future<bool> openExport(String outputUri) =>
+      _runExportAction('openExport', outputUri);
+
+  Future<bool> shareExport(String outputUri) =>
+      _runExportAction('shareExport', outputUri);
+
+  Future<bool> deleteExport(String outputUri) =>
+      _runExportAction('deleteExport', outputUri);
+
+  Future<bool> _runExportAction(String method, String outputUri) async {
+    final uri = Uri.tryParse(outputUri.trim());
+    if (uri == null ||
+        (uri.scheme != 'content' && uri.scheme != 'file') ||
+        (uri.scheme == 'content' && uri.authority.isEmpty) ||
+        (uri.scheme == 'file' && uri.path.isEmpty)) {
+      throw const FormatException('Export URI is invalid or unsupported.');
+    }
+    return await _channel.invokeMethod<bool>(
+          method,
+          <String, Object?>{'outputUri': uri.toString()},
+        ) ??
+        false;
+  }
+
   Future<void> cancelRender(String renderId) async {
     await _channel.invokeMethod<bool>(
       'cancelRender',

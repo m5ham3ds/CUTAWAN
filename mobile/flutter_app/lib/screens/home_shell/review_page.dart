@@ -16,6 +16,7 @@ import '../../services/candidate_discovery_service.dart';
 import '../../services/local_editorial_annotation_service.dart';
 import '../../services/local_project_repository.dart';
 import '../../services/processing_pipeline_service.dart';
+import '../../services/video_export_service.dart';
 import '../../services/qwen_model_manager.dart';
 import '../../services/whisper_transcription_service.dart';
 import '../features/clip_editor_page.dart';
@@ -42,6 +43,8 @@ class _ReviewPageState extends State<ReviewPage> {
   final Map<String, ReframePlan?> _reframePlans = {};
   final Set<String> _loadingArtifacts = {};
   final Map<String, List<Map<String, dynamic>>> _exportRecords = {};
+  final VideoExportService _exportService = VideoExportService();
+  final Set<String> _busyExportIds = <String>{};
   bool _pipelineRunning = false;
   String? _pipelineProjectId;
   String? _pipelineStage;
@@ -102,6 +105,219 @@ class _ReviewPageState extends State<ReviewPage> {
     } finally {
       _loadingArtifacts.remove(projectId);
     }
+  }
+
+  Future<void> _handleExportAction(
+    BuildContext context,
+    CutawanProject project,
+    Map<String, dynamic> export, {
+    required bool share,
+  }) async {
+    final clipId = export['clipId'] as String? ?? '';
+    final outputUri = export['outputUri'] as String? ?? '';
+    if (clipId.isEmpty || outputUri.isEmpty) return;
+    final key = '${project.id}:$clipId';
+    if (_busyExportIds.contains(key)) return;
+    setState(() => _busyExportIds.add(key));
+    try {
+      final succeeded = share
+          ? await _exportService.shareExport(outputUri)
+          : await _exportService.openExport(outputUri);
+      if (!succeeded) {
+        throw StateError(share
+            ? 'تعذّرت مشاركة ملف الفيديو.'
+            : 'تعذّر فتح ملف الفيديو.');
+      }
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(share
+                ? 'تم فتح خيارات مشاركة الفيديو.'
+                : 'تم إرسال الفيديو إلى مشغل الوسائط.'),
+          ),
+        );
+      }
+    } catch (error) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('تعذّر تنفيذ العملية: $error')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _busyExportIds.remove(key));
+    }
+  }
+
+  Future<void> _deleteExport(
+    BuildContext context,
+    CutawanProject project,
+    Map<String, dynamic> export,
+  ) async {
+    final clipId = export['clipId'] as String? ?? '';
+    final outputUri = export['outputUri'] as String? ?? '';
+    if (clipId.isEmpty || outputUri.isEmpty) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('حذف الفيديو المصدّر؟'),
+        content: const Text(
+          'سيُحذف ملف MP4 من مساحة مخرجات CUTAWAN على الجهاز، كما سيُزال سجلّه من المشروع. لا يمكن التراجع عن هذا الإجراء.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('إلغاء'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('حذف الملف'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    final key = '${project.id}:$clipId';
+    if (_busyExportIds.contains(key)) return;
+    setState(() => _busyExportIds.add(key));
+    try {
+      final deleted = await _exportService.deleteExport(outputUri);
+      if (!deleted) {
+        throw StateError('لم يتم حذف ملف الفيديو من Android.');
+      }
+      await widget.repository.deleteExportRecord(project.id, clipId);
+      await _loadArtifacts(project.id);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تم حذف الفيديو وسجل التصدير.')),
+        );
+      }
+    } catch (error) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('تعذّر حذف الفيديو: $error')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _busyExportIds.remove(key));
+    }
+  }
+
+  Widget _buildExportCard(
+    BuildContext context,
+    CutawanProject project,
+    Map<String, dynamic> export,
+  ) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final clipId = export['clipId'] as String? ?? '';
+    final outputUri = export['outputUri'] as String? ?? '';
+    final key = '${project.id}:$clipId';
+    final busy = _busyExportIds.contains(key);
+    final deliverable = clipId.isNotEmpty &&
+        outputUri.isNotEmpty &&
+        export['validated'] == true &&
+        export['fullyDecodeValidated'] == true;
+    return Card(
+      key: ValueKey('export-card-$clipId'),
+      margin: const EdgeInsets.only(top: 8),
+      child: Padding(
+        padding: const EdgeInsets.all(13),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  export['fullyDecodeValidated'] == true
+                      ? Icons.verified_rounded
+                      : Icons.video_file_outlined,
+                  color: export['fullyDecodeValidated'] == true
+                      ? scheme.secondary
+                      : scheme.onSurfaceVariant,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        export['displayName'] as String? ?? 'CUTAWAN export.mp4',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${export['width']} × ${export['height']} · '
+                        '${formatCutawanDuration((export['durationMs'] as num? ?? 0).toInt())} · '
+                        '${formatCutawanBytes((export['sizeBytes'] as num? ?? 0).toInt())}',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: scheme.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        export['fullyDecodeValidated'] == true
+                            ? 'تم التحقق من فك MP4 حتى نهاية الملف'
+                            : 'يحتاج الملف إلى إعادة التحقق من فك الترميز',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: scheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            if (deliverable) ...[
+              const Divider(height: 22),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  OutlinedButton.icon(
+                    key: ValueKey('open-export-$clipId'),
+                    onPressed: busy
+                        ? null
+                        : () => _handleExportAction(
+                              context,
+                              project,
+                              export,
+                              share: false,
+                            ),
+                    icon: const Icon(Icons.play_circle_outline_rounded),
+                    label: const Text('فتح الفيديو'),
+                  ),
+                  OutlinedButton.icon(
+                    key: ValueKey('share-export-$clipId'),
+                    onPressed: busy
+                        ? null
+                        : () => _handleExportAction(
+                              context,
+                              project,
+                              export,
+                              share: true,
+                            ),
+                    icon: const Icon(Icons.share_outlined),
+                    label: const Text('مشاركة'),
+                  ),
+                  IconButton(
+                    key: ValueKey('delete-export-$clipId'),
+                    tooltip: 'حذف الفيديو المصدّر',
+                    onPressed:
+                        busy ? null : () => _deleteExport(context, project, export),
+                    icon: const Icon(Icons.delete_outline_rounded),
+                  ),
+                ],
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _verifySource(
@@ -965,53 +1181,7 @@ class _ReviewPageState extends State<ReviewPage> {
               )
             else
               for (final export in exports)
-                Card(
-                  margin: const EdgeInsets.only(top: 8),
-                  child: Padding(
-                    padding: const EdgeInsets.all(13),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Icon(
-                          export['fullyDecodeValidated'] == true
-                              ? Icons.verified_rounded
-                              : Icons.video_file_outlined,
-                          color: export['fullyDecodeValidated'] == true
-                              ? scheme.secondary
-                              : scheme.onSurfaceVariant,
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                export['displayName'] as String? ?? 'CUTAWAN export.mp4',
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                '${export['width']} × ${export['height']} · '
-                                '${formatCutawanDuration((export['durationMs'] as num? ?? 0).toInt())} · '
-                                '${formatCutawanBytes((export['sizeBytes'] as num? ?? 0).toInt())}',
-                                style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                export['fullyDecodeValidated'] == true
-                                    ? 'تم التحقق من فك MP4 حتى نهاية الملف'
-                                    : 'يحتاج الملف إلى إعادة التحقق من فك الترميز',
-                                style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+                _buildExportCard(context, project, export),
           ],
         ),
       ),

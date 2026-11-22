@@ -54,6 +54,10 @@ void main() {
             'decodedVideoBuffers': 450,
             'decodedAudioBuffers': 680,
           };
+        case 'openExport':
+        case 'shareExport':
+        case 'deleteExport':
+          return true;
         case 'cancelRender':
           return true;
         case 'getCompletedRender':
@@ -358,6 +362,36 @@ void main() {
     expect(valid, isTrue);
     expect(calls.single.method, 'verifyExport');
     expect(calls.single.arguments, containsPair('sha256', expectedHash));
+  });
+
+  test('opens, shares and deletes validated export URIs through Android', () async {
+    final service = VideoExportService(channel: channel);
+    const uri = 'content://media/external/video/media/9001';
+
+    expect(await service.openExport(uri), isTrue);
+    expect(await service.shareExport(uri), isTrue);
+    expect(await service.deleteExport(uri), isTrue);
+    expect(calls.map((call) => call.method), [
+      'openExport',
+      'shareExport',
+      'deleteExport',
+    ]);
+    for (final call in calls) {
+      expect(call.arguments, containsPair('outputUri', uri));
+    }
+  });
+
+  test('rejects non-owned or unsupported export URI schemes before Android calls', () async {
+    final service = VideoExportService(channel: channel);
+    await expectLater(
+      service.openExport('https://example.com/video.mp4'),
+      throwsA(isA<FormatException>()),
+    );
+    await expectLater(
+      service.shareExport(''),
+      throwsA(isA<FormatException>()),
+    );
+    expect(calls, isEmpty);
   });
 
   test('rejects an export that reports metadata validation without full decode', () {

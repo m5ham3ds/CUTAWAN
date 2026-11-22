@@ -99,6 +99,47 @@ print("Verified Android backup restriction and WorkManager foreground-service ma
 
 PY
 
+# Expose only CUTAWAN-owned exports through FileProvider for older Android versions.
+python3 - <<'PY'
+from pathlib import Path
+
+manifest = Path("android/app/src/main/AndroidManifest.xml")
+source = manifest.read_text()
+provider = '''        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/cutawan_file_paths" />
+        </provider>
+'''
+if "androidx.core.content.FileProvider" not in source:
+    application_end = source.find("</application>")
+    if application_end < 0:
+        raise SystemExit("Could not locate Android application closing element for FileProvider.")
+    source = source[:application_end] + provider + source[application_end:]
+manifest.write_text(source)
+
+xml_dir = Path("android/app/src/main/res/xml")
+xml_dir.mkdir(parents=True, exist_ok=True)
+paths = xml_dir / "cutawan_file_paths.xml"
+paths.write_text('''<?xml version="1.0" encoding="utf-8"?>
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <external-files-path name="cutawan_external_exports" path="Movies/CUTAWAN/" />
+    <files-path name="cutawan_internal_exports" path="CUTAWAN/" />
+</paths>
+''')
+verified = manifest.read_text()
+xml = paths.read_text()
+if "androidx.core.content.FileProvider" not in verified or "@xml/cutawan_file_paths" not in verified:
+    raise SystemExit("FileProvider declaration was not applied.")
+if "Movies/CUTAWAN/" not in xml or 'path="CUTAWAN/"' not in xml:
+    raise SystemExit("FileProvider export paths are missing or too broad.")
+print("Verified FileProvider access is limited to CUTAWAN-owned export folders.")
+PY
+
 # The mobile artifact is intentionally ARM64-only.
 python3 - <<'PY'
 from pathlib import Path
