@@ -54,13 +54,31 @@ object NativeRenderStore {
         context: Context,
         renderKey: String,
         renderId: String,
+        projectId: String,
         result: Map<String, Any>
     ) {
         val payload = JSONObject(result)
             .put("renderId", renderId)
             .put("renderKey", renderKey)
+            .put("projectId", projectId)
             .put("completedAtUtcMs", System.currentTimeMillis())
         writeJsonAtomic(completionFile(context, renderKey), payload)
+    }
+
+    fun hasPendingCompletionForProject(context: Context, projectId: String): Boolean {
+        val directory = File(File(context.filesDir, ROOT), "completed")
+        val files = directory.listFiles() ?: return false
+        return files.any { file ->
+            if (!file.isFile || file.extension != "json") {
+                false
+            } else {
+                try {
+                    JSONObject(file.readText()).optString("projectId") == projectId
+                } catch (_: Exception) {
+                    false
+                }
+            }
+        }
     }
 
     fun readCompletion(context: Context, renderKey: String): Map<String, Any?>? {
@@ -197,7 +215,13 @@ class NativeRenderWorker(
             if (isStopped) {
                 throw InterruptedException("Render was cancelled.")
             }
-            NativeRenderStore.writeCompletion(applicationContext, renderKey, renderId, result)
+            NativeRenderStore.writeCompletion(
+                applicationContext,
+                renderKey,
+                renderId,
+                projectId,
+                result
+            )
             Result.success(
                 Data.Builder()
                     .putString(KEY_RESULT_JSON, JSONObject(result).toString())

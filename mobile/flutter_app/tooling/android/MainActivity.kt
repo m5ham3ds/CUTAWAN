@@ -1232,11 +1232,11 @@ class MainActivity : FlutterActivity() {
                             WorkInfo.State.RUNNING,
                             WorkInfo.State.ENQUEUED,
                             WorkInfo.State.BLOCKED -> true
-                            WorkInfo.State.SUCCEEDED -> {
-                                val renderKey = info.inputData.getString(NativeRenderWorker.KEY_RENDER_KEY)
-                                !renderKey.isNullOrBlank() &&
-                                    NativeRenderStore.readCompletion(applicationContext, renderKey) != null
-                            }
+                            WorkInfo.State.SUCCEEDED ->
+                                NativeRenderStore.hasPendingCompletionForProject(
+                                    applicationContext,
+                                    projectId
+                                )
                             WorkInfo.State.CANCELLED,
                             WorkInfo.State.FAILED -> false
                         }
