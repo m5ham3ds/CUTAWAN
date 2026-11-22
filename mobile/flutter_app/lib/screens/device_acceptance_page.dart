@@ -330,6 +330,7 @@ class _DeviceAcceptancePageState extends State<DeviceAcceptancePage> {
             const SizedBox(height: 8),
             Text(
               'اعتماد المرحلة 10: غير مكتمل حتى تسجيل نتائج الوسائط والجهاز الفعلي.',
+              key: const ValueKey('device-acceptance-phase10-status'),
               style: theme.textTheme.bodySmall?.copyWith(
                 color: scheme.onSurfaceVariant,
                 fontWeight: FontWeight.w600,
@@ -372,6 +373,7 @@ class _DeviceAcceptancePageState extends State<DeviceAcceptancePage> {
                 children: [
                   Text(
                     title,
+                    key: const ValueKey('device-acceptance-evidence-scope-title'),
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
                           color: scheme.onTertiaryContainer,
                           fontWeight: FontWeight.w900,
@@ -380,6 +382,7 @@ class _DeviceAcceptancePageState extends State<DeviceAcceptancePage> {
                   const SizedBox(height: 5),
                   Text(
                     description,
+                    key: const ValueKey('device-acceptance-evidence-scope-description'),
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: scheme.onTertiaryContainer,
                           height: 1.4,

@@ -68,6 +68,11 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('مرحباً بك في CUTAWAN'), findsOneWidget);
+        await tester.scrollUntilVisible(
+          find.text('نظرة عامة'),
+          220,
+          scrollable: find.byType(Scrollable).first,
+        );
         expect(find.text('نظرة عامة'), findsOneWidget);
         await tester.scrollUntilVisible(
           find.text('لا توجد مشاريع محفوظة بعد'),
@@ -113,7 +118,12 @@ void main() {
     await tester.tap(find.byTooltip('الإعدادات'));
     for (final label in ['المهام والمشاريع', 'المراجعة والتحرير', 'مركز النماذج']) {
       final finder = find.text(label);
-      await tester.ensureVisible(finder);
+      await tester.scrollUntilVisible(
+        finder,
+        220,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
       await tester.tap(finder);
     }
 

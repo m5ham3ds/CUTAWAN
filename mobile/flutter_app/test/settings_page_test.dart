@@ -60,7 +60,19 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('إعدادات CUTAWAN'), findsOneWidget);
+        await tester.scrollUntilVisible(
+          find.text('الخصوصية والمعالجة'),
+          220,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.pumpAndSettle();
         expect(find.text('الخصوصية والمعالجة'), findsOneWidget);
+        await tester.scrollUntilVisible(
+          find.text('المعلومات القانونية'),
+          220,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.pumpAndSettle();
         expect(find.text('المعلومات القانونية'), findsOneWidget);
         expect(tester.takeException(), isNull);
         await tester.pumpWidget(const SizedBox.shrink());
@@ -84,10 +96,20 @@ void main() {
     await tester.pumpAndSettle();
 
     final diagnosticsTile = find.text('تشخيص وقبول Android');
-    await tester.ensureVisible(diagnosticsTile);
+    await tester.scrollUntilVisible(
+      diagnosticsTile,
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
     await tester.tap(diagnosticsTile);
     final modelsTile = find.text('مركز النماذج والاتصالات');
-    await tester.ensureVisible(modelsTile);
+    await tester.scrollUntilVisible(
+      modelsTile,
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
     await tester.tap(modelsTile);
 
     expect(diagnostics, 1);

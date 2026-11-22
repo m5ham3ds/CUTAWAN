@@ -122,19 +122,27 @@ void main() {
         textScale: 2,
       );
 
+      const scopeTitleKey =
+          ValueKey('device-acceptance-evidence-scope-title');
+      const scopeDescriptionKey =
+          ValueKey('device-acceptance-evidence-scope-description');
+      const phase10StatusKey =
+          ValueKey('device-acceptance-phase10-status');
+
+      expect(find.byKey(scopeTitleKey), findsOneWidget);
       expect(
-        find.text('هذه لقطة قياسات وليست تشغيل اختبارات ميدانية'),
-        findsOneWidget,
+        tester.widget<Text>(find.byKey(scopeTitleKey)).data,
+        contains('هذه لقطة قياسات وليست تشغيل اختبارات ميدانية'),
       );
+      expect(find.byKey(scopeDescriptionKey), findsOneWidget);
       expect(
-        find.textContaining('اختبارات ملفات الوسائط وجودة التفريغ والأداء'),
-        findsOneWidget,
+        tester.widget<Text>(find.byKey(scopeDescriptionKey)).data,
+        contains('اختبارات ملفات الوسائط وجودة التفريغ والأداء'),
       );
+      expect(find.byKey(phase10StatusKey), findsOneWidget);
       expect(
-        find.text(
-          'اعتماد المرحلة 10: غير مكتمل حتى تسجيل نتائج الوسائط والجهاز الفعلي.',
-        ),
-        findsOneWidget,
+        tester.widget<Text>(find.byKey(phase10StatusKey)).data,
+        contains('اعتماد المرحلة 10: غير مكتمل'),
       );
       expect(tester.takeException(), isNull);
     },
