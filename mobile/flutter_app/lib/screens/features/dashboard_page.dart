@@ -252,7 +252,9 @@ class _DashboardStorageCardState extends State<_DashboardStorageCard> {
   }
 
   void _refresh() {
-    setState(() => _usage = Future<int>.sync(widget.loadUsage));
+    setState(() {
+      _usage = Future<int>.sync(widget.loadUsage);
+    });
   }
 
   String _formatUsage(int bytes) {

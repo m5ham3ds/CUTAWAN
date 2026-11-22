@@ -155,8 +155,17 @@ void main() {
     await tester.pumpAndSettle();
     expect(storageReads, 2);
 
-    await tester.tap(find.byKey(const ValueKey('dashboard-create-project')));
-    await tester.tap(find.byTooltip('الإعدادات'));
+    final createButton = find.byKey(
+      const ValueKey('dashboard-create-project'),
+    );
+    await tester.ensureVisible(createButton);
+    await tester.pumpAndSettle();
+    await tester.tap(createButton);
+
+    final settingsButton = find.byTooltip('الإعدادات');
+    await tester.ensureVisible(settingsButton);
+    await tester.pumpAndSettle();
+    await tester.tap(settingsButton);
     for (final label in ['المهام والمشاريع', 'المراجعة والتحرير', 'مركز النماذج']) {
       final finder = find.text(label);
       await tester.scrollUntilVisible(

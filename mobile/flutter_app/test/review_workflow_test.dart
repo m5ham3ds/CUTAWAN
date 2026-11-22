@@ -220,7 +220,7 @@ void main() {
   testWidgets(
     'review focuses the project opened from Dashboard before other saved projects',
     (tester) async {
-      tester.view.physicalSize = const Size(320, 900);
+      tester.view.physicalSize = const Size(320, 4000);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
