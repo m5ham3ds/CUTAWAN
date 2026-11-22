@@ -11,6 +11,8 @@ class DashboardPage extends StatelessWidget {
     required this.onOpenReview,
     required this.onOpenModels,
     required this.onOpenSettings,
+    required this.onOpenProject,
+    required this.storageUsageBytes,
     super.key,
   });
 
@@ -20,6 +22,8 @@ class DashboardPage extends StatelessWidget {
   final VoidCallback onOpenReview;
   final VoidCallback onOpenModels;
   final VoidCallback onOpenSettings;
+  final ValueChanged<CutawanProject> onOpenProject;
+  final Future<int> Function() storageUsageBytes;
 
   @override
   Widget build(BuildContext context) {
@@ -148,6 +152,8 @@ class DashboardPage extends StatelessWidget {
                     );
                   },
                 ),
+                const SizedBox(height: 14),
+                _DashboardStorageCard(loadUsage: storageUsageBytes),
                 const SizedBox(height: 22),
                 _DashboardSectionHeading(title: 'مسارات العمل'),
                 const SizedBox(height: 9),
@@ -192,6 +198,7 @@ class DashboardPage extends StatelessWidget {
                     Card(
                       margin: const EdgeInsets.only(bottom: 8),
                       child: ListTile(
+                        key: ValueKey('dashboard-project-${project.id}'),
                         minVerticalPadding: 12,
                         leading: CircleAvatar(
                           backgroundColor: Theme.of(context)
@@ -214,10 +221,74 @@ class DashboardPage extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                         ),
                         trailing: const Icon(Icons.chevron_left_rounded),
-                        onTap: onOpenReview,
+                        onTap: () => onOpenProject(project),
                       ),
                     ),
               ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _DashboardStorageCard extends StatefulWidget {
+  const _DashboardStorageCard({required this.loadUsage});
+
+  final Future<int> Function() loadUsage;
+
+  @override
+  State<_DashboardStorageCard> createState() => _DashboardStorageCardState();
+}
+
+class _DashboardStorageCardState extends State<_DashboardStorageCard> {
+  late Future<int> _usage;
+
+  @override
+  void initState() {
+    super.initState();
+    _usage = Future<int>.sync(widget.loadUsage);
+  }
+
+  void _refresh() {
+    setState(() => _usage = Future<int>.sync(widget.loadUsage));
+  }
+
+  String _formatUsage(int bytes) {
+    if (bytes <= 0) return '0 KB';
+    if (bytes < 1024 * 1024) {
+      return '${(bytes / 1024).toStringAsFixed(0)} KB';
+    }
+    return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return FutureBuilder<int>(
+      future: _usage,
+      builder: (context, snapshot) {
+        final description = snapshot.hasData
+            ? _formatUsage(snapshot.data!)
+            : snapshot.hasError
+                ? 'تعذّر قراءة مساحة التنزيلات'
+                : 'جارٍ حساب مساحة التنزيلات…';
+        return Card(
+          key: const ValueKey('dashboard-storage-card'),
+          child: ListTile(
+            minVerticalPadding: 12,
+            leading: CircleAvatar(
+              backgroundColor: scheme.primary.withValues(alpha: 0.12),
+              child: Icon(Icons.storage_outlined, color: scheme.primary),
+            ),
+            title: const Text('مساحة تنزيلات CUTAWAN'),
+            subtitle: Text(description),
+            trailing: IconButton(
+              key: const ValueKey('dashboard-refresh-storage'),
+              tooltip: 'تحديث مساحة التخزين',
+              onPressed: _refresh,
+              icon: const Icon(Icons.refresh_rounded),
             ),
           ),
         );

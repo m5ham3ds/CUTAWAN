@@ -1,9 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:cutawan_mobile/domain/clip_preferences.dart';
 import 'package:cutawan_mobile/domain/project_contract.dart';
 import 'package:cutawan_mobile/screens/features/dashboard_page.dart';
 import 'package:cutawan_mobile/theme/cutawan_theme.dart';
+
+
+CutawanProject _makeDashboardProject(String name) {
+  final now = DateTime.utc(2026, 11, 22);
+  return CutawanProject.create(
+    source: VideoAssetMetadata(
+      uri: 'content://media/external/video/101',
+      displayName: '$name.mp4',
+      mimeType: 'video/mp4',
+      sizeBytes: 1024 * 1024,
+      durationMs: 60000,
+      width: 1920,
+      height: 1080,
+      rotationDegrees: 0,
+      importedAtUtc: now,
+    ),
+    preferences: const ClipPreferences(),
+    now: now,
+  );
+}
 
 void main() {
   testWidgets(
@@ -59,6 +80,8 @@ void main() {
                     onOpenReview: () {},
                     onOpenModels: () {},
                     onOpenSettings: () {},
+                    onOpenProject: (_) {},
+                    storageUsageBytes: () async => 2 * 1024 * 1024,
                   ),
                 ),
               ),
@@ -95,7 +118,10 @@ void main() {
     var jobs = 0;
     var review = 0;
     var models = 0;
-    final projects = ValueNotifier<List<CutawanProject>>([]);
+    final project = _makeDashboardProject('dashboard-resume');
+    final projects = ValueNotifier<List<CutawanProject>>([project]);
+    var openedProjectId = '';
+    var storageReads = 0;
 
     await tester.pumpWidget(
       MaterialApp(
@@ -108,11 +134,26 @@ void main() {
             onOpenReview: () => review++,
             onOpenModels: () => models++,
             onOpenSettings: () => settings++,
+            onOpenProject: (project) => openedProjectId = project.id,
+            storageUsageBytes: () async {
+              storageReads++;
+              return 2 * 1024 * 1024;
+            },
           ),
         ),
       ),
     );
     await tester.pumpAndSettle();
+
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('dashboard-storage-card')),
+      180,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('2.0 MB'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('dashboard-refresh-storage')));
+    await tester.pumpAndSettle();
+    expect(storageReads, 2);
 
     await tester.tap(find.byKey(const ValueKey('dashboard-create-project')));
     await tester.tap(find.byTooltip('الإعدادات'));
@@ -132,6 +173,18 @@ void main() {
     expect(jobs, 1);
     expect(review, 1);
     expect(models, 1);
+
+    final projectTile = find.byKey(
+      ValueKey('dashboard-project-${project.id}'),
+    );
+    await tester.scrollUntilVisible(
+      projectTile,
+      220,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(projectTile);
+    expect(openedProjectId, project.id);
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox.shrink());
     projects.dispose();

@@ -217,4 +217,94 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+  testWidgets(
+    'review focuses the project opened from Dashboard before other saved projects',
+    (tester) async {
+      tester.view.physicalSize = const Size(320, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final repository = _ReviewMemoryRepository();
+      final olderProject = CutawanProject.create(
+        source: VideoAssetMetadata(
+          uri: 'content://media/external/video/media/72',
+          displayName: 'older-project.mp4',
+          mimeType: 'video/mp4',
+          sizeBytes: 9000000,
+          durationMs: 70000,
+          width: 1280,
+          height: 720,
+          rotationDegrees: 0,
+          importedAtUtc: DateTime.utc(2026, 11, 20),
+        ),
+        preferences: const ClipPreferences(),
+        now: DateTime.utc(2026, 11, 20),
+      );
+      final requestedProject = CutawanProject.create(
+        source: VideoAssetMetadata(
+          uri: 'content://media/external/video/media/73',
+          displayName: 'requested-project.mp4',
+          mimeType: 'video/mp4',
+          sizeBytes: 11000000,
+          durationMs: 83000,
+          width: 1920,
+          height: 1080,
+          rotationDegrees: 0,
+          importedAtUtc: DateTime.utc(2026, 11, 21),
+        ),
+        preferences: const ClipPreferences(),
+        now: DateTime.utc(2026, 11, 21),
+      );
+      repository.seed(olderProject);
+      repository.seed(requestedProject);
+      final projects = ValueNotifier<List<CutawanProject>>([
+        olderProject,
+        requestedProject,
+      ]);
+      addTearDown(projects.dispose);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Directionality(
+              textDirection: TextDirection.rtl,
+              child: ReviewPage(
+                projects: projects,
+                repository: repository,
+                onProjectsChanged: () async {},
+                initialProjectId: requestedProject.id,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(
+        find.textContaining('المشروع المحدد من الرئيسية'),
+        findsOneWidget,
+      );
+      final requestedCard = find.byKey(
+        ValueKey('review-project-${requestedProject.id}'),
+      );
+      final olderCard = find.byKey(
+        ValueKey('review-project-${olderProject.id}'),
+      );
+      expect(
+        tester.getRect(requestedCard).top,
+        lessThan(tester.getRect(olderCard).top),
+      );
+      expect(
+        find.byKey(
+          ValueKey('review-run-pipeline-${requestedProject.id}'),
+        ),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+
 }

@@ -26,12 +26,14 @@ class ReviewPage extends StatefulWidget {
     required this.projects,
     required this.repository,
     required this.onProjectsChanged,
+    this.initialProjectId,
     super.key,
   });
 
   final ValueListenable<List<CutawanProject>> projects;
   final LocalProjectRepository repository;
   final Future<void> Function() onProjectsChanged;
+  final String? initialProjectId;
 
   @override
   State<ReviewPage> createState() => _ReviewPageState();
@@ -1197,6 +1199,21 @@ class _ReviewPageState extends State<ReviewPage> {
       builder: (context, items, _) {
         final completed = items.where((item) => item.job.status == ProjectJobStatus.completed).length;
         final reviewable = _candidateSets.values.where((value) => value != null).length;
+        final orderedItems = List<CutawanProject>.from(items);
+        final selectedIndex = orderedItems.indexWhere(
+          (project) => project.id == widget.initialProjectId,
+        );
+        if (selectedIndex > 0) {
+          final selectedProject = orderedItems.removeAt(selectedIndex);
+          orderedItems.insert(0, selectedProject);
+        }
+        CutawanProject? selectedProject;
+        for (final project in items) {
+          if (project.id == widget.initialProjectId) {
+            selectedProject = project;
+            break;
+          }
+        }
         return ListView(
           key: const ValueKey('review-workflow-list'),
           padding: const EdgeInsets.fromLTRB(16, 20, 16, 132),
@@ -1213,6 +1230,12 @@ class _ReviewPageState extends State<ReviewPage> {
                 height: 1.45,
               ),
             ),
+            if (selectedProject != null) ...[
+              const SizedBox(height: 12),
+              CutawanStatusNote(
+                text: 'المشروع المحدد من الرئيسية: «${selectedProject.title}». تظهر بطاقته أولاً لمتابعة مرحلته المحفوظة.',
+              ),
+            ],
             if (items.isNotEmpty) ...[
               const SizedBox(height: 16),
               LayoutBuilder(
@@ -1240,7 +1263,7 @@ class _ReviewPageState extends State<ReviewPage> {
                 description: 'أنشئ مشروعًا أولاً. ستظهر هنا مراحل التحليل والمقاطع والملفات الناتجة.',
               )
             else
-              for (final project in items) _projectCard(context, project),
+              for (final project in orderedItems) _projectCard(context, project),
             if (_lastError != null) ...[
               const SizedBox(height: 8),
               CutawanStatusNote(text: _lastError!),

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../domain/project_contract.dart';
+import '../services/android_video_picker.dart';
+import '../services/direct_video_downloader.dart';
 import '../services/local_project_repository.dart';
 import '../services/processing_job_service.dart';
 import 'device_acceptance_page.dart';
@@ -28,6 +30,7 @@ class _HomeShellState extends State<HomeShell> with SingleTickerProviderStateMix
   late final AnimationController _navigationGlow;
   int _selectedIndex = 0;
   bool _didRecoverJobs = false;
+  String? _requestedReviewProjectId;
 
   static const List<CutawanNavigationDestination> _destinations = [
     (label: 'الرئيسية', icon: Icons.space_dashboard_outlined, selected: Icons.space_dashboard_rounded, hint: 'Dashboard'),
@@ -43,6 +46,23 @@ class _HomeShellState extends State<HomeShell> with SingleTickerProviderStateMix
     _repository = widget.repository ?? LocalProjectRepository();
     _navigationGlow = AnimationController(vsync: this, duration: const Duration(milliseconds: 360), value: 1);
     _reloadProjects();
+  }
+
+  DirectVideoDownloader _downloader() => DirectVideoDownloader(
+        availableStorageBytes: AndroidVideoPicker.availableStorageBytes,
+        inspectLocalFile: AndroidVideoPicker.inspectLocalFile,
+      );
+
+  Future<int> _readStorageUsage() =>
+      (widget.storageUsageBytes ?? _downloader().storageUsageBytes)();
+
+  void _openProjectInReview(CutawanProject project) {
+    HapticFeedback.selectionClick();
+    setState(() {
+      _requestedReviewProjectId = project.id;
+      _selectedIndex = 3;
+    });
+    _navigationGlow.forward(from: 0);
   }
 
   Future<void> _reloadProjects() async {
@@ -61,6 +81,7 @@ class _HomeShellState extends State<HomeShell> with SingleTickerProviderStateMix
   }
 
   Future<void> _handleProjectSaved() async {
+    _requestedReviewProjectId = null;
     await _reloadProjects();
     if (!mounted) return;
     _selectDestination(3);
@@ -124,6 +145,8 @@ class _HomeShellState extends State<HomeShell> with SingleTickerProviderStateMix
           onOpenReview: () => _selectDestination(3),
           onOpenModels: _openModels,
           onOpenSettings: _openSettings,
+          onOpenProject: _openProjectInReview,
+          storageUsageBytes: _readStorageUsage,
         ),
       ),
       TickerMode(
@@ -138,12 +161,17 @@ class _HomeShellState extends State<HomeShell> with SingleTickerProviderStateMix
           onProjectsChanged: _reloadProjects,
           onOpenReview: () => _selectDestination(3),
           onOpenCreate: () => _selectDestination(1),
-          storageUsageBytes: widget.storageUsageBytes,
+          storageUsageBytes: _readStorageUsage,
         ),
       ),
       TickerMode(
         enabled: _selectedIndex == 3,
-        child: ReviewPage(projects: _projects, repository: _repository, onProjectsChanged: _reloadProjects),
+        child: ReviewPage(
+          projects: _projects,
+          repository: _repository,
+          onProjectsChanged: _reloadProjects,
+          initialProjectId: _requestedReviewProjectId,
+        ),
       ),
       TickerMode(
         enabled: _selectedIndex == 4,
