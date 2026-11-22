@@ -1,3 +1,5 @@
+import 'dart:ui' show SemanticsAction;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -124,11 +126,14 @@ void main() {
             expect(finder, findsOneWidget);
             final size = tester.getSize(finder);
             expect(size.height, greaterThanOrEqualTo(48));
-            final node = tester.getSemantics(finder);
-            expect(node.hasFlag(SemanticsFlag.isButton), isTrue);
-            expect(node.hasAction(SemanticsAction.tap), isTrue);
+            final data = tester.getSemantics(finder).getSemanticsData();
+            expect(data.flagsCollection.isButton, isTrue);
             expect(
-              node.hasFlag(SemanticsFlag.isSelected),
+              (data.actions & SemanticsAction.tap.index) != 0,
+              isTrue,
+            );
+            expect(
+              data.flagsCollection.toStrings().contains('isSelected'),
               label == 'Projects',
             );
           }
