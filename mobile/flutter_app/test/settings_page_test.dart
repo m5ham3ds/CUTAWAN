@@ -36,8 +36,9 @@ Future<void> _scrollSettingsUntilFound(
       return;
     }
 
-    final nextOffset =
-        (position.pixels + distance).clamp(0.0, position.maxScrollExtent);
+    final nextOffset = (position.pixels + distance)
+        .clamp(0.0, position.maxScrollExtent)
+        .toDouble();
     if (nextOffset <= position.pixels) break;
 
     // jumpTo is synchronous; pump the frame before inspecting lazy children.
