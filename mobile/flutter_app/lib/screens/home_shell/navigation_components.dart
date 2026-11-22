@@ -9,7 +9,13 @@ typedef CutawanNavigationDestination = ({
 });
 
 class CutawanTopBar extends StatelessWidget {
-  const CutawanTopBar({required this.onModels, required this.onRefresh, required this.onDiagnostics, required this.onSettings});
+  const CutawanTopBar({
+    super.key,
+    required this.onModels,
+    required this.onRefresh,
+    required this.onDiagnostics,
+    required this.onSettings,
+  });
   final VoidCallback onModels;
   final Future<void> Function() onRefresh;
   final VoidCallback onDiagnostics;
@@ -64,7 +70,13 @@ class _TopBarAction extends StatelessWidget {
 }
 
 class CutawanNavigationBar extends StatelessWidget {
-  const CutawanNavigationBar({required this.selectedIndex, required this.onSelected, required this.destinations, required this.animation});
+  const CutawanNavigationBar({
+    super.key,
+    required this.selectedIndex,
+    required this.onSelected,
+    required this.destinations,
+    required this.animation,
+  });
   final int selectedIndex;
   final ValueChanged<int> onSelected;
   final List<CutawanNavigationDestination> destinations;
