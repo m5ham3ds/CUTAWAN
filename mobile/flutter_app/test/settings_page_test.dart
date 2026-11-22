@@ -16,6 +16,27 @@ Future<AppPreferencesStore> _createStore(Directory directory) async {
   return store;
 }
 
+
+Future<void> _scrollSettingsUntilFound(
+  WidgetTester tester,
+  Finder target, {
+  double distance = 480,
+  int maxSwipes = 12,
+}) async {
+  final list = find.byKey(const ValueKey('cutawan-settings-list'));
+  for (var attempt = 0; attempt < maxSwipes && !tester.any(target); attempt++) {
+    await tester.drag(list, Offset(0, -distance));
+    await tester.pump(const Duration(milliseconds: 100));
+  }
+  expect(
+    target,
+    findsOneWidget,
+    reason: 'Settings list did not reveal the target within $maxSwipes swipes.',
+  );
+  await tester.ensureVisible(target);
+  await tester.pump();
+}
+
 void main() {
   testWidgets(
     'CUTAWAN settings fit narrow and wide screens with enlarged text',
@@ -80,19 +101,15 @@ void main() {
         await tester.pump(const Duration(milliseconds: 400));
 
         expect(find.text('إعدادات CUTAWAN'), findsOneWidget);
-        await tester.scrollUntilVisible(
+        await _scrollSettingsUntilFound(
+          tester,
           find.text('الخصوصية والمعالجة'),
-          220,
-          scrollable: find.byType(Scrollable).first,
         );
-        await tester.pump();
         expect(find.text('الخصوصية والمعالجة'), findsOneWidget);
-        await tester.scrollUntilVisible(
+        await _scrollSettingsUntilFound(
+          tester,
           find.text('المعلومات القانونية'),
-          220,
-          scrollable: find.byType(Scrollable).first,
         );
-        await tester.pump();
         expect(find.text('المعلومات القانونية'), findsOneWidget);
         expect(tester.takeException(), isNull);
         await tester.pumpWidget(const SizedBox.shrink());
@@ -123,20 +140,18 @@ void main() {
     await tester.pump();
 
     final diagnosticsTile = find.text('تشخيص وقبول Android');
-    await tester.scrollUntilVisible(
+    await _scrollSettingsUntilFound(
+      tester,
       diagnosticsTile,
-      200,
-      scrollable: find.byType(Scrollable).first,
+      distance: 360,
     );
-    await tester.pump();
     await tester.tap(diagnosticsTile);
     final modelsTile = find.text('مركز النماذج والاتصالات');
-    await tester.scrollUntilVisible(
+    await _scrollSettingsUntilFound(
+      tester,
       modelsTile,
-      200,
-      scrollable: find.byType(Scrollable).first,
+      distance: 360,
     );
-    await tester.pump();
     await tester.tap(modelsTile);
 
     expect(diagnostics, 1);
@@ -175,12 +190,11 @@ void main() {
       final darkTheme = find.byKey(
         const ValueKey('settings-theme-dark'),
       );
-      await tester.scrollUntilVisible(
+      await _scrollSettingsUntilFound(
+        tester,
         darkTheme,
-        180,
-        scrollable: find.byType(Scrollable).first,
+        distance: 360,
       );
-      await tester.pump();
       await tester.tap(darkTheme);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 50));
@@ -189,12 +203,11 @@ void main() {
       final reduceMotion = find.byKey(
         const ValueKey('settings-reduce-motion'),
       );
-      await tester.scrollUntilVisible(
+      await _scrollSettingsUntilFound(
+        tester,
         reduceMotion,
-        180,
-        scrollable: find.byType(Scrollable).first,
+        distance: 300,
       );
-      await tester.pump();
       await tester.tap(reduceMotion);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 50));
