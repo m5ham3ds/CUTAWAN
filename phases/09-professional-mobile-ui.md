@@ -167,3 +167,20 @@ This page-by-page delivery uses Ssemble as a **workflow reference only**. No vis
 ### Current continuation
 
 The next engineering work returns to **Phase 8** before any further Phase 9 page expansion. Full MediaCodec decode and checkpoint-based deterministic resume are implemented, but live render sessions remain in `MainActivity` memory and are cancelled by `onDestroy`. Implement durable foreground rendering and render-session reconstruction (using WorkManager/foreground execution where supported), then add process-death, notification, cancellation and retry acceptance. Do not repeat Create, Review, Clip Editor, Caption Studio or the accepted Jobs UI slice.
+
+
+## WorkManager integration and current continuation — 2026-11-22
+
+The Jobs page's original UI-slice evidence is preserved above. The following later implementation supersedes its earlier statement that background rendering/notification cancellation did not exist:
+
+- Project cancellation from Jobs now first persists the cancellation state, then invokes `cancelBackgroundRenderForProject` over the native method channel. Android cancels all WorkManager work tagged for that project, covering queued and running clips.
+- WorkManager owns the long-running Media3 render with foreground notification progress and a notification cancellation intent. Durable completion state lets the Flutter pipeline adopt a render finished while the Flutter process was absent.
+- The pipeline persists the export record and stage checkpoint before acknowledging the durable completion.
+- Latest automated Android gate: run [44970800438](https://github.com/m5ham3ds/CUTAWAN/actions/runs/44970800438), run 267, SHA `645d2d349ecc9fe916b02a219a3ce0139f22b64a` — **success**, **160/160 tests**, ARM64-only APK and 10 unique native libraries with no duplicates. APK artifact [14733448407](https://github.com/m5ham3ds/CUTAWAN/actions/runs/44970800438/artifacts/14733448407).
+- Root/desktop CI [44970800462](https://github.com/m5ham3ds/CUTAWAN/actions/runs/44970800462), run 310 — success.
+
+### Phase 9 next engineering slice
+
+Jobs is complete and must not be repeated. Proceed with extracting the shared `HomeShell`/Dart `part of` implementation into feature-scoped screens and reusable components, introducing explicit navigation and clear feature state ownership. Keep the accepted Create, Review, Clip Editor, Caption Studio and Jobs interactions unchanged and protected by the existing workflow tests. Then address export gallery/delivery, semantics/accessibility, dark/light and Arabic RTL/English LTR golden coverage, narrow layouts, keyboard and landscape behavior.
+
+Physical-device lifecycle, media quality, OEM background and preview/export parity gates are still open.

@@ -41,3 +41,16 @@
 - Physical ARM64 device validation for lifecycle, codec, battery, memory and thermal behavior.
 
 **Decision:** Jobs is accepted as a UI workflow slice. Continue with Phase 8's durable rendering work; do not repeat the accepted Jobs UI or earlier pages.
+
+
+## Native WorkManager cancellation integration — 2026-11-22
+
+A later implementation on main adds actual project-scoped background render cancellation without changing the accepted Jobs page layout:
+
+- `JobsPage._cancel` persists the repository cancellation request, then calls `ProcessingJobService.cancelBackgroundRenderForProject(project.id)`.
+- The Android method channel validates project identity and cancels WorkManager work by the matching project tag, including queued and running render workers.
+- `NativeRenderWorker` is tagged per project and emits foreground notification progress with its own cancel action.
+- This bridge passed the latest Mobile Android run [44970800438](https://github.com/m5ham3ds/CUTAWAN/actions/runs/44970800438), run 267, commit `645d2d349ecc9fe916b02a219a3ce0139f22b64a`: **160/160 Flutter tests**, format, strict analysis, ARM64 build, ABI/native uniqueness checks and artifact upload all succeeded.
+- APK artifact [14733448407](https://github.com/m5ham3ds/CUTAWAN/actions/runs/44970800438/artifacts/14733448407). Full physical-device notification/cancellation behavior remains pending.
+
+This update adds a native execution path to the previously accepted Jobs UI slice; it does not mark per-clip retry/output management or Phase 8 physical acceptance complete.

@@ -91,3 +91,32 @@ Do not mark Phase 8 accepted until the remaining full-decode, output-fixture, ba
 - Automated gate passed on Mobile Android workflow 44865751038 (Phase 8 full-decode patch), and the subsequent Stage 9/10 ARM64 build workflows also passed.
 - Physical codec/format acceptance is still open: VFR, long duration, rotated input, silent/no-audio, AAC/other audio tracks and corrupt/truncated MP4 fixtures must be tested on actual ARM64 devices.
 - Background WorkManager execution, notification cancellation and process-death reconstruction of a live render are still not implemented; a destroyed Activity still cancels the in-memory Media3 session. Resume relies on persisted checkpoints and revalidation when the app is reopened.
+
+
+## WorkManager foreground rendering and durable completion — 2026-11-22
+
+**Automated implementation delivered on main; physical-device acceptance remains open.**
+
+- Extracted the native Media3 transform from the Activity-owned session into `NativeRenderEngine`; `NativeRenderWorker` executes project render requests through WorkManager's long-running foreground execution path.
+- Work requests are serialized through unique work; requests carry validated project/clip identity and are tagged by project so a Jobs cancellation can stop queued and active work for that project.
+- The worker publishes foreground progress notifications with a system cancellation action, and stores durable completion JSON tied to render identity/project so Flutter can recover a render completed while its process was absent.
+- `MainActivity` now enqueues/queries/cancels WorkManager jobs and exposes project-active, completed-render and acknowledge-completion method-channel operations. It no longer depends on an Activity-owned render-session map for background work.
+- Flutter's export service reads completed WorkManager output; the pipeline verifies it, saves the export record and checkpoint, and only then acknowledges/deletes the durable completion. This preserves the completion if the app process exits between render completion and Flutter persistence.
+- Job recovery checks native WorkManager state before classifying a project as interrupted. The Jobs cancellation action persists cancellation and calls the native project-tag cancellation bridge.
+- Android platform generation adds WorkManager 2.12.0, its required foreground-service manifest declarations/permissions and validates these generated declarations in CI.
+
+### Automated evidence — 2026-11-22
+
+- Android run [44970800438](https://github.com/m5ham3ds/CUTAWAN/actions/runs/44970800438), run 267, source SHA `645d2d349ecc9fe916b02a219a3ce0139f22b64a` — **success**.
+- Format, strict analysis, **160/160 Flutter tests**, Android platform generation, ARM64 debug APK build, ARM64-only assertion, 10-unique-native-library/no-duplicate assertion and APK upload all passed.
+- APK artifact [14733448407](https://github.com/m5ham3ds/CUTAWAN/actions/runs/44970800438/artifacts/14733448407), 59,996,128 bytes; archive SHA-256 `e7bf5a4a700b6c828d434c90667d3387ef26194c341d3c1bc42a2f8a72f440b5`.
+- Root/desktop CI [44970800462](https://github.com/m5ham3ds/CUTAWAN/actions/runs/44970800462), run 310 — **success** across checks, UI smoke, offline media pipeline and Apple Silicon package validation.
+
+### Remaining acceptance gates
+
+- Test background completion and relaunch recovery on a physical ARM64 handset; separately test ordinary process death versus explicit Android force-stop (force-stop may defer scheduled work until the app is launched again).
+- Confirm notification visibility/action, app notification permission behavior, foreground execution, OEM battery restrictions, cancellation latency and cleanup during long-running renders.
+- Exercise representative real media fixtures (long/VFR/rotated/no-audio/silent/corrupt/truncated), fully decoded audio/video outputs, crop continuity and Arabic/English subtitle timing/placement.
+- Per-clip retry and full export delivery/cleanup management remain product work. Caption Studio preview and native export do not yet have pixel-identical parity across the complete animation catalogue.
+
+**Decision:** accept the WorkManager/background-render code slice as passing automated gates. Do not mark Phase 8 globally complete until the physical-device and remaining product/media acceptance items above are satisfied.
