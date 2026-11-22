@@ -6,12 +6,12 @@
 
 ## Baseline and latest verified Android state
 
-- Latest accepted Mobile Android run: [45034907917](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45034907917), run **286**, SHA `6b9ba1f4689c98567c6eb677d4d05e6037945616` — **success**. Dart format, `flutter analyze --fatal-infos`, **172/172 Flutter tests**, ARM64 debug APK build, ARM64-only ABI verification, unique-native-library check and APK upload all passed.
-- APK artifact: [cutawan-mobile-arm64-debug, artifact 14759537141](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45034907917/artifacts/14759537141), **59,998,467 bytes**; ZIP SHA-256 `7be81d04380f9e981ec20e21a2b83ab692190fb518251467ee338026584a5617`. It contains exactly `arm64-v8a`, 10 unique native libraries, with no duplicate basenames.
-- Coverage artifact: [14759420912](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45034907917/artifacts/14759420912), 17,293 bytes.
-- Root/desktop CI run [45034907987](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45034907987), run **330** — **success** across checks, Xvfb UI smoke, offline FFmpeg/caption/render pipeline and Apple Silicon package validation.
+- Latest accepted Mobile Android run: [45036283358](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45036283358), run **289**, SHA `deecbd57744b2f06e6d989cec55cdd2f3dc70f3b` — **success**. Dart format, `flutter analyze --fatal-infos`, **174/174 Flutter tests**, ARM64 debug APK build, ARM64-only ABI verification, unique-native-library check and APK upload all passed.
+- APK artifact: [cutawan-mobile-arm64-debug, artifact 14760086606](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45036283358/artifacts/14760086606), **59,998,882 bytes**; ZIP SHA-256 `d74b241347bad571eed7dc0431c5ec228f526d0a1fea58b81836e00481368de4`. It contains exactly `arm64-v8a`, 10 unique native libraries, with no duplicate basenames.
+- Coverage artifact: [14760176118](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45036283358/artifacts/14760176118), 17,311 bytes.
+- Root/desktop CI run [45036283366](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45036283366), run **333** — **success** across checks, Xvfb UI smoke, offline FFmpeg/caption/render pipeline and Apple Silicon package validation.
 - WorkManager-backed Android rendering and project-scoped cancellation are implemented and pass automated CI. Physical-device process-death, force-stop, OEM background restrictions and long-render acceptance remain open.
-- Jobs workflow page remains accepted; project-scoped native WorkManager cancellation is wired. Targeted per-clip retry remains open; Phase 9 export gallery/delivery is now accepted in its own record.
+- Jobs workflow page remains accepted; project-scoped native WorkManager cancellation is wired. Targeted per-clip retry remains open; Phase 9 export gallery/delivery is accepted in its own record.
 
 - Latest accepted Mobile Android run: [44953830473](https://github.com/m5ham3ds/CUTAWAN/actions/runs/44953830473), run number 257, SHA `e2d3c08e9f2d4559cd931f4b461607f6012a2a95` — **success**.
 - It passed Dart format, `flutter analyze --fatal-infos` (`No issues found!`), **154/154 Flutter tests**, ARM64 debug APK build, ARM64-only ABI verification, duplicate-native-library verification, and APK upload.
@@ -33,7 +33,7 @@
 | 6 | Caption Studio visual presets, motion preview, RTL and preference persistence | Studio preview now loads saved transcript words/timing and groups them using live style/font/scale settings | Not synchronized to actual video playback; Studio and Android overlay are not yet pixel-identical |
 | 7 | Multi-provider model selection, secure user credentials, consented cloud editorial annotations | Provider-scoped model/key storage, consent gates on outbound requests, local fallback on key deletion; latest Android CI passed | Physical Keystore/backup/rotation tests, real provider account/model compatibility, billing and policy acceptance remain open |
 | 8 | End-to-end pipeline, job orchestration and clip export | Media3 full-track decode validation, deterministic checkpoints, WorkManager foreground worker, durable completion handoff, project-scoped cancellation and render notifications implemented; automated Android gates passed on run 267 | Physical ARM64 fixture/lifecycle/OEM tests remain open; targeted per-clip retry remains open |
-| 9 | Professional UI redesign and navigation/component architecture | Dashboard, Settings, Create, Review, Clip Editor, Caption Studio and Jobs are isolated feature screens; validated export gallery open/share/delete is implemented; Android run 286 passed 172/172 tests and ARM64 packaging | Current: accessibility semantics, minimum 48dp top-bar/navigation targets, 320dp RTL/LTR with dark/light and increased text scale, focus/keyboard/landscape/safe-area, then physical UI acceptance |
+| 9 | Professional UI redesign and navigation/component architecture | Dashboard, Settings, Create, Review, Clip Editor, Caption Studio and Jobs are isolated feature screens; validated export gallery open/share/delete is implemented; first accessibility slice passed Android run 289 with 174/174 tests and ARM64 packaging | Continue: increased text scale, no-overflow checks, focus/keyboard/landscape/safe-area, golden matrix and physical UI acceptance |
 | 10 | Physical-device quality, security, performance and Arabic/English acceptance | Responsive diagnostic workbench, baseline gate and missing-evidence reporting implemented; physical acceptance incomplete | 142/142 Flutter tests and ARM64-only APK pass in run 44870965616; still needs handset confirmation, real media corpus, WER/timing, full-decode and lifecycle/thermal evidence |
 
 ## Global engineering constraints
@@ -81,11 +81,16 @@ Phases 1–7 have a successful automated Android gate on SHA `80e182b`; physical
 
 ## Phase 9 accessibility and responsive UI matrix — 2026-11-22 (in progress)
 
-- Began the matrix after export gallery/delivery passed Android run 286 and CI run 330.
-- Initial implementation increases compact HomeShell top-bar icon action targets from 40dp to 48dp, preserving the existing iconography and callbacks.
-- Added widget tests for all five primary navigation destinations: semantic button/action/selected flags, a minimum 48dp height at 320dp, Arabic RTL and English LTR, light and dark Material 3 themes.
-- Added a compact 320dp RTL top-bar test that checks 48x48 target sizes, tooltip labels and action callbacks.
-- The broader phase remains open until the new tests pass Android CI and the remaining increased-text-scale, focus/keyboard, landscape, safe-area, golden and physical-handset checks are completed.
+- Initial accessibility slice passed on source SHA `deecbd57744b2f06e6d989cec55cdd2f3dc70f3b`.
+- Android run [45036283358](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45036283358), run 289 — **success**: Dart format, strict analysis, **174/174 Flutter tests**, ARM64 APK build, ARM64-only ABI and unique-native-library checks, and artifact upload.
+- Compact HomeShell top-bar icon actions now have 48x48dp targets without changing their icon glyphs or callbacks.
+- All five primary navigation destinations are covered for semantic labels/button roles/tap actions/selected state and minimum 48dp height at 320dp in RTL/LTR and light/dark Material 3.
+- Top-bar actions are verified at 48x48dp with labels and working callbacks on a compact 320dp RTL viewport.
+- APK artifact [`cutawan-mobile-arm64-debug`, ID 14760086606](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45036283358/artifacts/14760086606): 59,998,882 bytes; ZIP SHA-256 `d74b241347bad571eed7dc0431c5ec228f526d0a1fea58b81836e00481368de4`.
+- Coverage artifact [14760176118](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45036283358/artifacts/14760176118): 17,311 bytes.
+- Root/desktop CI [45036283366](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45036283366), run 333 — **success** across checks, Xvfb UI smoke, offline FFmpeg/render pipeline and Apple Silicon packaging.
+- Two test-only failures in earlier attempts were corrected: modern Flutter semantics are asserted through `flagsCollection`/semantics data, and the semantics handle is explicitly disposed after the matrix. Production navigation behavior was not changed to mask those test failures.
+- Broader matrix remains open: increased system text scale and no-clipping checks, focus traversal/keyboard activation, landscape, safe-area insets, light/dark RTL/LTR golden comparison and real handset UI acceptance.
 
 ## Branch and upstream integration audit — 2026-11-21
 
