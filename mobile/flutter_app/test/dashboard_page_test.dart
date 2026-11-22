@@ -145,27 +145,34 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    // The settings action is in the dashboard header. Tap it before
+    // scrolling the ListView so its lazy child remains mounted.
+    final settingsButton = find.byTooltip('الإعدادات');
+    expect(settingsButton, findsOneWidget);
+    await tester.tap(settingsButton);
+    await tester.pump();
+
+    final createButton = find.byKey(
+      const ValueKey('dashboard-create-project'),
+    );
+    await tester.scrollUntilVisible(
+      createButton,
+      180,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(createButton);
+
     await tester.scrollUntilVisible(
       find.byKey(const ValueKey('dashboard-storage-card')),
       180,
       scrollable: find.byType(Scrollable).first,
     );
+    await tester.pumpAndSettle();
     expect(find.text('2.0 MB'), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('dashboard-refresh-storage')));
     await tester.pumpAndSettle();
     expect(storageReads, 2);
-
-    final createButton = find.byKey(
-      const ValueKey('dashboard-create-project'),
-    );
-    await tester.ensureVisible(createButton);
-    await tester.pumpAndSettle();
-    await tester.tap(createButton);
-
-    final settingsButton = find.byTooltip('الإعدادات');
-    await tester.ensureVisible(settingsButton);
-    await tester.pumpAndSettle();
-    await tester.tap(settingsButton);
     for (final label in ['المهام والمشاريع', 'المراجعة والتحرير', 'مركز النماذج']) {
       final finder = find.text(label);
       await tester.scrollUntilVisible(

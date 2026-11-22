@@ -72,8 +72,17 @@ Exactly two branch refs are allowed:
 
 A repository workflow will synchronize `CUTAWAN-TEST` from every main push, dispatch CI and Mobile Android tests against it, and delete any branch ref other than `main` or `CUTAWAN-TEST`. It must never delete either allowed branch. The two branch refs are verified after cleanup.
 
+## Verified repository state after cleanup
+
+- The two allowed branch refs were created/synchronized at `3e79df606d40a22618b2902256f05856a2ebd474`:
+  - `main`
+  - `CUTAWAN-TEST`
+- Branch-policy workflow run [45049303735](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45049303735), run 1 — **success** for test-branch synchronization, Android/CI dispatch, and pruning.
+- The cleanup job explicitly reported **32 legacy branches deleted**. A fresh GitHub branch-list read then returned exactly two refs, `main` and `CUTAWAN-TEST`; both pointed to the same SHA.
+- CI 346 and Android 299 were dispatched against `CUTAWAN-TEST`. Android 299 is validating the Dashboard storage/project-resume slice after branch-governance setup.
+
 ## Scope limits
 
-- This operation does not change Flutter/desktop product code.
+- The archival merge preserves every legacy branch-only commit in Git ancestry; it does not falsely claim experimental desktop/site/Metachlorian files were copied into the active Flutter product tree.
 - It does not mark Phase 8 or Phase 10 physically accepted.
-- The Android 298 test failure on the current source is tracked separately and is to be corrected on the test-only branch before the tested source is accepted.
+- The Dashboard test sequencing failure from Android 298 is being corrected in the main test suite; branch policy will mirror that main commit to `CUTAWAN-TEST` and rerun both validation workflows there.
