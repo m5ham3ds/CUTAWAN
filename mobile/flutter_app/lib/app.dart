@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import 'domain/app_preferences.dart';
 import 'screens/home_shell.dart';
 import 'services/app_preferences_store.dart';
 import 'services/local_project_repository.dart';

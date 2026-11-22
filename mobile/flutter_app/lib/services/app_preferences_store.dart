@@ -37,7 +37,7 @@ class AppPreferencesStore {
     try {
       final directory = await directoryProvider();
       final file = File(
-        directory.path + Platform.pathSeparator + fileName,
+        '${directory.path}${Platform.pathSeparator}$fileName',
       );
       if (!await file.exists()) return;
 
@@ -65,9 +65,9 @@ class AppPreferencesStore {
       final directory = await directoryProvider();
       await directory.create(recursive: true);
       final file = File(
-        directory.path + Platform.pathSeparator + fileName,
+        '${directory.path}${Platform.pathSeparator}$fileName',
       );
-      final temporaryFile = File(file.path + '.tmp');
+      final temporaryFile = File('${file.path}.tmp');
 
       try {
         await temporaryFile.writeAsString(
