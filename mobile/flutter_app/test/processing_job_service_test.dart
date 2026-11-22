@@ -101,6 +101,7 @@ void main() {
     final jobs = ProcessingJobService(
       repository: repository,
       fingerprintVideo: (_) async => List.filled(64, 'c').join(),
+      hasActiveBackgroundRender: (_) async => false,
     );
     await jobs.recoverInterruptedJobs();
     final recovered = await repository.load(project.id);
