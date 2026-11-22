@@ -129,6 +129,19 @@ void main() {
       const phase10StatusKey =
           ValueKey('device-acceptance-phase10-status');
 
+      expect(find.byKey(phase10StatusKey), findsOneWidget);
+      expect(
+        tester.widget<Text>(find.byKey(phase10StatusKey)).data,
+        contains('اعتماد المرحلة 10: غير مكتمل'),
+      );
+
+      await tester.scrollUntilVisible(
+        find.byKey(scopeTitleKey),
+        180,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+
       expect(find.byKey(scopeTitleKey), findsOneWidget);
       expect(
         tester.widget<Text>(find.byKey(scopeTitleKey)).data,
@@ -138,11 +151,6 @@ void main() {
       expect(
         tester.widget<Text>(find.byKey(scopeDescriptionKey)).data,
         contains('اختبارات ملفات الوسائط وجودة التفريغ والأداء'),
-      );
-      expect(find.byKey(phase10StatusKey), findsOneWidget);
-      expect(
-        tester.widget<Text>(find.byKey(phase10StatusKey)).data,
-        contains('اعتماد المرحلة 10: غير مكتمل'),
       );
       expect(tester.takeException(), isNull);
     },

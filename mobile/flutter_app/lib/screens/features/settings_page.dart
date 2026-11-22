@@ -96,9 +96,8 @@ class SettingsPage extends StatelessWidget {
                   leading: Icon(Icons.dark_mode_outlined, color: scheme.primary),
                   title: const Text('وضع الألوان'),
                   subtitle: const Text(
-                    'يتبع CUTAWAN وضع المظهر الفاتح أو الداكن الذي يحدده النظام.',
+                    'يتبع CUTAWAN تلقائياً وضع المظهر الفاتح أو الداكن الذي يحدده نظام Android.',
                   ),
-                  trailing: const Chip(label: Text('حسب النظام')),
                 ),
               ),
               const SizedBox(height: 8),
