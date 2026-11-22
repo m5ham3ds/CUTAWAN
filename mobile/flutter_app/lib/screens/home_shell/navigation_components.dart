@@ -84,10 +84,17 @@ class CutawanNavigationBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final bottom = MediaQuery.paddingOf(context).bottom;
+    final safePadding = MediaQuery.paddingOf(context);
+    final bottom = safePadding.bottom;
     final compact = MediaQuery.sizeOf(context).width < 390;
+    final horizontalMargin = compact ? 4.0 : 14.0;
     return Container(
-      margin: EdgeInsets.fromLTRB(compact ? 4 : 14, 0, compact ? 4 : 14, bottom > 0 ? 8 : 13),
+      margin: EdgeInsets.fromLTRB(
+        horizontalMargin + safePadding.left,
+        0,
+        horizontalMargin + safePadding.right,
+        bottom > 0 ? bottom + 8 : 13,
+      ),
       padding: EdgeInsets.fromLTRB(compact ? 1 : 7, 6, compact ? 1 : 7, 6),
       decoration: BoxDecoration(color: scheme.surfaceContainer.withValues(alpha: 0.96), borderRadius: BorderRadius.circular(24), border: Border.all(color: scheme.outlineVariant), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.24), blurRadius: 28, offset: const Offset(0, 10))]),
       child: ClipRect(child: Row(children: List.generate(destinations.length, (index) {

@@ -1,5 +1,7 @@
 import 'dart:ui' show SemanticsAction;
 
+import 'package:flutter/services.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -187,6 +189,164 @@ void main() {
       expect(settingsTaps, 1);
       expect(diagnosticsTaps, 1);
       expect(modelsTaps, 1);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+
+  testWidgets(
+    'navigation and top bar remain usable with 200 percent text at 320dp',
+    (tester) async {
+      tester.view.physicalSize = const Size(320, 720);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      var settingsTaps = 0;
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: CutawanTheme.light(),
+          home: MediaQuery(
+            data: const MediaQueryData(
+              size: Size(320, 720),
+              textScaler: TextScaler.linear(2),
+            ),
+            child: Directionality(
+              textDirection: TextDirection.rtl,
+              child: Scaffold(
+                body: SafeArea(
+                  child: Column(
+                    children: [
+                      CutawanTopBar(
+                        onModels: () {},
+                        onRefresh: () async {},
+                        onDiagnostics: () {},
+                        onSettings: () => settingsTaps++,
+                      ),
+                      const Expanded(child: SizedBox.expand()),
+                    ],
+                  ),
+                ),
+                bottomNavigationBar: CutawanNavigationBar(
+                  selectedIndex: 0,
+                  onSelected: (_) {},
+                  destinations: _destinations,
+                  animation: const AlwaysStoppedAnimation<double>(1),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        tester.getSize(find.byTooltip('الإعدادات')),
+        const Size(48, 48),
+      );
+      expect(
+        tester.getSize(find.byTooltip('تشخيص الجهاز')),
+        const Size(48, 48),
+      );
+      expect(
+        tester.getSize(find.byTooltip('مركز النماذج')),
+        const Size(48, 48),
+      );
+      expect(find.bySemanticsLabel(RegExp('Dashboard')), findsOneWidget);
+      expect(find.bySemanticsLabel(RegExp('Captions')), findsOneWidget);
+      await tester.tap(find.byTooltip('الإعدادات'));
+      expect(settingsTaps, 1);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'primary navigation supports keyboard focus and activation',
+    (tester) async {
+      tester.view.physicalSize = const Size(320, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      var selected = -1;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            bottomNavigationBar: CutawanNavigationBar(
+              selectedIndex: 4,
+              onSelected: (value) => selected = value,
+              destinations: _destinations,
+              animation: const AlwaysStoppedAnimation<double>(1),
+            ),
+          ),
+        ),
+      );
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+
+      expect(selected, 0);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'landscape navigation respects horizontal and bottom safe-area insets',
+    (tester) async {
+      tester.view.physicalSize = const Size(720, 320);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      const insets = EdgeInsets.fromLTRB(24, 10, 24, 24);
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: CutawanTheme.dark(),
+          home: MediaQuery(
+            data: const MediaQueryData(
+              size: Size(720, 320),
+              padding: insets,
+              viewPadding: insets,
+            ),
+            child: Directionality(
+              textDirection: TextDirection.ltr,
+              child: Scaffold(
+                body: SafeArea(
+                  child: Column(
+                    children: [
+                      CutawanTopBar(
+                        onModels: () {},
+                        onRefresh: () async {},
+                        onDiagnostics: () {},
+                        onSettings: () {},
+                      ),
+                      const Expanded(child: SizedBox.expand()),
+                    ],
+                  ),
+                ),
+                bottomNavigationBar: CutawanNavigationBar(
+                  selectedIndex: 2,
+                  onSelected: (_) {},
+                  destinations: _destinations,
+                  animation: const AlwaysStoppedAnimation<double>(1),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final navigationSurface = find.descendant(
+        of: find.byType(CutawanNavigationBar),
+        matching: find.byType(ClipRect),
+      );
+      expect(navigationSurface, findsOneWidget);
+      final rect = tester.getRect(navigationSurface);
+      expect(rect.left, greaterThanOrEqualTo(24));
+      expect(rect.right, lessThanOrEqualTo(696));
+      expect(rect.bottom, lessThanOrEqualTo(296));
       expect(tester.takeException(), isNull);
     },
   );
