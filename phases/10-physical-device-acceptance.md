@@ -43,6 +43,17 @@ Widget tests cover a 320dp viewport with enlarged text, RTL, long build identifi
 - Mobile Android workflow [44868851973](https://github.com/m5ham3ds/CUTAWAN/actions/runs/44868851973) validated the prior baseline instrumentation: 139 Flutter tests, strict analysis, format, ARM64-only APK, and unique native-library checks.
 - The responsive workbench and its new tests are recorded in the subsequent implementation commit and must be verified by the new workflow run before calling this UI change accepted.
 
+## Latest automated implementation gate — 2026-11-22
+
+- Android run [45043179789](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45043179789), run 296, source SHA `eabc20e3c7494a2030668bcac35a177881821e3b` — **success**.
+- Format and `flutter analyze --fatal-infos`: passed.
+- Flutter suite: **183/183 tests passed**, including diagnostics report scope assertions and 320dp/200%-text responsive widget checks.
+- ARM64 debug APK build and packaging checks: passed; exactly `arm64-v8a`, 10 unique native libraries, no duplicate basenames.
+- APK artifact [14763285423](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45043179789/artifacts/14763285423): 60,020,680 bytes; ZIP SHA-256 `8954f75e5b9e81f611cc52c233b04067b5be81983113d7d14d0250b1c8200308`.
+- Coverage artifact [14763115567](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45043179789/artifacts/14763115567).
+- Root/desktop CI [45043179788](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45043179788), run 341 — **success**.
+- The app report states `physicalMediaTestsExecuted=false`: the page currently collects device metadata and performs one temporary secure-storage canary round-trip/delete. The media corpus, full decode, WER/timing, candidate quality, sustained performance, process-death, SAF force-stop, Keystore lifecycle and end-to-end consent tests are not run by the diagnostics page.
+
 ## Still not accepted — real-device gates
 
 - No physical handset report or human device confirmation is attached.

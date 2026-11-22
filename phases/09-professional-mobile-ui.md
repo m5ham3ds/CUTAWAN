@@ -184,3 +184,23 @@ The Jobs page's original UI-slice evidence is preserved above. The following lat
 Jobs is complete and must not be repeated. Proceed with extracting the shared `HomeShell`/Dart `part of` implementation into feature-scoped screens and reusable components, introducing explicit navigation and clear feature state ownership. Keep the accepted Create, Review, Clip Editor, Caption Studio and Jobs interactions unchanged and protected by the existing workflow tests. Then address export gallery/delivery, semantics/accessibility, dark/light and Arabic RTL/English LTR golden coverage, narrow layouts, keyboard and landscape behavior.
 
 Physical-device lifecycle, media quality, OEM background and preview/export parity gates are still open.
+
+## Dashboard, Settings, Models and Diagnostics responsive slice — 2026-11-22
+
+- The four-page presentation pass is recorded at source SHA `eabc20e3c7494a2030668bcac35a177881821e3b`.
+- Dashboard and Settings use centered, max-width layouts, responsive spacing, readable wrapping, and adaptive metric/action cards. Models Center has a compact header and responsive model status/actions; real model integrity checks remain in the production path.
+- Settings' appearance description correctly reflects the current system-controlled theme; no fake theme or reduced-motion toggle is presented. A 200%-text narrow-screen overflow caused by a trailing Chip was fixed before final acceptance.
+- Diagnostics explicitly separates a baseline device snapshot and a one-install secure-storage canary from media/performance/physical acceptance. It sets `physicalMediaTestsExecuted=false`; media corpus, speech/candidate quality, full decode, sustained performance, process-death, SAF and end-to-end consent tests remain unexecuted/unverified.
+- Automated acceptance: Android run [45043179789](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45043179789), run 296 — **success**, **183/183 tests**, Format and strict analysis passed, ARM64 APK built, exactly `arm64-v8a`, 10 unique native libraries and no duplicate basenames; artifact uploaded.
+- APK artifact [14763285423](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45043179789/artifacts/14763285423): 60,020,680 bytes; archive SHA-256 `8954f75e5b9e81f611cc52c233b04067b5be81983113d7d14d0250b1c8200308`.
+- Coverage artifact [14763115567](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45043179789/artifacts/14763115567): 17,699 bytes.
+- Root/desktop CI [45043179788](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45043179788), run 341 — **success** across all required jobs.
+
+### Exact next Phase 9 work
+
+1. Connect Dashboard to the existing `HomeShell.storageUsageBytes` provider (currently passed to Jobs only) with explicit loading/error/unknown states and refresh behavior.
+2. Make recent-project actions project-aware: resume/open the correct project workflow rather than sending every recent item to the same generic Review destination.
+3. Implement Settings controls only for preferences that have a persisted source of truth; do not expose no-op switches.
+4. Add page golden comparisons for light/dark, RTL/LTR and representative widths, then complete physical handset visual review.
+
+Create, Review, Clip Editor, Caption Studio, Jobs, HomeShell extraction and export gallery/delivery remain accepted and must not be repeated.

@@ -37,3 +37,23 @@
 - Physical handset UI review remains separate from emulator/widget test evidence.
 
 **Decision:** accept the first automated 48dp/semantics slice. Continue Phase 9 accessibility and responsive acceptance; do not mark the whole matrix or Phase 9 complete yet.
+
+## Four-page responsive acceptance slice — 2026-11-22
+
+- Dashboard, Settings, Models Center and Device Diagnostics responsive presentation passed on source SHA `eabc20e3c7494a2030668bcac35a177881821e3b`.
+- Test matrix includes 320dp/RTL/light/200% text, 390dp/LTR/dark/150% text and 720dp/RTL/dark/normal text for Dashboard, Settings and Models Center; Diagnostics is exercised at 320dp with 200% text and lazy-list scrolling.
+- Dashboard/Settings route callbacks and existing model/diagnostic data-contract tests remain in the 183-test suite.
+- A real layout defect was caught and fixed: the Settings appearance ListTile's trailing Chip overflowed at 320dp/200% text. The tile now keeps the system-theme explanation in its subtitle without a no-op control.
+- Models Center layout tests inject immediate local-model availability results and do not touch disk; production continues to validate Whisper catalog files and Qwen size/SHA-256 before treating them as installed.
+- Diagnostics uses stable evidence labels and makes it explicit that baseline collection is not execution of physical field tests.
+- Android run [45043179789](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45043179789), run 296 — **success**, **183/183 tests**, strict analysis, ARM64 APK, ABI and duplicate-library checks passed.
+- APK artifact [14763285423](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45043179789/artifacts/14763285423): 60,020,680 bytes; ZIP SHA-256 `8954f75e5b9e81f611cc52c233b04067b5be81983113d7d14d0250b1c8200308`.
+- CI [45043179788](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45043179788), run 341 — success.
+
+## Remaining matrix / page work
+
+- Page golden comparisons for light/dark and RTL/LTR at compact/regular/wide widths are still open.
+- Navigation-level keyboard activation and landscape/safe-area tests exist; complete page-level focus traversal/visible-focus and physical handset visual acceptance.
+- Dashboard still needs the existing `HomeShell.storageUsageBytes` provider wired into its overview and a project-aware quick-resume action.
+- Settings still needs real persisted preferences where the product supports them; no-op controls must not be exposed.
+- Phase 9 remains in progress; the four-page automated responsive slice is accepted, not the full phase.

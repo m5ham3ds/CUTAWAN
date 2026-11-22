@@ -52,3 +52,13 @@ Install an APK built from a SHA recorded in GitHub Actions on a physical ARM64 A
 - Result: 139/139 Flutter tests, strict analysis and format passed; ARM64-only APK and unique native library assertions passed.
 - APK artifact 14693675362, 59,016,463 bytes; SHA-256 `56cf57b2c79b83ee5533b1897e212f607c11f200f854a80cb79c21069a101ae4`.
 - The physical handset marker remains heuristic and manual confirmation is not verified. Media corpus and all physical quality/performance/lifecycle results remain uncollected.
+
+## Latest automated gate and diagnostic execution scope — 2026-11-22
+
+- Android run [45043179789](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45043179789), run 296, SHA `eabc20e3c7494a2030668bcac35a177881821e3b` — **success**: Format, strict analysis, **183/183 Flutter tests**, ARM64 APK build, ARM64-only ABI and duplicate-library verification, artifact upload.
+- The responsive Diagnostics page test explicitly asserts that the screen is a device measurement snapshot, not an executor for physical media tests. The service report sets `physicalMediaTestsExecuted=false` and identifies its scope as device metadata plus a temporary secure-storage self-test.
+- Service/widget tests use mocked platform-channel responses. They verify baseline completeness/missing-field logic, invalid RAM ranges, secure-storage canary cleanup, and responsive UI; they do not collect physical handset/media evidence.
+- APK artifact [14763285423](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45043179789/artifacts/14763285423): 60,020,680 bytes; ZIP SHA-256 `8954f75e5b9e81f611cc52c233b04067b5be81983113d7d14d0250b1c8200308`.
+- Root/desktop CI [45043179788](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45043179788), run 341 — success.
+
+**Field status remains unchanged:** no physical handset diagnostic JSON, hash-locked Arabic/English media corpus, WER/timing report, manually reviewed candidate/crop quality, on-device full decode, sustained battery/thermal/performance measurements, process-death/SAF/Keystore lifecycle or end-to-end consent result has been collected. Phase 10 remains incomplete.
