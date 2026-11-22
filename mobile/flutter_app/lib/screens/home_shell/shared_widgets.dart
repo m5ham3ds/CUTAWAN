@@ -78,24 +78,21 @@ class _MetricCard extends StatelessWidget {
     required this.label,
     required this.value,
     required this.icon,
-    this.tint,
   });
 
   final String label;
   final String value;
   final IconData icon;
-  final Color? tint;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final color = tint ?? theme.colorScheme.primary;
     return _Panel(
       padding: const EdgeInsets.all(14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 18, color: color),
+          Icon(icon, size: 18, color: theme.colorScheme.primary),
           const SizedBox(height: 12),
           Text(
             value,
@@ -123,15 +120,11 @@ class _EmptyState extends StatelessWidget {
     required this.icon,
     required this.title,
     required this.description,
-    this.action,
-    this.onAction,
   });
 
   final IconData icon;
   final String title;
   final String description;
-  final String? action;
-  final VoidCallback? onAction;
 
   @override
   Widget build(BuildContext context) {
@@ -164,13 +157,6 @@ class _EmptyState extends StatelessWidget {
               color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
-          if (action != null && onAction != null) ...[
-            const SizedBox(height: 19),
-            FilledButton.tonal(
-              onPressed: onAction,
-              child: Text(action!),
-            ),
-          ],
         ],
       ),
     );

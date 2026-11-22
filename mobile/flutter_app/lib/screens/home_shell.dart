@@ -11,7 +11,6 @@ import '../domain/transcript_contract.dart';
 import '../domain/clip_candidate.dart';
 import '../domain/reframe_contract.dart';
 import '../services/android_video_picker.dart';
-import '../services/direct_video_downloader.dart';
 import '../services/local_project_repository.dart';
 import '../services/whisper_transcription_service.dart';
 import '../services/qwen_model_manager.dart';
