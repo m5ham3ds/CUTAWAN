@@ -13,12 +13,16 @@ class ModelsPage extends StatefulWidget {
     this.qwenManager,
     this.credentials,
     this.gateway,
+    this.checkWhisperInstalled,
+    this.checkQwenInstalled,
   });
 
   final WhisperModelManager? whisperManager;
   final QwenModelManager? qwenManager;
   final AiCredentialStore? credentials;
   final AiModelGateway? gateway;
+  final Future<bool> Function()? checkWhisperInstalled;
+  final Future<bool> Function()? checkQwenInstalled;
 
   @override
   State<ModelsPage> createState() => _ModelsPageState();
@@ -109,15 +113,18 @@ class _ModelsPageState extends State<ModelsPage> {
 
   Future<void> _refreshModels() async {
     try {
-      final whisperFile =
-          await _whisper.findCatalogModel(WhisperModelCatalog.base);
-      final qwenFile = await _qwen.findInstalled();
+      final whisperInstalled = widget.checkWhisperInstalled != null
+          ? await widget.checkWhisperInstalled!()
+          : await _whisper.findCatalogModel(WhisperModelCatalog.base) != null;
+      final qwenInstalled = widget.checkQwenInstalled != null
+          ? await widget.checkQwenInstalled!()
+          : await _qwen.findInstalled() != null;
       if (!mounted) {
       return;
     }
       setState(() {
-        _whisperInstalled = whisperFile != null;
-        _qwenInstalled = qwenFile != null;
+        _whisperInstalled = whisperInstalled;
+        _qwenInstalled = qwenInstalled;
         _loading = false;
       });
     } catch (error) {

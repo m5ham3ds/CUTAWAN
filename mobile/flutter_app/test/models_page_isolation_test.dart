@@ -1,12 +1,8 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:whisper_cpp_flutter_plus/whisper_cpp_flutter_plus.dart';
 
 import 'package:cutawan_mobile/screens/home_shell/models_page.dart';
 import 'package:cutawan_mobile/services/ai_model_gateway.dart';
-import 'package:cutawan_mobile/services/qwen_model_manager.dart';
 import 'package:cutawan_mobile/theme/cutawan_theme.dart';
 
 class _MemoryCredentialStorage implements AiSecretStorage {
@@ -63,14 +59,9 @@ void main() {
       for (final item in cases) {
         tester.view.physicalSize = item.size;
         tester.view.devicePixelRatio = 1;
-        final directory = await Directory.systemTemp.createTemp(
-          'cutawan-models-widget-',
-        );
         final credentials = AiCredentialStore(
           storage: _MemoryCredentialStorage(),
         );
-        final whisper = WhisperModelManager(storageDirectory: directory);
-        final qwen = QwenModelManager(storageDirectory: directory);
 
         await tester.pumpWidget(
           MaterialApp(
@@ -83,9 +74,9 @@ void main() {
               child: Directionality(
                 textDirection: item.direction,
                 child: ModelsPage(
-                  whisperManager: whisper,
-                  qwenManager: qwen,
                   credentials: credentials,
+                  checkWhisperInstalled: () async => false,
+                  checkQwenInstalled: () async => false,
                 ),
               ),
             ),
@@ -104,7 +95,6 @@ void main() {
         expect(tester.takeException(), isNull);
 
         await tester.pumpWidget(const SizedBox.shrink());
-        await directory.delete(recursive: true);
       }
     },
   );
