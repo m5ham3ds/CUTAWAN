@@ -166,6 +166,11 @@ class NativeRenderWorker(
             ?: return Result.failure(errorData("Render identity is missing."))
         val renderKey = inputData.getString(KEY_RENDER_KEY)
             ?: return Result.failure(errorData("Render fingerprint is missing."))
+        val projectId = inputData.getString(KEY_PROJECT_ID)
+            ?: return Result.failure(errorData("Project identity is missing."))
+        if (!projectId.matches(Regex("^[A-Za-z0-9_-]{1,160}$"))) {
+            return Result.failure(errorData("Project identity is invalid."))
+        }
 
         return try {
             setForegroundAsync(foregroundInfo(0)).get(30, TimeUnit.SECONDS)
@@ -263,6 +268,7 @@ class NativeRenderWorker(
     companion object {
         const val KEY_RENDER_ID = "renderId"
         const val KEY_RENDER_KEY = "renderKey"
+        const val KEY_PROJECT_ID = "projectId"
         const val KEY_RESULT_JSON = "resultJson"
         const val KEY_ERROR = "error"
         const val KEY_PROGRESS = "progress"

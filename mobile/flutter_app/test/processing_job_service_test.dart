@@ -62,6 +62,33 @@ void main() {
     expect(first, isNot(changed));
   });
 
+  test(
+    'running jobs remain running while a durable background worker is active',
+    () async {
+    final project = makeProject();
+    await repository.save(project);
+    await repository.saveJobState(
+      project.id,
+      status: ProjectJobStatus.running,
+      stage: 'rendering_clip_42',
+      progress: 0.6,
+    );
+    final jobs = ProcessingJobService(
+      repository: repository,
+      fingerprintVideo: (_) async => List.filled(64, 'c').join(),
+      hasActiveBackgroundRender: (projectId) async => projectId == project.id,
+    );
+
+    await jobs.recoverInterruptedJobs();
+
+    final recovered = await repository.load(project.id);
+    expect(recovered!.job.status, ProjectJobStatus.running);
+    expect(recovered.job.stage, 'rendering_clip_42');
+    expect(recovered.job.progress, 0.6);
+      expect(recovered.job.cancelRequested, isFalse);
+    },
+  );
+
   test('interrupted running jobs are recovered as resumable failures', () async {
     final project = makeProject();
     await repository.save(project);

@@ -195,6 +195,7 @@ class MainActivity : FlutterActivity() {
                     "releaseRender" -> result.success(null)
                     "getCompletedRender" -> getCompletedRender(call, result)
                     "acknowledgeCompletedRender" -> acknowledgeCompletedRender(call, result)
+                    "hasActiveBackgroundRender" -> hasActiveBackgroundRender(call, result)
                     "getDeviceAcceptanceDiagnostics" -> {
                         try {
                             result.success(readDeviceAcceptanceDiagnostics())
@@ -1054,6 +1055,11 @@ class MainActivity : FlutterActivity() {
             reply.error("INVALID_RENDER_KEY", "A SHA-256 render fingerprint is required.", null)
             return
         }
+        val projectId = request["projectId"] as? String
+        if (projectId.isNullOrBlank() || !projectId.matches(Regex("^[A-Za-z0-9_-]{1,160}$"))) {
+            reply.error("INVALID_PROJECT_ID", "A valid project identity is required for background rendering.", null)
+            return
+        }
         val workManager = WorkManager.getInstance(applicationContext)
         ioExecutor.execute {
             try {
@@ -1093,9 +1099,11 @@ class MainActivity : FlutterActivity() {
                         Data.Builder()
                             .putString(NativeRenderWorker.KEY_RENDER_ID, renderId.toString())
                             .putString(NativeRenderWorker.KEY_RENDER_KEY, renderKey)
+                            .putString(NativeRenderWorker.KEY_PROJECT_ID, projectId)
                             .build()
                     )
                     .addTag("cutawan-video-render")
+                    .addTag("cutawan-project-$projectId")
                     .build()
                 try {
                     workManager.enqueueUniqueWork(
@@ -1203,6 +1211,43 @@ class MainActivity : FlutterActivity() {
                 }
             }
         }
+    }
+
+    private fun hasActiveBackgroundRender(call: io.flutter.plugin.common.MethodCall, reply: MethodChannel.Result) {
+        val projectId = call.argument<String>("projectId")
+        if (projectId.isNullOrBlank() ||
+            !projectId.matches(Regex("^[A-Za-z0-9_-]{1,160}$"))
+        ) {
+            reply.error("INVALID_PROJECT_ID", "A valid project identity is required.", null)
+            return
+        }
+        val future = WorkManager.getInstance(applicationContext)
+            .getWorkInfosByTag("cutawan-project-$projectId")
+        future.addListener(
+            {
+                try {
+                    val infos = future.get()
+                    val active = infos.any { info ->
+                        when (info.state) {
+                            WorkInfo.State.RUNNING,
+                            WorkInfo.State.ENQUEUED,
+                            WorkInfo.State.BLOCKED -> true
+                            WorkInfo.State.SUCCEEDED -> {
+                                val renderKey = info.inputData.getString(NativeRenderWorker.KEY_RENDER_KEY)
+                                !renderKey.isNullOrBlank() &&
+                                    NativeRenderStore.readCompletion(applicationContext, renderKey) != null
+                            }
+                            WorkInfo.State.CANCELLED,
+                            WorkInfo.State.FAILED -> false
+                        }
+                    }
+                    reply.success(active)
+                } catch (error: Exception) {
+                    reply.error("BACKGROUND_RENDER_LOOKUP_FAILED", error.message, projectId)
+                }
+            },
+            ContextCompat.getMainExecutor(this)
+        )
     }
 
     private fun acknowledgeCompletedRender(call: io.flutter.plugin.common.MethodCall, reply: MethodChannel.Result) {

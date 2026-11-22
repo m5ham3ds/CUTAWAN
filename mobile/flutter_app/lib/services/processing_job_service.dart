@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
+import 'package:flutter/services.dart';
 
 import '../domain/project_contract.dart';
 import 'android_video_picker.dart';
@@ -17,11 +18,33 @@ class ProcessingJobService {
   ProcessingJobService({
     required LocalProjectRepository repository,
     Future<String> Function(String uri)? fingerprintVideo,
+    Future<bool> Function(String projectId)? hasActiveBackgroundRender,
   })  : _repository = repository,
-        _fingerprintVideo = fingerprintVideo ?? AndroidVideoPicker.fingerprintVideo;
+        _fingerprintVideo =
+            fingerprintVideo ?? AndroidVideoPicker.fingerprintVideo,
+        _hasActiveBackgroundRender =
+            hasActiveBackgroundRender ?? _queryActiveBackgroundRender;
 
   final LocalProjectRepository _repository;
   final Future<String> Function(String uri) _fingerprintVideo;
+  final Future<bool> Function(String projectId) _hasActiveBackgroundRender;
+
+  static const MethodChannel _backgroundRenderChannel =
+      MethodChannel('com.cutawan.mobile/media');
+
+  static Future<bool> _queryActiveBackgroundRender(String projectId) async {
+    try {
+      return await _backgroundRenderChannel.invokeMethod<bool>(
+            'hasActiveBackgroundRender',
+            <String, Object?>{'projectId': projectId},
+          ) ??
+          false;
+    } on MissingPluginException {
+      return false;
+    } on PlatformException {
+      return false;
+    }
+  }
 
   static bool isSha256(String value) {
     if (value.length != 64) return false;
@@ -140,6 +163,11 @@ class ProcessingJobService {
     final projects = await _repository.listProjects();
     for (final project in projects) {
       if (project.job.status != ProjectJobStatus.running) continue;
+      // A durable WorkManager worker may still be queued/running even though
+      // the Flutter Activity/process that started it has been destroyed.
+      final backgroundWorkIsActive =
+          await _hasActiveBackgroundRender(project.id);
+      if (backgroundWorkIsActive) continue;
       final interruptedStage = project.job.stage.trim();
       final safeStage = interruptedStage.isEmpty
           ? 'unknown'

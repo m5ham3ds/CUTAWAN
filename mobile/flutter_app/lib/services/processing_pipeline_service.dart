@@ -458,6 +458,7 @@ class ProcessingPipelineService {
             captionStyle: captionStylePayload,
             captionAnimationId: project.preferences.captionAnimationId,
             renderKey: fingerprint,
+            projectId: projectId,
             outputPath: outputPath,
             shouldCancel: () => _jobs.isCancellationRequested(projectId),
             onStarted: onRenderStarted,

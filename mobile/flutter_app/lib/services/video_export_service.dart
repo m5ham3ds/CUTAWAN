@@ -99,6 +99,7 @@ class VideoExportService {
     Map<String, Object?>? captionStyle,
     String captionAnimationId = 'static',
     String? renderKey,
+    String projectId = 'standalone',
     required String outputPath,
     void Function(double progress)? onProgress,
     void Function(String renderId)? onStarted,
@@ -139,6 +140,7 @@ class VideoExportService {
       'startRender',
       <String, Object?>{
         'renderKey': stableRenderKey,
+        'projectId': projectId,
         'clipId': clipId,
         'uri': sourceUri,
         'startMs': startMs,
@@ -203,6 +205,21 @@ class VideoExportService {
       } on PlatformException {
         // The native Activity may have been recreated while exporting.
       }
+    }
+  }
+
+  /// Returns true while WorkManager owns queued/running work for this project,
+  /// including a succeeded render whose durable completion has not been consumed.
+  Future<bool> hasActiveBackgroundRender(String projectId) async {
+    if (projectId.trim().isEmpty) return false;
+    try {
+      return await _channel.invokeMethod<bool>(
+            'hasActiveBackgroundRender',
+            <String, Object?>{'projectId': projectId},
+          ) ??
+          false;
+    } on PlatformException {
+      return false;
     }
   }
 

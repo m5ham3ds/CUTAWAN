@@ -153,6 +153,7 @@ void main() {
       'releaseRender',
     ]);
     final arguments = Map<String, Object?>.from(calls.first.arguments as Map);
+    expect(arguments, containsPair('projectId', 'standalone'));
     expect(arguments, containsPair('startMs', 1000));
     expect(arguments, containsPair('endMs', 16000));
     expect(arguments, containsPair('sourceAspectRatio', 16 / 9));
