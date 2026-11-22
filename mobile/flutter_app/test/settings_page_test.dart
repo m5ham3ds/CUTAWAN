@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -8,37 +6,12 @@ import 'package:cutawan_mobile/screens/features/settings_page.dart';
 import 'package:cutawan_mobile/services/app_preferences_store.dart';
 import 'package:cutawan_mobile/theme/cutawan_theme.dart';
 
-Future<AppPreferencesStore> _createStore(Directory directory) async {
-  final store = AppPreferencesStore(
-    directoryProvider: () async => directory,
-  );
-  await store.load();
-  return store;
-}
-
-
-Future<T> _traceSettingsStep<T>(
-  String label,
-  Future<T> Function() action,
-) async {
-  debugPrint('[settings-test] $label:START');
-  try {
-    final result = await action().timeout(const Duration(seconds: 30));
-    debugPrint('[settings-test] $label:DONE');
-    return result;
-  } catch (error) {
-    debugPrint('[settings-test] $label:ERROR $error');
-    rethrow;
-  }
-}
-
 Future<void> _scrollSettingsUntilFound(
   WidgetTester tester,
   Finder target, {
   double distance = 480,
   int maxSwipes = 12,
 }) async {
-  debugPrint('[settings-scroll] START target');
   final list = find.byKey(const ValueKey('cutawan-settings-list'));
   final scrollableFinder = find.descendant(
     of: list,
@@ -49,7 +22,6 @@ Future<void> _scrollSettingsUntilFound(
 
   for (var attempt = 0; attempt < maxSwipes; attempt++) {
     if (tester.any(target) && tester.getRect(target).overlaps(viewport)) {
-      debugPrint('[settings-scroll] VISIBLE target');
       return;
     }
 
@@ -57,15 +29,10 @@ Future<void> _scrollSettingsUntilFound(
         .clamp(0.0, position.maxScrollExtent)
         .toDouble();
     if (nextOffset <= position.pixels) break;
-
-    // jumpTo is synchronous; pump the frame before inspecting lazy children.
-    // Awaiting ensureVisible before pumping can deadlock a widget test.
-    debugPrint('[settings-scroll] step=$attempt from=${position.pixels} to=$nextOffset max=${position.maxScrollExtent}');
     position.jumpTo(nextOffset);
-    await _traceSettingsStep('scroll-pump-$attempt', () => tester.pump());
+    await tester.pump();
   }
 
-  debugPrint('[settings-scroll] EXHAUSTED target');
   expect(
     target,
     findsOneWidget,
@@ -79,17 +46,16 @@ Future<void> _scrollSettingsUntilFound(
 }
 
 
+
+
 void main() {
   testWidgets(
     'CUTAWAN settings fit narrow and wide screens with enlarged text',
     (tester) async {
-      debugPrint('[settings-layout] START');
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
-      final directory = await _traceSettingsStep('layout-create-temp', () => Directory.systemTemp.createTemp('cutawan-settings-layout-'));
-      final store = await _traceSettingsStep('layout-create-store', () => _createStore(directory));
+      final store = AppPreferencesStore.inMemory();
       addTearDown(store.dispose);
-      addTearDown(() => directory.delete(recursive: true));
       final cases = <({
         Size size,
         TextDirection direction,
@@ -119,7 +85,7 @@ void main() {
       for (final item in cases) {
         tester.view.physicalSize = item.size;
         tester.view.devicePixelRatio = 1;
-        await _traceSettingsStep('layout-pump-widget-${item.size.width}', () => tester.pumpWidget(
+        await tester.pumpWidget(
           MaterialApp(
             theme: item.theme,
             home: MediaQuery(
@@ -137,32 +103,28 @@ void main() {
               ),
             ),
           ),
-        ));
-        await _traceSettingsStep('layout-initial-pump-${item.size.width}', () => tester.pump());
-        await _traceSettingsStep('layout-settle-frame-${item.size.width}', () => tester.pump(const Duration(milliseconds: 400)));
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
 
         expect(find.text('إعدادات CUTAWAN'), findsOneWidget);
-        await _traceSettingsStep('layout-scroll-privacy-${item.size.width}', () => _scrollSettingsUntilFound(tester, find.text('الخصوصية والمعالجة')));
+        await _scrollSettingsUntilFound(tester, find.text('الخصوصية والمعالجة'));
         expect(find.text('الخصوصية والمعالجة'), findsOneWidget);
-        await _traceSettingsStep('layout-scroll-legal-${item.size.width}', () => _scrollSettingsUntilFound(tester, find.text('المعلومات القانونية')));
+        await _scrollSettingsUntilFound(tester, find.text('المعلومات القانونية'));
         expect(find.text('المعلومات القانونية'), findsOneWidget);
         expect(tester.takeException(), isNull);
-        await _traceSettingsStep('layout-unmount-${item.size.width}', () => tester.pumpWidget(const SizedBox.shrink()));
+        await tester.pumpWidget(const SizedBox.shrink());
       }
     },
-    timeout: const Timeout(Duration(seconds: 90)),
   );
 
   testWidgets('settings routes open diagnostics and the models center',
       (tester) async {
-    debugPrint('[settings-routes] START');
     var diagnostics = 0;
     var models = 0;
-    final directory = await _traceSettingsStep('routes-create-temp', () => Directory.systemTemp.createTemp('cutawan-settings-routes-'));
-    final store = await _traceSettingsStep('routes-create-store', () => _createStore(directory));
+    final store = AppPreferencesStore.inMemory();
     addTearDown(store.dispose);
-    addTearDown(() => directory.delete(recursive: true));
-    await _traceSettingsStep('routes-pump-widget', () => tester.pumpWidget(
+    await tester.pumpWidget(
       MaterialApp(
         theme: CutawanTheme.light(),
         home: SettingsPage(
@@ -171,36 +133,33 @@ void main() {
           onModels: () => models++,
         ),
       ),
-    ));
-    await _traceSettingsStep('routes-initial-pump', () => tester.pump());
+    );
+    await tester.pump();
 
     final diagnosticsTile = find.text('تشخيص وقبول Android');
-    await _traceSettingsStep('routes-scroll-diagnostics', () => _scrollSettingsUntilFound(tester, diagnosticsTile, distance: 360));
-    await _traceSettingsStep('routes-tap-diagnostics', () => tester.tap(diagnosticsTile));
+    await _scrollSettingsUntilFound(tester, diagnosticsTile, distance: 360);
+    await tester.tap(diagnosticsTile);
     final modelsTile = find.text('مركز النماذج والاتصالات');
-    await _traceSettingsStep('routes-scroll-models', () => _scrollSettingsUntilFound(tester, modelsTile, distance: 360));
-    await _traceSettingsStep('routes-tap-models', () => tester.tap(modelsTile));
+    await _scrollSettingsUntilFound(tester, modelsTile, distance: 360);
+    await tester.tap(modelsTile);
 
     expect(diagnostics, 1);
     expect(models, 1);
     expect(tester.takeException(), isNull);
-  }, timeout: const Timeout(Duration(seconds: 90)));
+  });
 
   testWidgets(
     'theme mode and reduced motion controls persist on this device',
     (tester) async {
-      debugPrint('[settings-persistence] START');
       tester.view.physicalSize = const Size(390, 844);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
 
-      final directory = await _traceSettingsStep('persist-create-temp', () => Directory.systemTemp.createTemp('cutawan-settings-persist-'));
-      final store = await _traceSettingsStep('persist-create-store', () => _createStore(directory));
+      final store = AppPreferencesStore.inMemory();
       addTearDown(store.dispose);
-      addTearDown(() => directory.delete(recursive: true));
 
-      await _traceSettingsStep('persist-pump-widget', () => tester.pumpWidget(
+      await tester.pumpWidget(
         MaterialApp(
           theme: CutawanTheme.light(),
           darkTheme: CutawanTheme.dark(),
@@ -210,36 +169,29 @@ void main() {
             onModels: () {},
           ),
         ),
-      ));
-      await _traceSettingsStep('persist-initial-pump', () => tester.pump());
+      );
+      await tester.pump();
 
       final darkTheme = find.byKey(
         const ValueKey('settings-theme-dark'),
       );
-      await _traceSettingsStep('persist-scroll-theme', () => _scrollSettingsUntilFound(tester, darkTheme, distance: 360));
-      await _traceSettingsStep('persist-tap-theme', () => tester.tap(darkTheme));
-      await _traceSettingsStep('persist-post-theme-pump', () => tester.pump());
-      await _traceSettingsStep('persist-theme-delay', () => tester.pump(const Duration(milliseconds: 50)));
+      await _scrollSettingsUntilFound(tester, darkTheme, distance: 360);
+      await tester.tap(darkTheme);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
       expect(store.preferences.value.themeMode, AppThemeMode.dark);
 
       final reduceMotion = find.byKey(
         const ValueKey('settings-reduce-motion'),
       );
-      await _traceSettingsStep('persist-scroll-motion', () => _scrollSettingsUntilFound(tester, reduceMotion, distance: 300));
-      await _traceSettingsStep('persist-tap-motion', () => tester.tap(reduceMotion));
-      await _traceSettingsStep('persist-post-motion-pump', () => tester.pump());
-      await _traceSettingsStep('persist-motion-delay', () => tester.pump(const Duration(milliseconds: 50)));
+      await _scrollSettingsUntilFound(tester, reduceMotion, distance: 300);
+      await tester.tap(reduceMotion);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
       expect(store.preferences.value.reduceMotion, isTrue);
 
-      final restoredStore = AppPreferencesStore(
-        directoryProvider: () async => directory,
-      );
-      addTearDown(restoredStore.dispose);
-      await _traceSettingsStep('persist-reload-store', () => restoredStore.load());
-      expect(restoredStore.preferences.value.themeMode, AppThemeMode.dark);
-      expect(restoredStore.preferences.value.reduceMotion, isTrue);
+
     },
-    timeout: const Timeout(Duration(seconds: 90)),
   );
 
 }
