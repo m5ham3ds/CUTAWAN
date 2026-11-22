@@ -1,5 +1,16 @@
-part of '../home_shell.dart';
+import 'dart:async';
 
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
+import '../../domain/caption_animation.dart';
+import '../../domain/caption_catalog.dart';
+import '../../domain/clip_preferences.dart';
+import '../../domain/project_contract.dart';
+import '../../services/android_video_picker.dart';
+import '../../services/direct_video_downloader.dart';
+import '../../services/local_project_repository.dart';
+import 'shared_ui_primitives.dart';
 class CreatePage extends StatefulWidget {
   const CreatePage({required this.repository, required this.onProjectSaved, super.key});
   final LocalProjectRepository repository;
@@ -243,7 +254,7 @@ class _CreatePageState extends State<CreatePage> {
     final source = _source!;
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    return _Panel(
+    return CutawanPanel(
       accent: true,
       child: Row(children: [
         Icon(Icons.video_file_outlined, color: scheme.primary, size: 28),
@@ -254,7 +265,7 @@ class _CreatePageState extends State<CreatePage> {
             Text(source.displayName, maxLines: 1, overflow: TextOverflow.ellipsis,
               style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800)),
             const SizedBox(height: 4),
-            Text('${source.width} × ${source.height} · ${_formatDuration(source.durationMs)} · ${_formatBytes(source.sizeBytes)}',
+            Text('${source.width} × ${source.height} · ${formatCutawanDuration(source.durationMs)} · ${formatCutawanBytes(source.sizeBytes)}',
               maxLines: 2, overflow: TextOverflow.ellipsis,
               style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
             Text(source.mimeType, style: theme.textTheme.labelSmall?.copyWith(color: scheme.onSurfaceVariant)),
@@ -277,14 +288,14 @@ class _CreatePageState extends State<CreatePage> {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      const _Eyebrow('01 / مصدر الفيديو', icon: Icons.video_file_outlined),
+      const CutawanEyebrow('01 / مصدر الفيديو', icon: Icons.video_file_outlined),
       const SizedBox(height: 8),
       Text('أضف الفيديو الأصلي', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900)),
       const SizedBox(height: 6),
       Text('ابدأ بملف واحد. بعد فحصه سننتقل إلى إعداد عدد المقاطع ومدتها ونسبة الإخراج.',
         style: theme.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant, height: 1.5)),
       const SizedBox(height: 16),
-      _Panel(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      CutawanPanel(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         TextField(
           key: const ValueKey('create-direct-video-url'),
           controller: _urlController,
@@ -322,8 +333,8 @@ class _CreatePageState extends State<CreatePage> {
           LinearProgressIndicator(value: _downloadProgress!.fraction, borderRadius: BorderRadius.circular(99)),
           const SizedBox(height: 7),
           Text(_downloadProgress!.totalBytes == null
-              ? 'تم تنزيل ${_formatBytes(_downloadProgress!.receivedBytes)}'
-              : '${_formatBytes(_downloadProgress!.receivedBytes)} من ${_formatBytes(_downloadProgress!.totalBytes!)}',
+              ? 'تم تنزيل ${formatCutawanBytes(_downloadProgress!.receivedBytes)}'
+              : '${formatCutawanBytes(_downloadProgress!.receivedBytes)} من ${formatCutawanBytes(_downloadProgress!.totalBytes!)}',
             style: theme.textTheme.bodySmall),
           Align(alignment: AlignmentDirectional.centerEnd,
             child: TextButton.icon(onPressed: _cancelDownload,
@@ -359,7 +370,7 @@ class _CreatePageState extends State<CreatePage> {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      const _Eyebrow('02 / إعداد المشروع', icon: Icons.tune_rounded),
+      const CutawanEyebrow('02 / إعداد المشروع', icon: Icons.tune_rounded),
       const SizedBox(height: 8),
       Text('اضبط المقاطع قبل الإنشاء', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900)),
       const SizedBox(height: 6),
@@ -368,7 +379,7 @@ class _CreatePageState extends State<CreatePage> {
       const SizedBox(height: 16),
       _sourceCard(change: true),
       const SizedBox(height: 14),
-      _Panel(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      CutawanPanel(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text('عدد المقاطع المطلوبة', style: theme.textTheme.titleSmall),
         const SizedBox(height: 10),
         Wrap(spacing: 8, runSpacing: 8, children: [5, 10, 15, 20].map((count) => ChoiceChip(
@@ -424,7 +435,7 @@ class _CreatePageState extends State<CreatePage> {
         ],
       ])),
       const SizedBox(height: 12),
-      _Panel(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      CutawanPanel(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text('نسبة أبعاد الفيديو', style: theme.textTheme.titleSmall),
         const SizedBox(height: 10),
         Wrap(spacing: 8, runSpacing: 8, children: ClipAspectRatio.values.map((ratio) {
@@ -460,7 +471,7 @@ class _CreatePageState extends State<CreatePage> {
         ),
       ])),
       const SizedBox(height: 12),
-      _Panel(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      CutawanPanel(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(
           children: [
             Expanded(
@@ -521,7 +532,7 @@ class _CreatePageState extends State<CreatePage> {
           ),
         ],
       ])),
-      _Panel(child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      CutawanPanel(child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Icon(Icons.center_focus_strong_rounded, color: scheme.primary),
         const SizedBox(width: 12),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -532,17 +543,17 @@ class _CreatePageState extends State<CreatePage> {
         ])),
       ])),
       const SizedBox(height: 14),
-      _Panel(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      CutawanPanel(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text('ملخص المشروع', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w900)),
         const SizedBox(height: 10),
-        _SummaryLine(label: 'عدد المقاطع', value: '$_clipCount'),
-        _SummaryLine(label: 'المدة', value: _durationLabel),
-        _SummaryLine(label: 'نسبة الأبعاد', value: _ratioLabel),
-        _SummaryLine(label: 'جودة الإخراج', value: _resolution),
-        _SummaryLine(label: 'الترجمة النصية', value: _captions ? 'مفعّلة' : 'متوقفة'),
+        CutawanSummaryLine(label: 'عدد المقاطع', value: '$_clipCount'),
+        CutawanSummaryLine(label: 'المدة', value: _durationLabel),
+        CutawanSummaryLine(label: 'نسبة الأبعاد', value: _ratioLabel),
+        CutawanSummaryLine(label: 'جودة الإخراج', value: _resolution),
+        CutawanSummaryLine(label: 'الترجمة النصية', value: _captions ? 'مفعّلة' : 'متوقفة'),
         if (_captions) ...[
-          _SummaryLine(label: 'نمط الترجمة', value: captionStylePresets.firstWhere((item) => item.id == _styleId).name),
-          _SummaryLine(label: 'الحركة', value: captionAnimationPresets.firstWhere((item) => item.id == _animationId).name),
+          CutawanSummaryLine(label: 'نمط الترجمة', value: captionStylePresets.firstWhere((item) => item.id == _styleId).name),
+          CutawanSummaryLine(label: 'الحركة', value: captionAnimationPresets.firstWhere((item) => item.id == _animationId).name),
         ],
       ])),
       const SizedBox(height: 14),
