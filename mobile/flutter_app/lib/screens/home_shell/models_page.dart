@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:whisper_cpp_flutter_plus/whisper_cpp_flutter_plus.dart';
 
-import '../services/ai_model_gateway.dart';
-import '../services/android_video_picker.dart';
-import '../services/qwen_model_manager.dart';
+import '../../services/ai_model_gateway.dart';
+import '../../services/android_video_picker.dart';
+import '../../services/qwen_model_manager.dart';
 import 'shared_ui_primitives.dart';
 
 class ModelsPage extends StatefulWidget {

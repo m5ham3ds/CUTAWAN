@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:whisper_cpp_flutter_plus/whisper_cpp_flutter_plus.dart';
 import '../domain/caption_catalog.dart';
 import '../domain/caption_animation.dart';
 import '../domain/caption_layout.dart';
