@@ -63,7 +63,7 @@ class _TopBarAction extends StatelessWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(14),
         onTap: () { HapticFeedback.selectionClick(); onTap(); },
-        child: SizedBox(width: 40, height: 40, child: Icon(icon, size: 19, color: accent ? scheme.primary : scheme.onSurface)),
+        child: SizedBox(width: 48, height: 48, child: Icon(icon, size: 19, color: accent ? scheme.primary : scheme.onSurface)),
       ),
     ));
   }

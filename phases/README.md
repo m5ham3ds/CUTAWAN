@@ -6,12 +6,12 @@
 
 ## Baseline and latest verified Android state
 
-- Latest Mobile Android run: [44970800438](https://github.com/m5ham3ds/CUTAWAN/actions/runs/44970800438), run **267**, SHA `645d2d349ecc9fe916b02a219a3ce0139f22b64a` — **success**. Dart format, strict analysis, **160/160 Flutter tests**, ARM64 debug APK build, ARM64-only ABI check, unique-native-library verification and APK upload all passed.
-- APK artifact: [cutawan-mobile-arm64-debug, artifact 14733448407](https://github.com/m5ham3ds/CUTAWAN/actions/runs/44970800438/artifacts/14733448407), **59,996,128 bytes**; artifact ZIP SHA-256 `e7bf5a4a700b6c828d434c90667d3387ef26194c341d3c1bc42a2f8a72f440b5`. It contains exactly `arm64-v8a`, **10 unique native libraries**, and no duplicate native-library basenames.
-- Coverage artifact: [14733457471](https://github.com/m5ham3ds/CUTAWAN/actions/runs/44970800438/artifacts/14733457471), 16,981 bytes.
-- Root/desktop CI run [44970800462](https://github.com/m5ham3ds/CUTAWAN/actions/runs/44970800462), run **310** — **success** across checks, Xvfb UI smoke, offline FFmpeg/caption/render pipeline and Apple Silicon package validation.
-- WorkManager-backed Android rendering and project-scoped cancellation are present on this head. This is automated build/test evidence, **not** physical-device acceptance after process death, force-stop, OEM background restrictions or long renders.
-- Jobs workflow page remains accepted; its cancellation action now also requests cancellation of the project's queued/running native WorkManager renders. Per-clip retry and export delivery/management remain open.
+- Latest accepted Mobile Android run: [45034907917](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45034907917), run **286**, SHA `6b9ba1f4689c98567c6eb677d4d05e6037945616` — **success**. Dart format, `flutter analyze --fatal-infos`, **172/172 Flutter tests**, ARM64 debug APK build, ARM64-only ABI verification, unique-native-library check and APK upload all passed.
+- APK artifact: [cutawan-mobile-arm64-debug, artifact 14759537141](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45034907917/artifacts/14759537141), **59,998,467 bytes**; ZIP SHA-256 `7be81d04380f9e981ec20e21a2b83ab692190fb518251467ee338026584a5617`. It contains exactly `arm64-v8a`, 10 unique native libraries, with no duplicate basenames.
+- Coverage artifact: [14759420912](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45034907917/artifacts/14759420912), 17,293 bytes.
+- Root/desktop CI run [45034907987](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45034907987), run **330** — **success** across checks, Xvfb UI smoke, offline FFmpeg/caption/render pipeline and Apple Silicon package validation.
+- WorkManager-backed Android rendering and project-scoped cancellation are implemented and pass automated CI. Physical-device process-death, force-stop, OEM background restrictions and long-render acceptance remain open.
+- Jobs workflow page remains accepted; project-scoped native WorkManager cancellation is wired. Targeted per-clip retry remains open; Phase 9 export gallery/delivery is now accepted in its own record.
 
 - Latest accepted Mobile Android run: [44953830473](https://github.com/m5ham3ds/CUTAWAN/actions/runs/44953830473), run number 257, SHA `e2d3c08e9f2d4559cd931f4b461607f6012a2a95` — **success**.
 - It passed Dart format, `flutter analyze --fatal-infos` (`No issues found!`), **154/154 Flutter tests**, ARM64 debug APK build, ARM64-only ABI verification, duplicate-native-library verification, and APK upload.
@@ -32,8 +32,8 @@
 | 5 | Face sampling and validated reframing plans | Face-position-aware crop planning and safe `fit` gaps implemented; native renderer consumes time-ranged crop segments | Not active-speaker recognition; physical render framing/continuity evaluation remains open |
 | 6 | Caption Studio visual presets, motion preview, RTL and preference persistence | Studio preview now loads saved transcript words/timing and groups them using live style/font/scale settings | Not synchronized to actual video playback; Studio and Android overlay are not yet pixel-identical |
 | 7 | Multi-provider model selection, secure user credentials, consented cloud editorial annotations | Provider-scoped model/key storage, consent gates on outbound requests, local fallback on key deletion; latest Android CI passed | Physical Keystore/backup/rotation tests, real provider account/model compatibility, billing and policy acceptance remain open |
-| 8 | End-to-end pipeline, job orchestration and clip export | Media3 full-track decode validation, deterministic checkpoints, WorkManager foreground worker, durable completion handoff, project-scoped cancellation and render notifications implemented; automated Android gates passed on run 267 | Physical ARM64 fixture/lifecycle/OEM tests remain open; per-clip retry and export delivery/cleanup UI remain open |
-| 9 | Professional UI redesign and navigation/component architecture | Dashboard, Settings, Create, Review, Clip Editor, Caption Studio and Jobs are isolated feature screens; HomeShell no longer owns `part` libraries; Android run 284 passed 167/167 tests and ARM64 packaging | Next: finish export gallery/delivery actions; then complete accessibility semantics/focus/tap targets, dark/light RTL/LTR goldens at 320dp, keyboard/landscape/safe-area and physical UI acceptance |
+| 8 | End-to-end pipeline, job orchestration and clip export | Media3 full-track decode validation, deterministic checkpoints, WorkManager foreground worker, durable completion handoff, project-scoped cancellation and render notifications implemented; automated Android gates passed on run 267 | Physical ARM64 fixture/lifecycle/OEM tests remain open; targeted per-clip retry remains open |
+| 9 | Professional UI redesign and navigation/component architecture | Dashboard, Settings, Create, Review, Clip Editor, Caption Studio and Jobs are isolated feature screens; validated export gallery open/share/delete is implemented; Android run 286 passed 172/172 tests and ARM64 packaging | Current: accessibility semantics, minimum 48dp top-bar/navigation targets, 320dp RTL/LTR with dark/light and increased text scale, focus/keyboard/landscape/safe-area, then physical UI acceptance |
 | 10 | Physical-device quality, security, performance and Arabic/English acceptance | Responsive diagnostic workbench, baseline gate and missing-evidence reporting implemented; physical acceptance incomplete | 142/142 Flutter tests and ARM64-only APK pass in run 44870965616; still needs handset confirmation, real media corpus, WER/timing, full-decode and lifecycle/thermal evidence |
 
 ## Global engineering constraints
@@ -56,12 +56,36 @@ Implement and gate in this order: Phases 1–3 together; then Phases 4–5; then
 ## Current next actions
 
 1. Phase 8's full-decode, durable WorkManager render worker, foreground progress notification, project cancellation and process-recovery handoff are implemented and have passed automated Android/desktop CI. Do not repeat this implementation.
-2. Keep Phase 8 acceptance open until a physical ARM64 device run validates background completion, relaunch/recovery, cancellation notification, long/VFR/rotated/no-audio/silent/corrupt fixtures, crop/caption continuity, audio and full decode. Add targeted per-clip retry and export delivery/cleanup UI as remaining product work.
+2. Keep Phase 8 acceptance open until a physical ARM64 device run validates background completion, relaunch/recovery, cancellation notification, long/VFR/rotated/no-audio/silent/corrupt fixtures, crop/caption continuity, audio and full decode. Targeted per-clip retry remains separate product work.
 3. Phase 9 HomeShell extraction is accepted on `d30695cf38c7fb1dd009427c3da8c029921e4a17`; see `PHASE-09-HOME-SHELL-SCREEN-EXTRACTION-RECORD-2026-11-22.md`. Do not repeat the page extraction or redesign the accepted Create, Review, Clip Editor, Caption Studio or Jobs workflows unless a regression is found.
-4. Continue Phase 9 with export gallery/delivery: open, share and safely delete only validated app-owned MP4 exports. Then complete accessibility semantics/focus/tap targets, dark/light RTL/LTR goldens at 320dp, keyboard/landscape/safe-area behavior and real interaction tests.
+4. Phase 9 export gallery/delivery is accepted on `6b9ba1f4689c98567c6eb677d4d05e6037945616`; see `PHASE-09-EXPORT-GALLERY-DELIVERY-RECORD-2026-11-22.md`. Continue the accessibility matrix: semantic roles/actions and focus order, 48dp minimum tap targets, 320dp RTL/LTR with dark/light and increased text scale, keyboard/landscape/safe-area, then physical UI acceptance.
 5. Finish Phase 10 with physical ARM64 accuracy, privacy, thermal, battery, lifecycle and performance acceptance.
 
 Phases 1–7 have a successful automated Android gate on SHA `80e182b`; physical-device checks and phase-specific quality acceptance are still separate and must not be inferred from CI.
+
+## Phase 9 export gallery and delivery — 2026-11-22
+
+- Implemented export-card **open**, **share** and confirmed **delete** actions for MP4 records that have both `validated == true` and `fullyDecodeValidated == true`.
+- Android checks that MediaStore content URIs are published MP4s in `Movies/CUTAWAN/` owned by this package. Older app-owned file exports are exposed through a FileProvider confined to CUTAWAN export folders; arbitrary file/content URIs are rejected.
+- Successful native deletion is followed by removal of the matching project export record. A failed native deletion leaves the record visible.
+- Added MethodChannel service tests, repository record-deletion tests, and a 320dp RTL Review gallery interaction test covering open/share/confirm-delete.
+- The first Android attempt exposed a widget-test timing defect: the test tapped a card before `ensureVisible` scrolling had settled. The test now pumps to a stable viewport before each tap; no production action behavior was changed for that failure.
+- Final source SHA: `6b9ba1f4689c98567c6eb677d4d05e6037945616`.
+- Android run [45034907917](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45034907917), run 286 — **success**: format, strict analysis, **172/172 tests**, ARM64 APK build, ARM64-only ABI verification, no duplicate native libraries and APK upload.
+- APK artifact [14759537141](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45034907917/artifacts/14759537141): 59,998,467 bytes; archive SHA-256 `7be81d04380f9e981ec20e21a2b83ab692190fb518251467ee338026584a5617`.
+- Coverage artifact [14759420912](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45034907917/artifacts/14759420912): 17,293 bytes.
+- Root/desktop CI [45034907987](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45034907987), run 330 — **success** across checks, Xvfb UI smoke, offline FFmpeg/caption/render pipeline and Apple Silicon package validation.
+- Physical testing of the chooser, third-party player access, old FileProvider paths and deletion against actual Android MediaStore remains part of handset acceptance; mocked widget tests do not replace it.
+
+**Decision:** accept export gallery/delivery as an automated workflow slice. Proceed to the Phase 9 accessibility and responsive UI matrix.
+
+## Phase 9 accessibility and responsive UI matrix — 2026-11-22 (in progress)
+
+- Began the matrix after export gallery/delivery passed Android run 286 and CI run 330.
+- Initial implementation increases compact HomeShell top-bar icon action targets from 40dp to 48dp, preserving the existing iconography and callbacks.
+- Added widget tests for all five primary navigation destinations: semantic button/action/selected flags, a minimum 48dp height at 320dp, Arabic RTL and English LTR, light and dark Material 3 themes.
+- Added a compact 320dp RTL top-bar test that checks 48x48 target sizes, tooltip labels and action callbacks.
+- The broader phase remains open until the new tests pass Android CI and the remaining increased-text-scale, focus/keyboard, landscape, safe-area, golden and physical-handset checks are completed.
 
 ## Branch and upstream integration audit — 2026-11-21
 
@@ -164,7 +188,7 @@ The page workflow sequence is tracked separately from the broader phase matrix. 
 
 ### Next Phase 9 engineering slice
 
-**The HomeShell page extraction is complete and must not be repeated.** `CaptionStudioPage` is now independently importable under `screens/features/`; Create, Jobs, Review, Models, Clip Editor, Dashboard and Settings are also feature-scoped libraries. `HomeShell` owns composition/navigation/state, not feature-page `part` declarations. Preserve the accepted page behavior and tests. **Next Phase 9 slice: finish export gallery/delivery** (open, share and safe deletion of validated app-owned MP4 files), followed by the accessibility/golden/RTL/keyboard acceptance matrix.
+**HomeShell extraction and export gallery/delivery are accepted and must not be repeated.** `CaptionStudioPage` is independently importable under `screens/features/`; the export gallery opens/shares/deletes only validated app-owned MP4 files. Preserve these workflows and their tests. **Current Phase 9 slice: accessibility and responsive acceptance** — semantics, selected/focus state, minimum 48dp targets, 320dp RTL/LTR with light/dark and increased text scale, keyboard/landscape/safe-area behavior and real interaction tests.
 
 
 ## WorkManager render implementation and Android gate — 2026-11-22
