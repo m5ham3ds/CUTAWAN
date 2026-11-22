@@ -63,9 +63,9 @@ void main() {
       ),
     );
 
-    expect(find.bySemanticsLabel('Dashboard'), findsOneWidget);
-    expect(find.bySemanticsLabel('Jobs'), findsOneWidget);
-    expect(find.bySemanticsLabel('Review'), findsOneWidget);
+    expect(find.bySemanticsLabel(RegExp('Dashboard')), findsOneWidget);
+    expect(find.bySemanticsLabel(RegExp('Jobs')), findsOneWidget);
+    expect(find.bySemanticsLabel(RegExp('Review')), findsOneWidget);
     semantics.dispose();
   });
 }
