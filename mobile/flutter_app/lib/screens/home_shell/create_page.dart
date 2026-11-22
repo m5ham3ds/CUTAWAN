@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../domain/caption_animation.dart';
 import '../../domain/caption_catalog.dart';
 import '../../domain/clip_preferences.dart';
 import '../../domain/project_contract.dart';
