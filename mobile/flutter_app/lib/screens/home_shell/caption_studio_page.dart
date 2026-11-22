@@ -726,7 +726,7 @@ class _CaptionStudioPageState extends State<CaptionStudioPage>
         ),
         if (_error != null) ...[
           const SizedBox(height: 10),
-          _StatusNote(text: _error!),
+          CutawanStatusNote(text: _error!),
         ],
       ],
     );
@@ -1037,7 +1037,7 @@ class _CaptionStudioPageState extends State<CaptionStudioPage>
           onChanged: (value) => setState(() => _rtl = value),
         ),
         if (_dirty)
-          const _StatusNote(
+          const CutawanStatusNote(
             text: 'توجد تعديلات غير محفوظة على المشروع المحدد.',
           ),
         const SizedBox(height: 8),

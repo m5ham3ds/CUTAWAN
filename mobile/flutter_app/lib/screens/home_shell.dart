@@ -27,12 +27,13 @@ import 'features/dashboard_page.dart';
 import 'features/settings_page.dart';
 import 'features/clip_editor_page.dart';
 import 'home_shell/navigation_components.dart';
+import 'home_shell/models_page.dart';
+import 'home_shell/shared_ui_primitives.dart';
 
 part 'home_shell/create_page.dart';
 part 'home_shell/jobs_page.dart';
 part 'home_shell/review_page.dart';
 part 'home_shell/caption_studio_page.dart';
-part 'home_shell/models_page.dart';
 part 'home_shell/shared_widgets.dart';
 
 class HomeShell extends StatefulWidget {

@@ -1053,7 +1053,7 @@ class _ReviewPageState extends State<ReviewPage> {
               for (final project in items) _projectCard(context, project),
             if (_lastError != null) ...[
               const SizedBox(height: 8),
-              _StatusNote(text: _lastError!),
+              CutawanStatusNote(text: _lastError!),
             ],
           ],
         );

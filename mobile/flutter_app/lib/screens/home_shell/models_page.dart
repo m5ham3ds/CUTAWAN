@@ -1,4 +1,10 @@
-part of '../home_shell.dart';
+import 'package:flutter/material.dart';
+import 'package:whisper_cpp_flutter_plus/whisper_cpp_flutter_plus.dart';
+
+import '../services/ai_model_gateway.dart';
+import '../services/android_video_picker.dart';
+import '../services/qwen_model_manager.dart';
+import 'shared_ui_primitives.dart';
 
 class ModelsPage extends StatefulWidget {
   const ModelsPage({super.key});
@@ -116,7 +122,7 @@ class _ModelsPageState extends State<ModelsPage> {
     }
     if (mounted) {
       setState(() => _error =
-          'المساحة الحرة غير كافية. المطلوب نحو ${_formatBytes(requiredBytes)}، والمتاح ${_formatBytes(available)}.');
+          'المساحة الحرة غير كافية. المطلوب نحو ${formatCutawanBytes(requiredBytes)}، والمتاح ${formatCutawanBytes(available)}.');
     }
     return false;
   }
@@ -451,11 +457,11 @@ class _ModelsPageState extends State<ModelsPage> {
           ),
           if (_error != null) ...[
             const SizedBox(height: 12),
-            _StatusNote(text: _error!),
+            CutawanStatusNote(text: _error!),
           ],
           if (_providerMessage != null) ...[
             const SizedBox(height: 12),
-            _StatusNote(text: _providerMessage!),
+            CutawanStatusNote(text: _providerMessage!),
           ],
           if (_busy) ...[
             const SizedBox(height: 16),
@@ -665,7 +671,7 @@ class _ModelsPageState extends State<ModelsPage> {
             ),
           ],
           const SizedBox(height: 14),
-          const _StatusNote(
+          const CutawanStatusNote(
             text: 'تُحفظ المفاتيح عبر تخزين آمن على الجهاز مع استخدام Android Keystore. تعطيل النسخ الاحتياطي يمنع نقل النص المشفّر إلى جهاز لا يملك مفتاح Keystore الأصلي.',
           ),
           const SizedBox(height: 12),
