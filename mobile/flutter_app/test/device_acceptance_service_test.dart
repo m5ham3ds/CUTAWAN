@@ -64,6 +64,8 @@ void main() {
     expect(report['manufacturer'], 'Example');
     expect(report['model'], 'Physical Test Device');
     expect(report['buildSha'], DeviceAcceptanceService.buildSha);
+    expect(report['diagnosticCollectionScope'], 'device-metadata-and-temporary-keystore-self-test');
+    expect(report['physicalMediaTestsExecuted'], isFalse);
     expect(report['fixtureEvidenceStatus'], 'not-collected-by-device-baseline');
     expect(report['deviceClass'], 'physical-candidate');
     expect(report['physicalDeviceHeuristicPassed'], isTrue);
@@ -81,6 +83,41 @@ void main() {
       'incomplete-device-and-media-evidence-required',
     );
     expect(secureStorage.values, isEmpty);
+  });
+
+  test('baseline readiness never claims media or performance acceptance', () async {
+    messenger.setMockMethodCallHandler(
+      channel,
+      (call) async => <String, Object?>{
+        'manufacturer': 'Example',
+        'model': 'Physical Candidate',
+        'androidRelease': '16',
+        'androidSdk': 36,
+        'isPhysicalDevice': true,
+        'cpuCoreCount': 8,
+        'totalMemoryBytes': 8 * 1024 * 1024 * 1024,
+        'availableMemoryBytes': 4 * 1024 * 1024 * 1024,
+        'processPssKb': 160000,
+        'availableStorageBytes': 20 * 1024 * 1024 * 1024,
+        'appVersionName': '0.2.0',
+        'appVersionCode': 2,
+      },
+    );
+    final report = await DeviceAcceptanceService(
+      secretStorage: _MemorySecretStorage(),
+    ).collect();
+
+    expect(report['diagnosticBaselineStatus'], 'ready-for-physical-media-tests');
+    expect(report['physicalMediaTestsExecuted'], isFalse);
+    expect(report['mediaCorpusStatus'], 'not-collected');
+    expect(report['speechQualityStatus'], 'not-collected');
+    expect(report['candidateQualityStatus'], 'not-collected');
+    expect(report['videoFullDecodeStatus'], 'not-collected-on-physical-device');
+    expect(report['sustainedPerformanceStatus'], 'not-collected');
+    expect(report['processDeathResumeStatus'], 'not-verified-on-physical-device');
+    expect(report['safLifecycleStatus'], 'not-verified-across-force-stop');
+    expect(report['networkConsentEndToEndStatus'], 'not-verified-on-physical-device');
+    expect(report['phase10Acceptance'], 'incomplete-device-and-media-evidence-required');
   });
 
   test('emulator diagnostics never qualify as a physical-device baseline', () async {

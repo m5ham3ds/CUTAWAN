@@ -109,6 +109,7 @@ class _DeviceAcceptancePageState extends State<DeviceAcceptancePage> {
       'not-collected' => 'لم يُجمع بعد',
       'not-collected-on-physical-device' => 'لم يُختبر على جهاز فعلي',
       'not-collected-by-device-baseline' => 'بانتظار ملف الوسائط',
+      'ready-for-physical-media-tests' => 'جاهز لاختبارات ميدانية لم تُنفّذ',
       'not-verified-on-physical-device' => 'بانتظار التحقق الميداني',
       'not-verified-across-force-stop' => 'لم يُختبر بعد الإيقاف القسري',
       'single-install-round-trip-only' => 'اختبار تثبيت واحد فقط',
@@ -169,6 +170,10 @@ class _DeviceAcceptancePageState extends State<DeviceAcceptancePage> {
           padding: const EdgeInsetsDirectional.fromSTEB(16, 8, 16, 28),
           children: [
             _buildOverview(context, report, baselineReady),
+            if (report != null) ...[
+              const SizedBox(height: 10),
+              _buildEvidenceScopeNotice(context, report, baselineReady),
+            ],
             if (_loading) ...[
               const SizedBox(height: 12),
               const LinearProgressIndicator(),
@@ -328,6 +333,59 @@ class _DeviceAcceptancePageState extends State<DeviceAcceptancePage> {
               style: theme.textTheme.bodySmall?.copyWith(
                 color: scheme.onSurfaceVariant,
                 fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEvidenceScopeNotice(
+    BuildContext context,
+    Map<String, Object?> report,
+    bool baselineReady,
+  ) {
+    final scheme = Theme.of(context).colorScheme;
+    final mediaTestsExecuted = report['physicalMediaTestsExecuted'] == true;
+    final title = mediaTestsExecuted
+        ? 'نتائج الاختبارات الميدانية'
+        : 'هذه لقطة قياسات وليست تشغيل اختبارات ميدانية';
+    final description = baselineReady
+        ? 'اكتملت قراءة مواصفات الجهاز واختبار التخزين الآمن المؤقت فقط. اختبارات ملفات الوسائط وجودة التفريغ والأداء والاستعادة لم تُشغّل من هذه الصفحة بعد.'
+        : 'البيانات الأساسية غير مكتملة. عالج الحقول الناقصة أولاً؛ لا تعتبر اختبارات الوسائط أو الأداء مجتازة.';
+    return Card(
+      color: scheme.tertiaryContainer.withValues(alpha: 0.42),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(
+              Icons.info_outline_rounded,
+              color: scheme.onTertiaryContainer,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          color: scheme.onTertiaryContainer,
+                          fontWeight: FontWeight.w900,
+                        ),
+                  ),
+                  const SizedBox(height: 5),
+                  Text(
+                    description,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: scheme.onTertiaryContainer,
+                          height: 1.4,
+                        ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -635,46 +693,69 @@ class _DetailRow extends StatelessWidget {
       null => scheme.onSurface,
     };
 
+    final valueWidget = selectable
+        ? SelectableText(
+            value,
+            textAlign: TextAlign.end,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: valueColor,
+              fontWeight: FontWeight.w600,
+            ),
+          )
+        : Text(
+            value,
+            textAlign: TextAlign.end,
+            softWrap: true,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: valueColor,
+              fontWeight: FontWeight.w600,
+            ),
+          );
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 10),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            flex: 5,
-            child: Text(
-              label,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: scheme.onSurfaceVariant,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          if (constraints.maxWidth < 350) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Align(
+                  alignment: AlignmentDirectional.centerEnd,
+                  child: valueWidget,
+                ),
+              ],
+            );
+          }
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                flex: 5,
+                child: Text(
+                  label,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
               ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Flexible(
-            flex: 6,
-            child: Align(
-              alignment: AlignmentDirectional.centerEnd,
-              child: selectable
-                  ? SelectableText(
-                      value,
-                      textAlign: TextAlign.end,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: valueColor,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    )
-                  : Text(
-                      value,
-                      textAlign: TextAlign.end,
-                      softWrap: true,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: valueColor,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-            ),
-          ),
-        ],
+              const SizedBox(width: 12),
+              Flexible(
+                flex: 6,
+                child: Align(
+                  alignment: AlignmentDirectional.centerEnd,
+                  child: valueWidget,
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -713,31 +794,47 @@ class _EvidenceCard extends StatelessWidget {
                 ),
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 12),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Expanded(
-                      flex: 6,
-                      child: Text(
-                        rows[index].label,
-                        softWrap: true,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Flexible(
-                      flex: 5,
-                      child: Align(
-                        alignment: AlignmentDirectional.centerEnd,
-                        child: _StatePill(
-                          label: statusLabel(rows[index].rawStatus),
-                          tone: statusTone(rows[index].rawStatus),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final label = Text(
+                      rows[index].label,
+                      softWrap: true,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                    );
+                    final status = _StatePill(
+                      label: statusLabel(rows[index].rawStatus),
+                      tone: statusTone(rows[index].rawStatus),
+                    );
+                    if (constraints.maxWidth < 350) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          label,
+                          const SizedBox(height: 8),
+                          Align(
+                            alignment: AlignmentDirectional.centerStart,
+                            child: status,
+                          ),
+                        ],
+                      );
+                    }
+                    return Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Expanded(flex: 6, child: label),
+                        const SizedBox(width: 8),
+                        Flexible(
+                          flex: 5,
+                          child: Align(
+                            alignment: AlignmentDirectional.centerEnd,
+                            child: status,
+                          ),
                         ),
-                      ),
-                    ),
-                  ],
+                      ],
+                    );
+                  },
                 ),
               ),
             ],

@@ -14,6 +14,8 @@ class _FakeDeviceAcceptanceService extends DeviceAcceptanceService {
         'androidSdk': 36,
         'deviceClass': 'physical-candidate',
         'physicalDeviceManualConfirmationStatus': 'not-verified',
+        'diagnosticCollectionScope': 'device-metadata-and-temporary-keystore-self-test',
+        'physicalMediaTestsExecuted': false,
         'diagnosticBaselineStatus': 'ready-for-physical-media-tests',
         'diagnosticMissingFields': <String>[],
         'appVersionName': '0.2.0',
@@ -86,7 +88,7 @@ void main() {
       tester,
       size: const Size(320, 780),
       theme: CutawanTheme.light(),
-      textScale: 1.25,
+      textScale: 2,
     );
 
     expect(find.text('تشخيص الجهاز'), findsOneWidget);
@@ -109,6 +111,34 @@ void main() {
     expect(find.text('الأمان والخصوصية'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets(
+    'baseline report clearly distinguishes measurements from unrun field tests',
+    (tester) async {
+      await pumpPage(
+        tester,
+        size: const Size(320, 780),
+        theme: CutawanTheme.dark(),
+        textScale: 2,
+      );
+
+      expect(
+        find.text('هذه لقطة قياسات وليست تشغيل اختبارات ميدانية'),
+        findsOneWidget,
+      );
+      expect(
+        find.textContaining('اختبارات ملفات الوسائط وجودة التفريغ والأداء'),
+        findsOneWidget,
+      );
+      expect(
+        find.text(
+          'اعتماد المرحلة 10: غير مكتمل حتى تسجيل نتائج الوسائط والجهاز الفعلي.',
+        ),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets('uses dark colors and wraps long device identifiers',
       (tester) async {

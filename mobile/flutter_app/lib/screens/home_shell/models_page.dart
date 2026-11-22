@@ -7,17 +7,32 @@ import '../../services/qwen_model_manager.dart';
 import 'shared_ui_primitives.dart';
 
 class ModelsPage extends StatefulWidget {
-  const ModelsPage({super.key});
+  const ModelsPage({
+    super.key,
+    this.whisperManager,
+    this.qwenManager,
+    this.credentials,
+    this.gateway,
+  });
+
+  final WhisperModelManager? whisperManager;
+  final QwenModelManager? qwenManager;
+  final AiCredentialStore? credentials;
+  final AiModelGateway? gateway;
 
   @override
   State<ModelsPage> createState() => _ModelsPageState();
 }
 
 class _ModelsPageState extends State<ModelsPage> {
-  final WhisperModelManager _whisper = WhisperModelManager();
-  final QwenModelManager _qwen = QwenModelManager();
-  final AiCredentialStore _credentials = AiCredentialStore();
-  late final AiModelGateway _gateway = AiModelGateway(credentials: _credentials);
+  late final WhisperModelManager _whisper =
+      widget.whisperManager ?? WhisperModelManager();
+  late final QwenModelManager _qwen =
+      widget.qwenManager ?? QwenModelManager();
+  late final AiCredentialStore _credentials =
+      widget.credentials ?? AiCredentialStore();
+  late final AiModelGateway _gateway =
+      widget.gateway ?? AiModelGateway(credentials: _credentials);
 
   final TextEditingController _apiKeyController = TextEditingController();
   final TextEditingController _baseUrlController = TextEditingController();
@@ -440,21 +455,48 @@ class _ModelsPageState extends State<ModelsPage> {
     final provider = AiProviderCatalog.byId(_provider);
     return Scaffold(
       appBar: AppBar(title: const Text('مركز النماذج'), centerTitle: false),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 18, 20, 32),
-        children: [
-          Text(
-            'النماذج المحلية',
-            style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'تعمل هذه النماذج على الهاتف بعد تنزيل الأوزان والتحقق من سلامتها. لا تحتاج مفاتيح API.',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-              height: 1.45,
-            ),
-          ),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final horizontalPadding =
+              constraints.maxWidth < 390 ? 16.0 : 24.0;
+          return Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 820),
+              child: ListView(
+                padding: EdgeInsets.fromLTRB(
+                  horizontalPadding,
+                  16,
+                  horizontalPadding,
+                  30,
+                ),
+                children: [
+                  CutawanPanel(
+                    accent: true,
+                    padding: const EdgeInsets.all(17),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const CutawanEyebrow(
+                          'LOCAL AI',
+                          icon: Icons.memory_rounded,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'النماذج المحلية',
+                          style: theme.textTheme.titleLarge
+                              ?.copyWith(fontWeight: FontWeight.w900),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'تعمل هذه النماذج على الهاتف بعد تنزيل الأوزان والتحقق من سلامتها، ولا تحتاج إلى مفاتيح API.',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                            height: 1.4,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
           if (_error != null) ...[
             const SizedBox(height: 12),
             CutawanStatusNote(text: _error!),
@@ -503,7 +545,7 @@ class _ModelsPageState extends State<ModelsPage> {
           const Divider(height: 36),
           Text(
             'اختيار محرك الذكاء الاصطناعي',
-            style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
+            style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
           ),
           const SizedBox(height: 8),
           SegmentedButton<String>(
@@ -546,7 +588,7 @@ class _ModelsPageState extends State<ModelsPage> {
           const Divider(height: 36),
           Text(
             'منصات النماذج السحابية',
-            style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
+            style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
           ),
           const SizedBox(height: 8),
           Text(
@@ -679,8 +721,11 @@ class _ModelsPageState extends State<ModelsPage> {
             onPressed: _busy || _remoteBusy ? null : _refreshModels,
             icon: const Icon(Icons.refresh),
             label: const Text('إعادة فحص النماذج المحلية'),
-          ),
-        ],
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -701,19 +746,53 @@ class _ModelsPageState extends State<ModelsPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(children: [
-              const CircleAvatar(child: Icon(Icons.memory_outlined)),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final titleWidget = Text(
                   title,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ),
-              Chip(label: Text(installed ? 'متحقق' : 'غير مثبت')),
-            ]),
+                  style: theme.textTheme.titleMedium
+                      ?.copyWith(fontWeight: FontWeight.w800),
+                );
+                final statusChip = Chip(
+                  visualDensity: VisualDensity.compact,
+                  label: Text(installed ? 'متحقق' : 'غير مثبت'),
+                );
+                if (constraints.maxWidth < 360) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const CircleAvatar(
+                            child: Icon(Icons.memory_outlined),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(child: titleWidget),
+                        ],
+                      ),
+                      const SizedBox(height: 7),
+                      Align(
+                        alignment: AlignmentDirectional.centerStart,
+                        child: statusChip,
+                      ),
+                    ],
+                  );
+                }
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const CircleAvatar(
+                      child: Icon(Icons.memory_outlined),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(child: titleWidget),
+                    const SizedBox(width: 8),
+                    statusChip,
+                  ],
+                );
+              },
+            ),
             const SizedBox(height: 8),
             Text(description),
             const SizedBox(height: 6),
@@ -724,7 +803,7 @@ class _ModelsPageState extends State<ModelsPage> {
               ),
             ),
             const SizedBox(height: 10),
-            Wrap(spacing: 8, children: [
+            Wrap(spacing: 8, runSpacing: 8, children: [
               FilledButton.tonalIcon(
                 onPressed: _busy ? null : installed ? null : onInstall,
                 icon: const Icon(Icons.download_outlined),

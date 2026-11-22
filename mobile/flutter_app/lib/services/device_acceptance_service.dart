@@ -114,6 +114,9 @@ class DeviceAcceptanceService {
       ...native.map((key, value) => MapEntry(key, value)),
       'collectedAtUtc': DateTime.now().toUtc().toIso8601String(),
       'buildSha': buildSha,
+      'diagnosticCollectionScope':
+          'device-metadata-and-temporary-keystore-self-test',
+      'physicalMediaTestsExecuted': false,
       'fixtureEvidenceStatus': 'not-collected-by-device-baseline',
       'secureStorageRoundTrip': 'passed',
       'secureStorageCanaryDeleted': true,
