@@ -155,11 +155,17 @@ class _JobsPageState extends State<JobsPage> {
     setState(() => _busyProjectIds.add(project.id));
     try {
       await widget.repository.cancelJob(project.id);
+      final backgroundCancellationRequested =
+          await ProcessingJobService.cancelBackgroundRenderForProject(project.id);
       await widget.onProjectsChanged();
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('تم حفظ طلب إيقاف المهمة. ستتوقف المعالجة عند أقرب نقطة آمنة.'),
+          SnackBar(
+            content: Text(
+              backgroundCancellationRequested
+                  ? 'تم حفظ الإيقاف وإرسال أمر إلغاء عامل الخلفية لهذا المشروع.'
+                  : 'تم حفظ طلب الإيقاف؛ لم يتأكد الاتصال بعامل الخلفية، وستُراجع حالة المهمة عند العودة إلى التطبيق.',
+            ),
           ),
         );
       }

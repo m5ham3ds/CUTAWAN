@@ -3,6 +3,7 @@ import 'package:cutawan_mobile/domain/project_contract.dart';
 import 'package:cutawan_mobile/screens/home_shell.dart';
 import 'package:cutawan_mobile/services/local_project_repository.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 class _JobsMemoryRepository extends LocalProjectRepository {
@@ -101,6 +102,24 @@ Future<void> _pumpJobsPage(
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  const mediaChannel = MethodChannel('com.cutawan.mobile/media');
+  final nativeMethods = <String>[];
+
+  setUp(() {
+    nativeMethods.clear();
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(mediaChannel, (call) async {
+      nativeMethods.add(call.method);
+      if (call.method == 'cancelBackgroundRenderForProject') return true;
+      return null;
+    });
+  });
+
+  tearDown(() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(mediaChannel, null);
+  });
 
   testWidgets('job filters and search isolate the requested project states', (
     tester,
@@ -225,6 +244,7 @@ void main() {
     final restored = repository.records[running.id]!;
     expect(restored.job.status, ProjectJobStatus.cancelled);
     expect(restored.job.cancelRequested, isTrue);
+    expect(nativeMethods, contains('cancelBackgroundRenderForProject'));
     expect(find.text('متوقف'), findsOneWidget);
 
     await tester.tap(find.byKey(ValueKey('open-review-${running.id}')));

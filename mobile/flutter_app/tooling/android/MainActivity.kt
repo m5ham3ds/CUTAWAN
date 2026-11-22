@@ -192,6 +192,7 @@ class MainActivity : FlutterActivity() {
                     "startRender" -> startRender(call, result)
                     "getRenderProgress" -> getRenderProgress(call, result)
                     "cancelRender" -> cancelBackgroundRender(call, result)
+                    "cancelBackgroundRenderForProject" -> cancelBackgroundRenderForProject(call, result)
                     "releaseRender" -> result.success(null)
                     "getCompletedRender" -> getCompletedRender(call, result)
                     "acknowledgeCompletedRender" -> acknowledgeCompletedRender(call, result)
@@ -1185,6 +1186,38 @@ class MainActivity : FlutterActivity() {
         }
         WorkManager.getInstance(applicationContext).cancelWorkById(renderId)
         reply.success(true)
+    }
+
+    private fun cancelBackgroundRenderForProject(
+        call: io.flutter.plugin.common.MethodCall,
+        reply: MethodChannel.Result
+    ) {
+        val projectId = call.argument<String>("projectId")
+        if (projectId.isNullOrBlank() ||
+            !projectId.matches(Regex("^[A-Za-z0-9_-]{1,160}$"))
+        ) {
+            reply.error("INVALID_PROJECT_ID", "A valid project identity is required.", null)
+            return
+        }
+        // The durable worker is tagged with the owning project. Cancelling this
+        // tag stops both the running clip and queued clips belonging to the project.
+        ioExecutor.execute {
+            try {
+                WorkManager.getInstance(applicationContext)
+                    .cancelAllWorkByTag("cutawan-project-$projectId")
+                    .result
+                    .get(30, TimeUnit.SECONDS)
+                mainHandler.post { reply.success(true) }
+            } catch (error: Exception) {
+                mainHandler.post {
+                    reply.error(
+                        "BACKGROUND_RENDER_CANCEL_FAILED",
+                        error.message ?: "Could not cancel the project's background render.",
+                        projectId
+                    )
+                }
+            }
+        }
     }
 
     private fun getCompletedRender(call: io.flutter.plugin.common.MethodCall, reply: MethodChannel.Result) {
