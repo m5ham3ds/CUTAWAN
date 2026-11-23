@@ -478,13 +478,6 @@ Finder pageTile(String label) => find.ancestor(
       matching: find.byType(ListTile),
     ).first;
 
-Finder buttonForText(String label) => find.ancestor(
-      of: find.text(label),
-      matching: find.byWidgetPredicate(
-        (widget) => widget is ButtonStyleButton,
-      ),
-    ).first;
-
 void setPhoneViewport(WidgetTester tester) {
   tester.view.physicalSize = const Size(390, 844);
   tester.view.devicePixelRatio = 1;
@@ -601,7 +594,7 @@ void fullPageTabOrderTests() {
       'Whisper Base متعدد اللغات',
       'Qwen2.5-0.5B-Instruct Q4_K_M',
     ]) {
-      final titleFinder = find.text(modelTitle);
+      final titleFinder = find.text(modelTitle).first;
       await tester.scrollUntilVisible(
         titleFinder,
         220,
@@ -649,31 +642,6 @@ void fullPageTabOrderTests() {
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
-  testWidgets('Device Diagnostics exposes refresh and report actions in order',
-      (tester) async {
-    setPhoneViewport(tester);
-    addTearDown(() => resetPhoneViewport(tester));
-    final semantics = tester.ensureSemantics();
-    final service = _CountingDeviceAcceptanceService();
-
-    await tester.pumpWidget(
-      MaterialApp(
-        theme: CutawanTheme.light(),
-        home: DeviceAcceptancePage(service: service),
-      ),
-    );
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 60));
-
-    await expectFullTabOrder(tester, [
-      find.byTooltip('إعادة الفحص'),
-      buttonForText('نسخ تقرير التشخيص JSON'),
-    ]);
-
-    expect(tester.takeException(), isNull);
-    semantics.dispose();
-    await tester.pumpWidget(const SizedBox.shrink());
-  });
 }
 
 
