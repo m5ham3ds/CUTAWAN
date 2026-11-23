@@ -36,7 +36,7 @@ class _LandscapeCase {
       );
 }
 
-const _landscapeCases = <_LandscapeCase>[
+final _landscapeCases = <_LandscapeCase>[
   _LandscapeCase(
     name: 'wide-landscape-rtl-large-text',
     size: Size(720, 320),
