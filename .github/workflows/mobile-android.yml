@@ -2,12 +2,12 @@ name: Mobile Android (Flutter)
 
 on:
   push:
-    branches: [CUTAWAN-TEST]
+    branches: [main]
     paths:
       - "mobile/flutter_app/**"
       - ".github/workflows/mobile-android.yml"
   pull_request:
-    branches: [CUTAWAN-TEST]
+    branches: [main]
     paths:
       - "mobile/flutter_app/**"
       - ".github/workflows/mobile-android.yml"
@@ -16,10 +16,10 @@ on:
       validation_batch:
         description: "Validation batch"
         required: false
-        default: "phases-1-3"
+        default: "main"
         type: string
       capture_page_goldens:
-        description: "Capture the first Flutter page golden baselines and commit them to main"
+        description: "Capture/update Flutter page golden baselines"
         required: false
         default: false
         type: boolean
@@ -40,39 +40,29 @@ jobs:
     defaults:
       run:
         working-directory: mobile/flutter_app
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Validate Android generation script syntax
         run: bash -n tooling/generate_android_platform.sh
-
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: stable
           flutter-version: "3.47.6"
           cache: true
-
       - name: Install pinned Android NDK
         uses: android-actions/setup-android@v3
         with:
           packages: "ndk;28.2.13676358"
-
       - name: Generate Android platform files
-        run: |
-          bash tooling/generate_android_platform.sh
-
+        run: bash tooling/generate_android_platform.sh
       - name: Resolve dependencies
         run: flutter pub get
-
       - name: Format
         run: dart format lib test
-
       - name: Analyze
         run: flutter analyze --fatal-infos
-
       - name: Test
         env:
           CAPTURE_PAGE_GOLDENS: ${{ inputs.capture_page_goldens }}
@@ -82,7 +72,6 @@ jobs:
           else
             flutter test --coverage --reporter expanded
           fi
-
       - name: Upload Flutter coverage report
         if: always()
         uses: actions/upload-artifact@v4
@@ -91,21 +80,10 @@ jobs:
           path: mobile/flutter_app/coverage/lcov.info
           if-no-files-found: ignore
           retention-days: 14
-
-      - name: Upload initial Flutter page goldens
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.capture_page_goldens == true && always() }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: cutawan-mobile-page-goldens
-          path: mobile/flutter_app/test/goldens/pages/*.png
-          if-no-files-found: error
-          retention-days: 14
-
       - name: Build ARM64 debug APK
         env:
           CMAKE_BUILD_PARALLEL_LEVEL: "2"
         run: flutter build apk --debug --target-platform android-arm64 --dart-define=BUILD_SHA=${{ github.sha }}
-
       - name: Verify APK contains ARM64 libraries only and no duplicated native libraries
         run: |
           python3 - <<'PY'
@@ -120,10 +98,8 @@ jobs:
                   for name in entries
                   if name.startswith("lib/") and len(PurePosixPath(name).parts) > 2
               }
-              expected = {"arm64-v8a"}
-              if abis != expected:
+              if abis != {"arm64-v8a"}:
                   raise SystemExit(f"Expected ARM64-only APK, found native ABIs: {sorted(abis)}")
-
               native_files = [
                   name for name in entries
                   if name.startswith("lib/arm64-v8a/") and name.endswith(".so")
@@ -135,7 +111,6 @@ jobs:
               })
               if duplicates:
                   raise SystemExit(f"Duplicate native libraries in APK: {duplicates}")
-
               required = {
                   "libwhisper_flutter.so",
                   "libllama_jni.so",
@@ -145,7 +120,6 @@ jobs:
               missing = sorted(required - set(basenames))
               if missing:
                   raise SystemExit(f"Missing required native inference libraries: {missing}")
-
               whisper_ggml = sorted(
                   name for name in basenames
                   if name.startswith("libggml") and name != "libggml-base.so"
@@ -155,7 +129,6 @@ jobs:
                   f"GGML libraries={whisper_ggml + ['libggml-base.so']}"
               )
           PY
-
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
@@ -163,99 +136,3 @@ jobs:
           path: mobile/flutter_app/build/app/outputs/flutter-apk/app-debug.apk
           if-no-files-found: error
           retention-days: 14
-      - name: Commit the generated page goldens to main and resync validation
-        if: ${{ success() && github.event_name == 'workflow_dispatch' && inputs.capture_page_goldens == true }}
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const fs = require('node:fs');
-            const path = require('node:path');
-            const { owner, repo } = context.repo;
-            const root = path.join(
-              process.env.GITHUB_WORKSPACE,
-              'mobile/flutter_app/test/goldens/pages',
-            );
-
-            function listPngFiles(directory) {
-              return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
-                const fullPath = path.join(directory, entry.name);
-                if (entry.isDirectory()) return listPngFiles(fullPath);
-                return entry.isFile() && entry.name.endsWith('.png') ? [fullPath] : [];
-              });
-            }
-
-            if (!fs.existsSync(root)) {
-              core.setFailed('Page golden capture directory was not created.');
-              return;
-            }
-
-            const files = listPngFiles(root).sort();
-            if (files.length !== 32) {
-              core.setFailed('Expected 32 page golden PNGs (24 layout + 8 focused states); found ' + files.length);
-              return;
-            }
-
-            const mainRef = await github.rest.git.getRef({
-              owner,
-              repo,
-              ref: 'heads/main',
-            });
-            if (mainRef.data.object.sha !== context.sha) {
-              core.setFailed(
-                'main advanced while the page goldens were being captured; refusing to commit stale snapshots.',
-              );
-              return;
-            }
-
-            const baseCommit = await github.rest.git.getCommit({
-              owner,
-              repo,
-              commit_sha: mainRef.data.object.sha,
-            });
-            const entries = await Promise.all(files.map(async (file) => {
-              const relative = path.relative(root, file).split(path.sep).join('/');
-              const blob = await github.rest.git.createBlob({
-                owner,
-                repo,
-                content: fs.readFileSync(file).toString('base64'),
-                encoding: 'base64',
-              });
-              return {
-                path: 'mobile/flutter_app/test/goldens/pages/' + relative,
-                mode: '100644',
-                type: 'blob',
-                sha: blob.data.sha,
-              };
-            }));
-
-            const tree = await github.rest.git.createTree({
-              owner,
-              repo,
-              base_tree: baseCommit.data.tree.sha,
-              tree: entries,
-            });
-            const nextCommit = await github.rest.git.createCommit({
-              owner,
-              repo,
-              message: 'test(android): add rendered responsive page goldens',
-              tree: tree.data.sha,
-              parents: [mainRef.data.object.sha],
-            });
-            await github.rest.git.updateRef({
-              owner,
-              repo,
-              ref: 'heads/main',
-              sha: nextCommit.data.sha,
-              force: false,
-            });
-
-            await github.rest.actions.createWorkflowDispatch({
-              owner,
-              repo,
-              workflow_id: 'branch-policy.yml',
-              ref: 'main',
-            });
-            core.notice(
-              'Committed ' + files.length + ' real Flutter page goldens and dispatched branch policy for main resynchronization.',
-            );
