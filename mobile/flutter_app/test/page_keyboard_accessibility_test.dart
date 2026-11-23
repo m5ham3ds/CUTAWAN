@@ -438,8 +438,8 @@ void main() {
           home: DeviceAcceptancePage(service: service),
         ),
       );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 50));
+      await tester.pumpAndSettle();
+      expect(service.calls, 1);
 
       final refresh = find.ancestor(
         of: find.byTooltip('إعادة الفحص'),
@@ -447,16 +447,19 @@ void main() {
       ).first;
       await _tabUntilFocused(tester, refresh);
 
-      final copyReport = find.ancestor(
-        of: find.text('نسخ تقرير التشخيص JSON'),
-        matching: find.byType(FilledButton),
-      ).first;
+      // Scroll to the lazy list child before resolving its ancestor control.
+      final copyReportLabel = find.text('نسخ تقرير التشخيص JSON');
       await tester.scrollUntilVisible(
-        copyReport,
+        copyReportLabel,
         220,
         scrollable: find.byType(Scrollable).first,
       );
       await tester.pump();
+      expect(copyReportLabel, findsOneWidget);
+      final copyReport = find.ancestor(
+        of: copyReportLabel,
+        matching: find.byType(FilledButton),
+      ).first;
       await _tabUntilFocused(tester, copyReport);
 
       expect(tester.takeException(), isNull);
@@ -732,8 +735,7 @@ void fullPageTabOrderTests() {
           ),
         ),
       );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 60));
+      await tester.pumpAndSettle();
 
       for (final modelTitle in [
         'Whisper Base متعدد اللغات',
@@ -750,31 +752,43 @@ void fullPageTabOrderTests() {
           of: titleFinder,
           matching: find.byType(Card),
         ).first;
-        final removeButton = find.descendant(
+        final removeLabel = find.descendant(
           of: modelCard,
-          matching: find.byType(TextButton),
+          matching: find.text('إزالة'),
+        );
+        expect(removeLabel, findsOneWidget);
+        final removeButton = find.ancestor(
+          of: removeLabel,
+          matching: find.byWidgetPredicate(
+            (widget) => widget is ButtonStyleButton,
+          ),
         ).first;
         await _tabUntilFocused(tester, removeButton, maxTabs: 64);
       }
 
-      await expectFullTabOrder(tester, [
-        find.ancestor(
-          of: find.text('حفظ الإعدادات بأمان'),
-          matching: find.byType(FilledButton),
-        ).first,
-        find.ancestor(
-          of: find.text('حذف المفتاح'),
-          matching: find.byType(TextButton),
-        ).first,
-        find.ancestor(
-          of: find.text('جلب النماذج'),
-          matching: find.byType(OutlinedButton),
-        ).first,
-        find.ancestor(
-          of: find.text('إعادة فحص النماذج المحلية'),
-          matching: find.byType(TextButton),
-        ).first,
-      ], maxTabsPerTarget: 64);
+      final remainingControls = <({String label, Type type})>[
+        (label: 'حفظ الإعدادات بأمان', type: FilledButton),
+        (label: 'حذف المفتاح', type: TextButton),
+        (label: 'جلب النماذج', type: OutlinedButton),
+        (label: 'إعادة فحص النماذج المحلية', type: TextButton),
+      ];
+      for (final control in remainingControls) {
+        // The model center uses a lazy ListView. Build the text child first,
+        // then resolve its enclosing Material button.
+        final label = find.text(control.label);
+        await tester.scrollUntilVisible(
+          label,
+          220,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.pump();
+        expect(label, findsOneWidget);
+        final target = find.ancestor(
+          of: label,
+          matching: find.byType(control.type),
+        ).first;
+        await _tabUntilFocused(tester, target, maxTabs: 64);
+      }
 
       expect(tester.takeException(), isNull);
       semantics.dispose();
