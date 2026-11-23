@@ -278,12 +278,17 @@ void main() {
           variant,
         );
 
+        final diagnosticsTitle = find.text('تشخيص وقبول Android');
+        await tester.scrollUntilVisible(
+          diagnosticsTitle,
+          120,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.pump();
         final diagnostics = find.ancestor(
-          of: find.text('تشخيص وقبول Android'),
+          of: diagnosticsTitle,
           matching: find.byType(ListTile),
         ).first;
-        await tester.ensureVisible(diagnostics);
-        await tester.pump();
         _expectInsideSafeRegion(tester, diagnostics, variant);
       }
 
