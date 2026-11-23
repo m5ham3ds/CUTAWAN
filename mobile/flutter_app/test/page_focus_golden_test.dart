@@ -154,7 +154,6 @@ void main() {
     addTearDown(projects.dispose);
 
     for (final variant in _focusVariants) {
-      final key = 'focused-page-golden';
       await tester.pumpWidget(
         MaterialApp(
           theme: variant.theme,
