@@ -478,13 +478,6 @@ Finder _pageTile(String label) => find.ancestor(
       matching: find.byType(ListTile),
     ).first;
 
-Finder _pageButton(String label, Type buttonType) => find.ancestor(
-      of: find.text(label),
-      matching: find.byWidgetPredicate(
-        (widget) => widget.runtimeType == buttonType,
-      ),
-    ).first;
-
 void _setPhoneViewport(WidgetTester tester) {
   tester.view.physicalSize = const Size(390, 844);
   tester.view.devicePixelRatio = 1;
