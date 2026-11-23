@@ -127,7 +127,7 @@ Future<void> _tabUntilFocused(
     reason: 'Keyboard navigation must activate the visible focus mode.',
   );
   expect(
-    tester.getSemantics(target).hasFlag(SemanticsFlag.isFocused),
+    tester.getSemantics(target).flagsCollection.isFocused.toBoolOrNull() == true,
     isTrue,
     reason: 'The focused page action must expose its focused semantics state.',
   );
