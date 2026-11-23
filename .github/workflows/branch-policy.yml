@@ -3,6 +3,7 @@ name: Branch policy
 on:
   push:
     branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -41,13 +42,32 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const { owner, repo } = context.repo;
+            let capturePageGoldens = false;
+            try {
+              await github.rest.repos.getContent({
+                owner,
+                repo,
+                path: 'mobile/flutter_app/test/goldens/pages/dashboard-compact-rtl-light.png',
+                ref: 'main',
+              });
+            } catch (error) {
+              if (error.status === 404) {
+                capturePageGoldens = true;
+              } else {
+                throw error;
+              }
+            }
+
             await Promise.all([
               github.rest.actions.createWorkflowDispatch({
                 owner,
                 repo,
                 workflow_id: 'mobile-android.yml',
                 ref: 'CUTAWAN-TEST',
-                inputs: { validation_batch: 'main-' + context.sha.slice(0, 7) },
+                inputs: {
+                  validation_batch: 'main-' + context.sha.slice(0, 7),
+                  capture_page_goldens: capturePageGoldens,
+                },
               }),
               github.rest.actions.createWorkflowDispatch({
                 owner,
