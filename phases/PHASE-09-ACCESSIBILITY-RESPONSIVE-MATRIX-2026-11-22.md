@@ -50,10 +50,22 @@
 - APK artifact [14763285423](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45043179789/artifacts/14763285423): 60,020,680 bytes; ZIP SHA-256 `8954f75e5b9e81f611cc52c233b04067b5be81983113d7d14d0250b1c8200308`.
 - CI [45043179788](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45043179788), run 341 — success.
 
+## Resolved in the 2026-11-23 Dashboard/Settings follow-up
+
+- Dashboard storage usage is wired to `HomeShell.storageUsageBytes`. The card exposes loading, measured usage, error and refresh states.
+- Dashboard recent-project actions preserve the selected project ID. Review prioritizes that project and labels it as selected from Dashboard.
+- Settings persists theme mode and reduced-motion preferences. Widget interaction uses an in-memory store; the standalone disk-backed store test verifies the persistence round-trip.
+- The Settings widget-test hang was traced to filesystem temp-directory creation inside `testWidgets`. The diagnostic run recorded the blocking `Directory.systemTemp.createTemp` operation. Disk I/O now remains in the separate store test.
+- The 320dp/RTL/200%-text matrix then exposed a 77px horizontal RenderFlex overflow. The AppBar title now ellipsizes and the appearance-row title is flexible.
+- Source SHA `5f0a352417e48a54b9d59b14811563743754f576`; Android run [45086449500](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45086449500), run 312 — **success**, **188/188 tests**, format, strict analysis, ARM64 APK, ABI/native duplicate check and APK upload passed.
+- APK artifact [14779307711](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45086449500/artifacts/14779307711): 60,029,566 bytes; archive SHA-256 `cf48374bfe7020f6cfd7c666e6e9673ea50d9b47f39b2dbc2c925629797bebb4`. Exactly `arm64-v8a`, 10 unique native libraries, GGML libraries present, no duplicate basenames.
+- CI [45086449397](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45086449397), run 359 — **success**.
+
 ## Remaining matrix / page work
 
-- Page golden comparisons for light/dark and RTL/LTR at compact/regular/wide widths are still open.
-- Navigation-level keyboard activation and landscape/safe-area tests exist; complete page-level focus traversal/visible-focus and physical handset visual acceptance.
-- Dashboard still needs the existing `HomeShell.storageUsageBytes` provider wired into its overview and a project-aware quick-resume action.
-- Settings still needs real persisted preferences where the product supports them; no-op controls must not be exposed.
-- Phase 9 remains in progress; the four-page automated responsive slice is accepted, not the full phase.
+- Page golden comparisons for light/dark and RTL/LTR at compact/regular/wide widths.
+- Page-level focus traversal, visible-focus state and keyboard activation for feature-specific controls.
+- Per-page landscape and Android safe-area/system-inset acceptance.
+- Physical handset UI review remains separate from emulator/widget/golden test evidence.
+
+**Decision:** accept Dashboard storage/quick-resume and Settings persistence as automated responsive slices. Phase 9 and the full accessibility matrix remain in progress.

@@ -6,20 +6,14 @@
 
 ## Baseline and latest verified Android state
 
-- Latest accepted Mobile Android run: [45043179789](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45043179789), run **296**, SHA `eabc20e3c7494a2030668bcac35a177881821e3b` — **success**. Dart format, `flutter analyze --fatal-infos`, **183/183 Flutter tests**, ARM64 debug APK build, ARM64-only ABI verification, unique-native-library check and APK upload all passed.
-- APK artifact: [cutawan-mobile-arm64-debug, artifact 14763285423](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45043179789/artifacts/14763285423), **60,020,680 bytes**; ZIP SHA-256 `8954f75e5b9e81f611cc52c233b04067b5be81983113d7d14d0250b1c8200308`. It contains exactly `arm64-v8a`, 10 unique native libraries including the GGML runtime, with no duplicate basenames.
-- Coverage artifact: [14763115567](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45043179789/artifacts/14763115567), 17,699 bytes.
-- Root/desktop CI run [45043179788](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45043179788), run **341** — **success** across checks, Xvfb UI smoke, offline FFmpeg/caption/render pipeline and Apple Silicon package validation.
-- WorkManager-backed Android rendering and project-scoped cancellation are implemented and pass automated CI. Physical-device process-death, force-stop, OEM background restrictions and long-render acceptance remain open.
-- Jobs workflow page remains accepted; project-scoped native WorkManager cancellation is wired. Targeted per-clip retry remains open; Phase 9 export gallery/delivery is accepted in its own record.
-
-- Latest accepted Mobile Android run: [44953830473](https://github.com/m5ham3ds/CUTAWAN/actions/runs/44953830473), run number 257, SHA `e2d3c08e9f2d4559cd931f4b461607f6012a2a95` — **success**.
-- It passed Dart format, `flutter analyze --fatal-infos` (`No issues found!`), **154/154 Flutter tests**, ARM64 debug APK build, ARM64-only ABI verification, duplicate-native-library verification, and APK upload.
-- APK artifact: [`cutawan-mobile-arm64-debug`, artifact 14727205792](https://github.com/m5ham3ds/CUTAWAN/actions/runs/44953830473/artifacts/14727205792), size 59,094,264 bytes; archive SHA-256 `366a66f02d012135b0bec933492642c6a487bdd9b1a7a532cd1978b5b5fb1adf`.
-- Native package assertion: exactly `arm64-v8a`, 10 unique native libraries, including `libggml-cpu.so`, `libggml.so`, and `libggml-base.so`; no duplicate native-library basenames.
-- Coverage artifact: [`cutawan-mobile-flutter-coverage`, artifact 14726905907](https://github.com/m5ham3ds/CUTAWAN/actions/runs/44953830473/artifacts/14726905907), size 16,294 bytes; archive SHA-256 `13b8639dab36826fd00e3a20f61ef94ad8b2df28e167df63af4c8b66f21119f3`.
-- Root/desktop CI run [44953830478](https://github.com/m5ham3ds/CUTAWAN/actions/runs/44953830478) — **success**, including app checks, UI smoke, and offline video/caption pipeline tests. This is independent of Android validation and does not replace physical-device acceptance.
-- The successful CI run confirms formatting, static analysis, widget/unit tests, compilation and packaging only. It does not prove physical-device inference quality, SAF process-death behavior, Android Keystore backup/restore, sustained media decode, thermal limits or background render recovery.
+- Latest accepted Mobile Android run: [45086449500](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45086449500), run **312**, source SHA `5f0a352417e48a54b9d59b14811563743754f576` — **success**.
+- Dart format and `flutter analyze --fatal-infos`: passed.
+- Flutter unit/widget suite: **188/188 tests passed**.
+- ARM64 debug APK: built and uploaded; packaging verification passed with exactly `arm64-v8a`, **10 unique native libraries**, no duplicate basenames, and `libggml-cpu.so`, `libggml.so`, `libggml-base.so` present.
+- APK artifact [`cutawan-mobile-arm64-debug`, ID 14779307711](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45086449500/artifacts/14779307711): **60,029,566 bytes**; archive SHA-256 `cf48374bfe7020f6cfd7c666e6e9673ea50d9b47f39b2dbc2c925629797bebb4`.
+- Coverage artifact [ID 14779431913](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45086449500/artifacts/14779431913): **18,177 bytes**; archive SHA-256 `43112cc7d429c245e09ef42ccc4c427280bf169d774403d2d293bae9f5abc50f`.
+- Root/desktop CI [45086449397](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45086449397), run **359** — **success** across checks, Xvfb UI smoke, offline FFmpeg/caption/render pipeline and Apple Silicon package validation.
+- This is automated build/test evidence only. Physical ARM64, OEM background behavior, media-quality/performance, lifecycle, and visual handset acceptance remain separate requirements.
 
 ## Phase matrix
 
@@ -33,8 +27,8 @@
 | 6 | Caption Studio visual presets, motion preview, RTL and preference persistence | Studio preview now loads saved transcript words/timing and groups them using live style/font/scale settings | Not synchronized to actual video playback; Studio and Android overlay are not yet pixel-identical |
 | 7 | Multi-provider model selection, secure user credentials, consented cloud editorial annotations | Provider-scoped model/key storage, consent gates on outbound requests, local fallback on key deletion; latest Android CI passed | Physical Keystore/backup/rotation tests, real provider account/model compatibility, billing and policy acceptance remain open |
 | 8 | End-to-end pipeline, job orchestration and clip export | Media3 full-track decode validation, deterministic checkpoints, WorkManager foreground worker, durable completion handoff, project-scoped cancellation and render notifications implemented; automated Android gates passed on run 267 | Physical ARM64 fixture/lifecycle/OEM tests remain open; targeted per-clip retry remains open |
-| 9 | Professional UI redesign and navigation/component architecture | HomeShell, accepted Create/Review/Clip Editor/Caption Studio/Jobs slices and export gallery preserved; Dashboard, Settings, Models and Diagnostics responsive presentation slice passed Android run 296 with 183/183 tests and ARM64 packaging | Continue: Dashboard real storage usage/quick-resume, persisted Settings preferences, page goldens/focus and physical UI acceptance |
-| 10 | Physical-device quality, security, performance and Arabic/English acceptance | Diagnostic report explicitly limits itself to device metadata and one temporary secure-storage canary; physical acceptance incomplete | Android run 296 passed automated diagnostics tests and ARM64 packaging; still needs handset confirmation, hashed media corpus, WER/timing, full decode, thermal/battery and lifecycle/consent evidence |
+| 9 | Professional UI redesign and navigation/component architecture | HomeShell, Create/Review/Clip Editor/Caption Studio/Jobs, export gallery, Dashboard storage/quick-resume, and persisted Settings preferences are implemented and automated-gate accepted; latest Android run 312 passed 188/188 tests and ARM64 packaging | Continue: page-level light/dark + RTL/LTR goldens, page focus/visible focus, per-page keyboard/landscape/safe-area checks and physical handset UI acceptance |
+| 10 | Physical-device quality, security, performance and Arabic/English acceptance | Diagnostic report remains a baseline metadata snapshot plus one temporary secure-storage canary; physical acceptance incomplete | Android run 312 passed automated gates; still needs human-confirmed handset report, hashed media corpus, WER/timing, full decode, thermal/battery and lifecycle/consent evidence |
 
 ## Global engineering constraints
 
@@ -58,7 +52,7 @@ Implement and gate in this order: Phases 1–3 together; then Phases 4–5; then
 1. Phase 8's full-decode, durable WorkManager render worker, foreground progress notification, project cancellation and process-recovery handoff are implemented and have passed automated Android/desktop CI. Do not repeat this implementation.
 2. Keep Phase 8 acceptance open until a physical ARM64 device run validates background completion, relaunch/recovery, cancellation notification, long/VFR/rotated/no-audio/silent/corrupt fixtures, crop/caption continuity, audio and full decode. Targeted per-clip retry remains separate product work.
 3. Phase 9 HomeShell extraction is accepted on `d30695cf38c7fb1dd009427c3da8c029921e4a17`; see `PHASE-09-HOME-SHELL-SCREEN-EXTRACTION-RECORD-2026-11-22.md`. Do not repeat the page extraction or redesign the accepted Create, Review, Clip Editor, Caption Studio or Jobs workflows unless a regression is found.
-4. Phase 9's navigation semantics slice and the responsive presentation slice for Dashboard, Settings, Models and Diagnostics are accepted as automated slices on Android run 296; preserve all accepted Create/Review/Clip Editor/Caption Studio/Jobs and export-gallery work. Next wire Dashboard's existing storage provider and project-aware quick-resume, then implement only real persisted Settings preferences and page goldens.
+4. Phase 9's Dashboard storage usage/refresh, project-aware Review focus, and persisted Settings theme/reduced-motion preferences are implemented and accepted by Android run 312 (188/188). Their in-memory widget tests and real disk preference round-trip tests are separate. Do not repeat these features. Continue with page-level goldens, focus/keyboard and landscape/safe-area coverage.
 5. Finish Phase 10 with physical ARM64 accuracy, privacy, thermal, battery, lifecycle and performance acceptance.
 
 Phases 1–7 have a successful automated Android gate on SHA `80e182b`; physical-device checks and phase-specific quality acceptance are still separate and must not be inferred from CI.
@@ -206,17 +200,9 @@ The page workflow sequence is tracked separately from the broader phase matrix. 
 - Do not rebuild the Review workflow already accepted. Its stages, primary processing control, evidence sections and candidate-to-editor route are implemented and tested.
 - The successful APK/CI checks do not count as physical-device acceptance and do not close the broader Phase 8/10 limitations. Do not repeat the accepted Create, Review, Clip Editor or Caption Studio page passes unless a specific regression is reported.
 
-### Next Phase 9 engineering slice
+### Next Phase 9 engineering slice — current as of 2026-11-23
 
-**HomeShell extraction, export gallery/delivery, and the responsive presentation slice for Dashboard, Settings, Models and Diagnostics are accepted as automated slices.** Do not repeat those or the accepted Create, Review, Clip Editor, Caption Studio and Jobs workflows without a regression. **Next Phase 9 slice:** connect Dashboard to the existing `HomeShell.storageUsageBytes` provider and implement project-aware quick-resume routing for recent projects; then add only real persisted Settings preferences (no no-op toggles). Follow with page goldens and the remaining page-level focus/physical UI acceptance.
-
-
-## WorkManager render implementation and Android gate — 2026-11-22
-
-- Latest Android source head: `645d2d349ecc9fe916b02a219a3ce0139f22b64a`.
-- WorkManager implementation record: [PHASE-08-WORKMANAGER-BACKGROUND-RENDER-RECORD-2026-11-22.md](PHASE-08-WORKMANAGER-BACKGROUND-RENDER-RECORD-2026-11-22.md).
-- Android run [44970800438](https://github.com/m5ham3ds/CUTAWAN/actions/runs/44970800438), run 267 — **success**: Format, strict analysis, **160/160 Flutter tests**, ARM64 APK build, ARM64-only ABI check, duplicate-native-library check and APK upload.
-- APK artifact [14733448407](https://github.com/m5ham3ds/CUTAWAN/actions/runs/44970800438/artifacts/14733448407): 59,996,128 bytes; ZIP SHA-256 `e7bf5a4a700b6c828d434c90667d3387ef26194c341d3c1bc42a2f8a72f440b5`. Exactly `arm64-v8a`, 10 unique native libraries, no duplicate basenames.
-- Coverage artifact: [14733457471](https://github.com/m5ham3ds/CUTAWAN/actions/runs/44970800438/artifacts/14733457471).
-- Root/desktop CI [44970800462](https://github.com/m5ham3ds/CUTAWAN/actions/runs/44970800462), run 310 — success for checks, Xvfb UI smoke, offline FFmpeg/caption/render pipeline and Apple Silicon package validation.
-- Do not equate CI with physical ARM64 process-death/background/notification or visual/media-fixture acceptance.
+- Dashboard storage usage/loading/error/refresh, project-aware quick-resume to the requested Review project, and persisted Settings theme/reduced-motion preferences are now implemented and accepted by Android run 312 (188/188). Do not repeat them.
+- Proceed with page-level golden comparisons for Dashboard, Settings, Models Center and Device Diagnostics across compact/regular/wide layouts, light/dark themes and Arabic RTL/English LTR.
+- Then complete page-level focus traversal/visible-focus, keyboard activation, landscape and Android safe-area/system-inset checks.
+- Physical handset visual acceptance is still a separate gate; Phase 9 and Phase 10 remain in progress.

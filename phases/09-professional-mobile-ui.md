@@ -204,3 +204,19 @@ Physical-device lifecycle, media quality, OEM background and preview/export pari
 4. Add page golden comparisons for light/dark, RTL/LTR and representative widths, then complete physical handset visual review.
 
 Create, Review, Clip Editor, Caption Studio, Jobs, HomeShell extraction and export gallery/delivery remain accepted and must not be repeated.
+
+
+## Dashboard, Settings and responsive follow-up — 2026-11-23
+
+This record supersedes the older Dashboard/Settings items in the original next-slice checklist. Those items are now implemented and automated-gate accepted; do not repeat them.
+
+- Dashboard reads `HomeShell.storageUsageBytes` and presents a storage card with loading, measured value, read failure and refresh states.
+- A recent-project tap is project-aware: `HomeShell` passes the selected ID to `ReviewPage.initialProjectId`; Review places that project first and labels it as selected from Dashboard.
+- Settings persists theme mode (`system/light/dark`) and reduced-motion preferences. The widget test verifies interactions with an in-memory store; `app_preferences_store_test.dart` separately verifies disk-backed round-trip and fallback behavior.
+- Runs 304/305 timed out in the three Settings widget tests. Diagnostic run 309 showed each affected test stopped at `Directory.systemTemp.createTemp`; filesystem I/O was removed from widget tests without removing real disk-persistence coverage.
+- Android run 311 exposed a separate layout issue: `RenderFlex overflowed by 77 pixels on the right` at 320dp/RTL/200% text. The AppBar title now ellipsizes and the appearance-row title uses `Expanded`.
+- Android run [45086449500](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45086449500), run 312, SHA `5f0a352417e48a54b9d59b14811563743754f576`: **188/188 tests**, format, strict analysis, ARM64 APK, ABI verification and APK upload all passed.
+- APK artifact [14779307711](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45086449500/artifacts/14779307711): 60,029,566 bytes; ZIP SHA-256 `cf48374bfe7020f6cfd7c666e6e9673ea50d9b47f39b2dbc2c925629797bebb4`.
+- CI [45086449397](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45086449397), run 359: success.
+
+**Current next Phase 9 slice:** page-level goldens for Dashboard/Settings/Models/Diagnostics, followed by page focus, keyboard, landscape and safe-area coverage. Physical handset UI review remains separate.
