@@ -64,14 +64,7 @@ jobs:
       - name: Analyze
         run: flutter analyze --fatal-infos
       - name: Test
-        env:
-          CAPTURE_PAGE_GOLDENS: ${{ inputs.capture_page_goldens }}
-        run: |
-          if [[ "$CAPTURE_PAGE_GOLDENS" == "true" ]]; then
-            flutter test --coverage --reporter expanded --update-goldens
-          else
-            flutter test --coverage --reporter expanded
-          fi
+        run: flutter test --coverage --reporter expanded
       - name: Upload Flutter coverage report
         if: always()
         uses: actions/upload-artifact@v4
