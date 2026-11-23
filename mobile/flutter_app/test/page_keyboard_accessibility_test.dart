@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:cutawan_mobile/domain/project_contract.dart';
@@ -94,6 +95,42 @@ Future<void> _focusAndActivate(
 
   await tester.sendKeyEvent(LogicalKeyboardKey.enter);
   await tester.pump();
+}
+
+
+Future<void> _tabUntilFocused(
+  WidgetTester tester,
+  Finder target, {
+  int maxTabs = 24,
+}) async {
+  final expectedNode = Focus.of(tester.element(target));
+  var reached = false;
+
+  for (var index = 0; index < maxTabs; index++) {
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.pump();
+
+    if (identical(FocusManager.instance.primaryFocus, expectedNode)) {
+      reached = true;
+      break;
+    }
+  }
+
+  expect(
+    reached,
+    isTrue,
+    reason: 'Tab traversal did not reach the requested page action.',
+  );
+  expect(
+    FocusManager.instance.highlightMode,
+    FocusHighlightMode.traditional,
+    reason: 'Keyboard navigation must activate the visible focus mode.',
+  );
+  expect(
+    tester.getSemantics(target).hasFlag(SemanticsFlag.isFocused),
+    isTrue,
+    reason: 'The focused page action must expose its focused semantics state.',
+  );
 }
 
 void main() {
@@ -257,4 +294,137 @@ void main() {
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox.shrink());
   });
+
+  testWidgets(
+    'Dashboard Tab traversal reaches the settings action with visible focus',
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final semantics = tester.ensureSemantics();
+      addTearDown(semantics.dispose);
+
+      final projects = ValueNotifier<List<CutawanProject>>([]);
+      addTearDown(projects.dispose);
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: CutawanTheme.light(),
+          home: Scaffold(
+            body: DashboardPage(
+              projects: projects,
+              onCreate: () {},
+              onOpenJobs: () {},
+              onOpenReview: () {},
+              onOpenModels: () {},
+              onOpenSettings: () {},
+              onOpenProject: (_) {},
+              storageUsageBytes: () async => 0,
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      await _tabUntilFocused(tester, find.byKey(const ValueKey('dashboard-settings')));
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
+
+  testWidgets(
+    'Settings Tab traversal reaches diagnostics with visible focus',
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final semantics = tester.ensureSemantics();
+      addTearDown(semantics.dispose);
+      final store = AppPreferencesStore.inMemory();
+      addTearDown(store.dispose);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: CutawanTheme.light(),
+          home: SettingsPage(
+            store: store,
+            onDiagnostics: () {},
+            onModels: () {},
+          ),
+        ),
+      );
+      await tester.pump();
+
+      await _tabUntilFocused(
+        tester,
+        find.text('تشخيص وقبول Android'),
+      );
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
+
+  testWidgets(
+    'Models Center Tab traversal reaches local mode with visible focus',
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final semantics = tester.ensureSemantics();
+      addTearDown(semantics.dispose);
+
+      final credentials = AiCredentialStore(
+        storage: _MemoryCredentialStorage(),
+      );
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: CutawanTheme.dark(),
+          home: ModelsPage(
+            credentials: credentials,
+            checkWhisperInstalled: () async => false,
+            checkQwenInstalled: () async => false,
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      await _tabUntilFocused(tester, find.text('محلي'));
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
+
+  testWidgets(
+    'Device Diagnostics Tab traversal reaches refresh with visible focus',
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final semantics = tester.ensureSemantics();
+      addTearDown(semantics.dispose);
+
+      final service = _CountingDeviceAcceptanceService();
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: CutawanTheme.light(),
+          home: DeviceAcceptancePage(service: service),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      final refresh = find.descendant(
+        of: find.byTooltip('إعادة الفحص'),
+        matching: find.byIcon(Icons.refresh_rounded),
+      );
+      await _tabUntilFocused(tester, refresh);
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
+
 }
