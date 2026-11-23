@@ -1,21 +1,21 @@
 # CUTAWAN Mobile — Phase Register
 
 **Repository:** `m5ham3ds/CUTAWAN`  
-**Allowed branches:** `main` and `CUTAWAN-TEST` only.  
-**Rule:** Continue from the last accepted commit; do not re-run completed implementation phases without a specific regression or acceptance reason. Implement product changes directly on `main`; use `CUTAWAN-TEST` only for automated validation and device-test runs.
+**Allowed branches:** `main` only.  
+**Rule:** Continue from the last accepted commit; do not re-run completed implementation phases without a specific regression or acceptance reason. Commit product changes and validation-only changes directly to `main`. Do not create or synchronize a secondary test branch.
 
 ## Baseline and latest verified Android state
 
-- Latest accepted Mobile Android run: [45096664414](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45096664414), run **330**, source SHA `91429dce5f4917b75072f54e6b79b231c17649e2` — **success**.
+- Latest accepted Mobile Android run: [45209870754](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45209870754), run **359**, source SHA `0835c19d00cf770c17fa48fd3e8252b2bf77e6a4` — **success**.
 - Dart format and `flutter analyze --fatal-infos`: passed.
-- Flutter unit/widget suite: **204/204 tests passed**. This includes 24 committed page golden comparisons, four focus-plus-Enter actions, four natural Tab/focused-semantics checks and four page landscape/safe-area widget tests.
-- Landscape matrix: Dashboard, Settings, Models Center and Device Diagnostics were tested at 720×320 RTL/light/1.5× text and 844×390 LTR/dark/1.0× text, with horizontal, top and bottom insets simulated through `MediaQuery.padding/viewPadding`. Key page viewports/actions remained within the modeled safe rectangle and no Flutter layout exceptions occurred.
-- ARM64 debug APK: built and uploaded; exactly `arm64-v8a`, **10 unique native libraries**, no duplicate basenames, and `libggml-cpu.so`, `libggml.so`, `libggml-base.so` present.
-- APK artifact [14783514048](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45096664414/artifacts/14783514048): **60,028,674 bytes**; archive SHA-256 `54b52d795659ac3f699344c63ad77c81ff21fdc60ccd5dbab76cb49e45f43023`.
-- Coverage artifact [14784045542](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45096664414/artifacts/14784045542): **18,526 bytes**; archive SHA-256 `1d533fc46f7cd9241b5bc796f9765cea87a7ae7e069015a33e59e6348508e896`.
-- Root/desktop CI [45096664356](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45096664356), run **377** — **success** across checks, Xvfb UI smoke, offline FFmpeg/caption/render pipeline and Apple Silicon package validation.
-- The safe-area matrix simulates system insets in widget tests; it does not substitute for actual cutouts, gesture navigation bars, OEM edge-to-edge behavior or physical handset review.
-- Full per-control Tab-order and focus-indicator contrast/pixel review, physical handset visual/accessibility, OEM background behavior, media quality/performance and Phase 10 field evidence remain open.
+- Flutter unit/widget suite: **213/213 tests passed**. The suite includes the 24 committed page golden comparisons, keyboard Enter/Tab paths, four-page landscape/simulated-safe-area coverage, additional Models Center and Device Diagnostics Tab targets, and a light/dark focus-outline contrast contract.
+- The landscape matrix simulates horizontal/top/bottom insets through `MediaQuery.padding/viewPadding`; it does not replace real Android cutout, gesture-navigation, edge-to-edge or OEM handset review.
+- ARM64 debug APK: built and uploaded; exactly `arm64-v8a`, **10 unique native libraries**, no duplicate basenames. The workflow confirmed `libggml-cpu.so`, `libggml.so` and `libggml-base.so`.
+- APK artifact [14836142069](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45209870754/artifacts/14836142069): **60,024,888 bytes**; archive SHA-256 `ead7c527999842a831d93a837c0e4a45853b42239fe33c950e01dd6119b2ce66`.
+- Coverage artifact [14835623220](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45209870754/artifacts/14835623220): **18,639 bytes**; archive SHA-256 `8dff1bb3b1beebda56ce896290871fe1f2a4cdb97bb3653ef038f96de5e3ad93`.
+- Root/desktop CI [45209870719](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45209870719), run **408**, attempt 2 — **success** across checks, Xvfb UI smoke, offline FFmpeg/caption/render pipeline and Apple Silicon package validation. The first FFmpeg-job attempt hit a transient `onnxruntime-node` network timeout during `npm ci`; only that failed job was rerun, then passed without source or lockfile changes.
+- Branch Policy [45209870742](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45209870742) — **success**; the repository currently has only `main`.
+- Theme-level button/input outline contrast now has automated assertions. Full per-control Tab-stop enumeration, visual focus-indicator review on all control types, actual handset landscape/safe-area checks, OEM behavior, and Phase 8/10 physical field evidence remain open.
 
 ## Phase matrix
 
@@ -29,13 +29,13 @@
 | 6 | Caption Studio visual presets, motion preview, RTL and preference persistence | Studio preview now loads saved transcript words/timing and groups them using live style/font/scale settings | Not synchronized to actual video playback; Studio and Android overlay are not yet pixel-identical |
 | 7 | Multi-provider model selection, secure user credentials, consented cloud editorial annotations | Provider-scoped model/key storage, consent gates on outbound requests, local fallback on key deletion; latest Android CI passed | Physical Keystore/backup/rotation tests, real provider account/model compatibility, billing and policy acceptance remain open |
 | 8 | End-to-end pipeline, job orchestration and clip export | Media3 full-track decode validation, deterministic checkpoints, WorkManager foreground worker, durable completion handoff, project-scoped cancellation and render notifications implemented; automated Android gates passed on run 267 | Physical ARM64 fixture/lifecycle/OEM tests remain open; targeted per-clip retry remains open |
-| 9 | Professional UI redesign and navigation/component architecture | Accepted workflows, Dashboard storage/quick-resume, persisted Settings, Enter/Tab/focused-semantics checks, 24 page goldens and automated four-page landscape/safe-area matrix; Android run 330 passed 204/204 tests and ARM64 packaging | Continue: complete per-control Tab/focus-indicator review and physical handset visual/accessibility acceptance |
-| 10 | Physical-device quality, security, performance and Arabic/English acceptance | Diagnostic report remains a baseline metadata snapshot plus one temporary secure-storage canary; physical acceptance incomplete | Android run 330 passed automated gates; still needs human-confirmed handset report, hashed media corpus, WER/timing, full decode, thermal/battery and lifecycle/consent evidence |
+| 9 | Professional UI redesign and navigation/component architecture | Accepted workflows, responsive Dashboard/Settings, 24 page goldens, four-page landscape/simulated-safe-area matrix, and expanded keyboard/focus tests; Android run 359 passed 213/213 tests and ARM64 packaging | Still open: exhaustive per-control Tab-stop inventory, focus visuals across all control types, and actual ARM64 handset visual/accessibility acceptance |
+| 10 | Physical-device quality, security, performance and Arabic/English acceptance | Diagnostic workbench and automated baseline tests implemented; physical acceptance incomplete | Still needs human-confirmed handset report, hashed media corpus, WER/timing, on-device full decode, thermal/battery and lifecycle/consent evidence |
 
 ## Global engineering constraints
 
 1. Root Electron desktop remains intact. Flutter Android is a sibling application.
-2. Only `main` and `CUTAWAN-TEST` are allowed. Product source is committed directly to `main`; the branch-policy workflow synchronizes `CUTAWAN-TEST` to each main commit and dispatches Mobile Android + desktop CI there. No feature branches are to be created.
+2. Only `main` is allowed. Product source, automated tests and validation-only changes are committed directly to `main`. Branch Policy fails if any secondary branch exists. CI runs from `main`; do not create or synchronize a test branch.
 3. No API key in source, assets, project JSON, logs, screenshots, analytics, or GitHub Actions output.
 4. Cloud calls need explicit consent. Send only the minimum text needed; do not upload a user's video by default.
 5. Provider model lists are account-scoped and not a universal guarantee of cost, quota, availability, or task compatibility.
@@ -54,8 +54,8 @@ Implement and gate in this order: Phases 1–3 together; then Phases 4–5; then
 1. Phase 8's full-decode, durable WorkManager render worker, foreground progress notification, project cancellation and process-recovery handoff are implemented and have passed automated Android/desktop CI. Do not repeat this implementation.
 2. Keep Phase 8 acceptance open until a physical ARM64 device run validates background completion, relaunch/recovery, cancellation notification, long/VFR/rotated/no-audio/silent/corrupt fixtures, crop/caption continuity, audio and full decode. Targeted per-clip retry remains separate product work.
 3. Phase 9 HomeShell extraction is accepted on `d30695cf38c7fb1dd009427c3da8c029921e4a17`; see `PHASE-09-HOME-SHELL-SCREEN-EXTRACTION-RECORD-2026-11-22.md`. Do not repeat the page extraction or redesign the accepted Create, Review, Clip Editor, Caption Studio or Jobs workflows unless a regression is found.
-4. Dashboard storage/quick-resume, persisted Settings preferences, Enter and representative Tab/focused-semantics tests, 24 page goldens, and the four-page landscape/safe-area widget matrix are accepted by Android run 330 (204/204). Do not repeat them. Continue with complete per-control Tab/focus-indicator review and physical handset visual/accessibility review.
-5. Finish Phase 10 with physical ARM64 accuracy, privacy, thermal, battery, lifecycle and performance acceptance.
+4. Dashboard storage/quick-resume, persisted Settings, page Enter paths, 24 page goldens, representative Tab paths, and the four-page landscape/simulated-safe-area matrix are accepted automated slices. The additional page-control Tab/focus assertions on SHA `0835c19` passed Android run 359 (213/213). Do not repeat accepted slices. Continue only with the remaining Tab-stop gaps and physical handset visual/accessibility review.
+5. Keep Phase 8 physical render/lifecycle and Phase 7 Keystore/provider acceptance open. Phase 10 field acceptance follows the remaining Phase 9 handset gate and requires the real ARM64 fixture/quality/security/performance evidence below.
 
 Phases 1–7 have a successful automated Android gate on SHA `80e182b`; physical-device checks and phase-specific quality acceptance are still separate and must not be inferred from CI.
 
@@ -208,3 +208,17 @@ The page workflow sequence is tracked separately from the broader phase matrix. 
 - The landscape tests cover 720×320 and 844×390 with modeled horizontal/top/bottom insets, RTL/LTR, light/dark themes and 1.5×/1.0× text scaling. They assert page viewport/action bounds against the simulated safe rectangle.
 - Next complete the per-control Tab-stop inventory and visual focus-indicator contrast/pixel review, then perform physical ARM64 handset visual/accessibility review using actual Android system bars/cutouts and OEM behavior.
 - Phase 9 and Phase 10 remain in progress.
+
+
+## Latest Phase 9 keyboard/focus extension — 2026-11-23
+
+- Source SHA: `0835c19d00cf770c17fa48fd3e8252b2bf77e6a4`.
+- Android run [45209870754](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45209870754), run 359 — **success**: format, `flutter analyze --fatal-infos`, **213/213 Flutter tests**, ARM64 APK build, ARM64-only ABI verification, 10 unique native-library/no-duplicate checks and APK upload.
+- The additional Tab cases reach the Device Diagnostics JSON-copy action and the installed-model removal/saved-provider-key removal controls in Models Center. The existing page matrix also exercises representative ordered targets on Dashboard, Settings and Models Center.
+- `focus_indicator_contrast_test.dart` asserts at least 3:1 contrast for focused Material button outlines and the focused text-field border in both themes. For ListTile, SwitchListTile and chips, this test currently checks that the shared focus overlay is configured; it does not measure the resulting rendered pixel contrast.
+- APK artifact [14836142069](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45209870754/artifacts/14836142069): 60,024,888 bytes; archive SHA-256 `ead7c527999842a831d93a837c0e4a45853b42239fe33c950e01dd6119b2ce66`. Exactly `arm64-v8a`, 10 unique native libraries, GGML present, no duplicate basenames.
+- Coverage artifact [14835623220](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45209870754/artifacts/14835623220): 18,639 bytes; SHA-256 `8dff1bb3b1beebda56ce896290871fe1f2a4cdb97bb3653ef038f96de5e3ad93`.
+- Root/desktop CI [45209870719](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45209870719), run 408, attempt 2 — **success** across desktop checks, Xvfb UI smoke, offline FFmpeg/caption/render and Apple Silicon package verification. The first FFmpeg attempt failed only during dependency-network access to `onnxruntime-node`; rerunning that failed job alone succeeded.
+- Branch Policy [45209870742](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45209870742) — **success**, confirming `main` is the only branch.
+
+**Decision:** accept this automated keyboard/focus extension. Do not mark Phase 9 complete yet. Remaining gates are: enumerate any still-uncovered focusable controls (including the conditional remote-model test action), verify focus appearance on the rendered ListTile/switch/chip/button/input states, and perform actual handset landscape/safe-area/RTL/large-text visual review. Phase 10 remains a separate physical-media, performance, privacy and lifecycle acceptance phase.

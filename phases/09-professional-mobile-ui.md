@@ -285,3 +285,19 @@ This record supersedes the older Dashboard/Settings items in the original next-s
 
 - Complete interactive-control Tab order inventory and visual focus-indicator contrast/pixel review.
 - Physical ARM64 handset landscape/safe-area and visual/accessibility acceptance with actual system bars, gesture insets, cutouts and OEM behavior.
+
+
+## Extended page-control Tab and focus-outline acceptance — 2026-11-23
+
+- Extended `test/page_keyboard_accessibility_test.dart` so Device Diagnostics reaches the JSON-copy button after the refresh control, and Models Center reaches the removal action for each installed local model plus saved provider-key removal, save settings, fetch models and local-model recheck actions.
+- The lazy ListView controls are first brought into the widget tree before their enclosing button finders are resolved; tests then follow the real Tab path and require focused semantics and Flutter's traditional keyboard highlight mode.
+- Added `test/focus_indicator_contrast_test.dart`: in light and dark themes, focused IconButton/FilledButton/OutlinedButton/TextButton outlines are at least 2dp and at least 3:1 against the tested surface; focused TextField borders are at least 1.5dp and 3:1 against their input fill/surface.
+- Scope limit: the theme test confirms that ListTile/SwitchListTile/chip focus overlays are configured, but it does not measure their final rasterized contrast. The test matrix reaches the listed targets in order; it is not yet a proof that every conditional/future control on every page has been exhaustively enumerated. Physical handset visibility remains unverified.
+- Earlier failed attempts were test-harness defects: one local helper was referenced outside its scope, then lazy-list targets were resolved before the children were built. Both were corrected without changing application behavior.
+- Mobile Android run [45209870754](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45209870754), run 359, source SHA `0835c19d00cf770c17fa48fd3e8252b2bf77e6a4` — **success**: Dart Format, `flutter analyze --fatal-infos`, **213/213 Flutter tests**, ARM64 debug APK, ABI/native-library checks and artifact upload all passed.
+- APK artifact [14836142069](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45209870754/artifacts/14836142069): 60,024,888 bytes; archive SHA-256 `ead7c527999842a831d93a837c0e4a45853b42239fe33c950e01dd6119b2ce66`. The workflow verified exactly `arm64-v8a`, 10 unique native libraries, GGML runtime files present and no duplicate basenames.
+- Coverage artifact [14835623220](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45209870754/artifacts/14835623220): 18,639 bytes; SHA-256 `8dff1bb3b1beebda56ce896290871fe1f2a4cdb97bb3653ef038f96de5e3ad93`.
+- Root/desktop CI [45209870719](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45209870719), run 408, attempt 2 — **success** across checks, Xvfb, offline FFmpeg/caption/render and Apple Silicon packaging. The initial offline-pipeline job failed during `npm ci` with a transient `onnxruntime-node` network timeout; rerunning only that failed job succeeded, with no source or lockfile edits.
+- Branch Policy [45209870742](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45209870742) — **success**; `main` is the only branch.
+
+**Decision:** accept this automated test/focus-contract slice. Phase 9 remains in progress until the remaining conditional-control inventory, raster/visual focus review and actual ARM64 handset visual/accessibility checks are evidenced. Phase 10 must not be treated as accepted or complete from these CI results.
