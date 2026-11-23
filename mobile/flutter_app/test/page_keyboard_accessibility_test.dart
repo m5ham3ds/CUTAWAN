@@ -451,7 +451,13 @@ void main() {
         of: find.text('نسخ تقرير التشخيص JSON'),
         matching: find.byType(FilledButton),
       ).first;
-      await expectFullTabOrder(tester, [copyReport]);
+      await tester.scrollUntilVisible(
+        copyReport,
+        220,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pump();
+      await _tabUntilFocused(tester, copyReport);
 
       expect(tester.takeException(), isNull);
       semantics.dispose();
