@@ -478,6 +478,13 @@ Finder pageTile(String label) => find.ancestor(
       matching: find.byType(ListTile),
     ).first;
 
+Finder buttonForText(String label) => find.ancestor(
+      of: find.text(label),
+      matching: find.byWidgetPredicate(
+        (widget) => widget is ButtonStyleButton,
+      ),
+    ).first;
+
 void setPhoneViewport(WidgetTester tester) {
   tester.view.physicalSize = const Size(390, 844);
   tester.view.devicePixelRatio = 1;
@@ -590,14 +597,31 @@ void fullPageTabOrderTests() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 60));
 
-    final downloadButtons = find.ancestor(
-      of: find.text('تنزيل والتحقق'),
-      matching: find.byType(FilledButton),
-    );
+    for (final modelTitle in [
+      'Whisper Base متعدد اللغات',
+      'Qwen2.5-0.5B-Instruct Q4_K_M',
+    ]) {
+      final titleFinder = find.text(modelTitle);
+      await tester.scrollUntilVisible(
+        titleFinder,
+        220,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pump();
+      final modelCard = find.ancestor(
+        of: titleFinder,
+        matching: find.byType(Card),
+      ).first;
+      final installButton = find.descendant(
+        of: modelCard,
+        matching: find.byWidgetPredicate(
+          (widget) => widget is ButtonStyleButton,
+        ),
+      ).first;
+      await _tabUntilFocused(tester, installButton, maxTabs: 64);
+    }
 
     await expectFullTabOrder(tester, [
-      downloadButtons.at(0),
-      downloadButtons.at(1),
       find.bySemanticsLabel(RegExp('محلي')),
       find.bySemanticsLabel(RegExp('سحابي')),
       find.ancestor(
@@ -643,10 +667,7 @@ void fullPageTabOrderTests() {
 
     await expectFullTabOrder(tester, [
       find.byTooltip('إعادة الفحص'),
-      find.ancestor(
-        of: find.text('نسخ تقرير التشخيص JSON'),
-        matching: find.byType(FilledButton),
-      ).first,
+      buttonForText('نسخ تقرير التشخيص JSON'),
     ]);
 
     expect(tester.takeException(), isNull);
