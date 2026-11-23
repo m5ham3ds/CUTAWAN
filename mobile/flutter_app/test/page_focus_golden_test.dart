@@ -24,7 +24,7 @@ class _FocusVariant {
   final TextDirection direction;
 }
 
-const _focusVariants = <_FocusVariant>[
+final _focusVariants = <_FocusVariant>[
   _FocusVariant(
     name: 'light-rtl',
     theme: CutawanTheme.light(),
