@@ -123,7 +123,8 @@ Future<void> _tabUntilFocused(
   expect(
     reached,
     isTrue,
-    reason: 'Natural Tab traversal did not focus the requested page action.',
+    reason:
+        'Natural Tab traversal did not focus the requested page action: ${target.description}',
   );
   expect(
     FocusManager.instance.highlightMode,
@@ -616,8 +617,8 @@ void fullPageTabOrderTests() {
     }
 
     await expectFullTabOrder(tester, [
-      find.bySemanticsLabel(RegExp('محلي')).first,
-      find.bySemanticsLabel(RegExp('سحابي')).first,
+      // SegmentedButton is one Tab stop; arrow keys move between its segments.
+      find.byType(SegmentedButton<String>).first,
       find.ancestor(
         of: find.text('أوافق على إرسال مقتطفات نص التفريغ للمزوّد الخارجي'),
         matching: find.byType(CheckboxListTile),
