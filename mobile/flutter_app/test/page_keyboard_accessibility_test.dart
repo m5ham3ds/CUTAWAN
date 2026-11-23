@@ -78,6 +78,44 @@ class _CountingDeviceAcceptanceService extends DeviceAcceptanceService {
   }
 }
 
+class _StaticAiModelGateway extends AiModelGateway {
+  _StaticAiModelGateway({required super.credentials});
+
+  int listCalls = 0;
+  int testCalls = 0;
+
+  @override
+  Future<List<AiModelChoice>> listModels(
+    AiProviderId provider, {
+    String? apiKeyOverride,
+    String? baseUrlOverride,
+  }) async {
+    listCalls++;
+    return [
+      AiModelChoice(
+        id: 'cutawan-test-model',
+        provider: provider,
+        label: 'CUTAWAN test model',
+      ),
+    ];
+  }
+
+  @override
+  Future<String> testModel(
+    AiProviderId provider, {
+    required String modelId,
+    String? apiKeyOverride,
+    String? baseUrlOverride,
+  }) async {
+    testCalls++;
+    return 'CUTAWAN test model passed';
+  }
+
+  @override
+  void close() {}
+}
+
+
 Future<void> _focusAndActivate(
   WidgetTester tester,
   Finder target,
@@ -447,6 +485,22 @@ void main() {
       ).first;
       await _tabUntilFocused(tester, refresh);
 
+      final technicalDetailsLabel = find.text('القياسات التقنية التفصيلية');
+      await tester.scrollUntilVisible(
+        technicalDetailsLabel,
+        220,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pump();
+      final technicalDetails = find.ancestor(
+        of: technicalDetailsLabel,
+        matching: find.byType(ListTile),
+      ).first;
+      await _tabUntilFocused(tester, technicalDetails);
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+      expect(find.text('إجمالي RAM'), findsOneWidget);
+
       // Scroll to the lazy list child before resolving its ancestor control.
       final copyReportLabel = find.text('نسخ تقرير التشخيص JSON');
       await tester.scrollUntilVisible(
@@ -790,6 +844,62 @@ void fullPageTabOrderTests() {
         await _tabUntilFocused(tester, target, maxTabs: 64);
       }
 
+      expect(tester.takeException(), isNull);
+      semantics.dispose();
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
+
+
+  testWidgets(
+    'Models Center exposes conditional remote-model test through Tab and Enter',
+    (tester) async {
+      setPhoneViewport(tester);
+      addTearDown(() => resetPhoneViewport(tester));
+      final semantics = tester.ensureSemantics();
+      final storage = _MemoryCredentialStorage();
+      final credentials = AiCredentialStore(storage: storage);
+      await credentials.saveApiKey(AiProviderId.openAi, 'test-only-api-key');
+      await credentials.saveCloudConsent(true);
+      final gateway = _StaticAiModelGateway(credentials: credentials);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: CutawanTheme.dark(),
+          home: ModelsPage(
+            credentials: credentials,
+            gateway: gateway,
+            checkWhisperInstalled: () async => false,
+            checkQwenInstalled: () async => false,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final fetchModels = find.ancestor(
+        of: find.text('جلب النماذج'),
+        matching: find.byType(OutlinedButton),
+      ).first;
+      await _tabUntilFocused(tester, fetchModels, maxTabs: 64);
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+      expect(gateway.listCalls, 1);
+
+      final selectedModel = find.byType(DropdownButtonFormField<String>);
+      expect(selectedModel, findsOneWidget);
+      await _tabUntilFocused(tester, selectedModel, maxTabs: 64);
+
+      final testModelLabel = find.text('اختبار النموذج فعلياً');
+      expect(testModelLabel, findsOneWidget);
+      final testModelButton = find.ancestor(
+        of: testModelLabel,
+        matching: find.byType(FilledButton),
+      ).first;
+      await _tabUntilFocused(tester, testModelButton, maxTabs: 64);
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+
+      expect(gateway.testCalls, 1);
       expect(tester.takeException(), isNull);
       semantics.dispose();
       await tester.pumpWidget(const SizedBox.shrink());
