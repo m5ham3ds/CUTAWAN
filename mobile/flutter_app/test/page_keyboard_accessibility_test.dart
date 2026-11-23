@@ -1,7 +1,3 @@
-      semantics.dispose();
-      semantics.dispose();
-      semantics.dispose();
-      semantics.dispose();
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -339,6 +335,7 @@ void main() {
 
       await _tabUntilFocused(tester, find.byTooltip('الإعدادات'));
       expect(tester.takeException(), isNull);
+      semantics.dispose();
       await tester.pumpWidget(const SizedBox.shrink());
     },
   );
@@ -374,6 +371,7 @@ void main() {
         ).first,
       );
       expect(tester.takeException(), isNull);
+      semantics.dispose();
       await tester.pumpWidget(const SizedBox.shrink());
     },
   );
@@ -418,6 +416,7 @@ void main() {
         ).first,
       );
       expect(tester.takeException(), isNull);
+      semantics.dispose();
       await tester.pumpWidget(const SizedBox.shrink());
     },
   );
@@ -447,6 +446,7 @@ void main() {
       ).first;
       await _tabUntilFocused(tester, refresh);
       expect(tester.takeException(), isNull);
+      semantics.dispose();
       await tester.pumpWidget(const SizedBox.shrink());
     },
   );
