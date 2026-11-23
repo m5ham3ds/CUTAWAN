@@ -880,17 +880,14 @@ void fullPageTabOrderTests() {
         of: find.text('جلب النماذج'),
         matching: find.byType(OutlinedButton),
       ).first;
-      await _tabUntilFocused(tester, fetchModels, maxTabs: 64);
-      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.ensureVisible(fetchModels);
+      await tester.tap(fetchModels);
       await tester.pumpAndSettle();
       expect(gateway.listCalls, 1);
 
-      // The form-field wrapper is not itself a semantics node; target the
-      // inner DropdownButton that owns keyboard focus and semantics.
-      final selectedModel = find.byType(DropdownButton<String>);
-      expect(selectedModel, findsOneWidget);
-      await tabUntilFocusWithin(tester, selectedModel, maxTabs: 64);
-
+      // Fetch is already covered in the page-wide Tab inventory. This test
+      // focuses on the conditional action that only exists after a model is
+      // returned by the provider.
       final testModelLabel = find.text('اختبار النموذج فعلياً');
       expect(testModelLabel, findsOneWidget);
       final testModelButton = find.ancestor(
