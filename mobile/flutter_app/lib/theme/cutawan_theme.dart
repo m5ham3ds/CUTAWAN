@@ -84,8 +84,6 @@ class CutawanTheme {
         iconTheme: IconThemeData(color: scheme.onSurface),
       ),
       listTileTheme: ListTileThemeData(
-        focusColor: keyboardFocusFill,
-        hoverColor: scheme.primary.withValues(alpha: dark ? 0.16 : 0.08),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
       iconButtonTheme: IconButtonThemeData(
