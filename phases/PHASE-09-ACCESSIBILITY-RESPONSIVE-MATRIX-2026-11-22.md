@@ -100,3 +100,23 @@
 - CI [45089841836](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45089841836), run 366 — **success**.
 
 **Scope limit:** these are deterministic widget rendering baselines, not physical handset screenshots. Full Tab-order/visible-focus, landscape/safe-area and handset validation remain open.
+
+
+## Natural Tab traversal and focused semantics — 2026-11-23
+
+- Four new tests send real Tab events (no programmatic `requestFocus()`) and wait for a representative action on each screen to expose focused semantics.
+- Dashboard Settings action: `IconButton` found by tooltip. Settings diagnostics action: its clickable `ListTile`. Models Center: local-model refresh `TextButton`. Device Diagnostics: refresh `IconButton`.
+- Each test verifies `SemanticsFlag.isFocused` on the target and `FocusManager.instance.highlightMode == FocusHighlightMode.traditional`.
+- Android run [45093466824](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45093466824), run 325, SHA `f4690770873e9362cab5e4c45f7d2649ad1c735f` — **success**, **200/200 tests**, format, strict analysis, ARM64 APK, ARM64-only and 10-unique-native-library checks, and APK upload passed.
+- APK artifact [14782207705](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45093466824/artifacts/14782207705): 60,027,476 bytes; SHA-256 `6947d92f8022ff3299098a8dab12aef70698fd8534ca941260db1e9e76c2e304`. Exactly `arm64-v8a`, GGML present, no duplicate native basenames.
+- CI [45093466603](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45093466603), run 372 — **success**.
+
+**Scope limit:** the four tests prove representative Tab reachability and focused semantics, not the complete traversal sequence of every interactive control or measured focus-ring contrast.
+
+## Remaining matrix / page work
+
+- Per-page landscape and safe-area/system-inset tests at compact and wide sizes with RTL/LTR and enlarged text.
+- Complete per-control Tab-order inventory and visual focus-indicator review.
+- Physical handset visual/accessibility review remains separate from emulator/widget/golden test evidence.
+
+**Decision:** accept this representative Tab/focused-semantics slice. Phase 9 and the full accessibility matrix remain in progress.

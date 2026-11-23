@@ -377,7 +377,7 @@ void main() {
   );
 
   testWidgets(
-    'Models Center Tab traversal reaches local mode with visible focus',
+    'Models Center Tab traversal reaches local-model refresh with visible focus',
     (tester) async {
       tester.view.physicalSize = const Size(390, 844);
       tester.view.devicePixelRatio = 1;

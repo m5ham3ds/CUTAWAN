@@ -246,3 +246,23 @@ This record supersedes the older Dashboard/Settings items in the original next-s
 - CI [45089841836](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45089841836), run 366 — **success**.
 
 **Remaining Phase 9 gates:** full Tab traversal/visible focus, per-page landscape/safe-area, and physical handset visual review. This golden slice is accepted; Phase 9 remains in progress.
+
+
+## Natural Tab traversal and focused semantics — 2026-11-23
+
+- Extended `test/page_keyboard_accessibility_test.dart` with four natural Tab traversal checks, one per page. The tests send Tab from the initial page focus state until the representative action reports `SemanticsFlag.isFocused`; they do not call `requestFocus()` for these paths.
+- Dashboard: reach the Settings IconButton. Settings: reach the Android diagnostics ListTile. Models Center: reach the local-model refresh TextButton. Device Diagnostics: reach the refresh IconButton.
+- Each test asserts Flutter has switched to traditional keyboard highlight mode and that the target semantic node exposes its focused state. Semantics handles are explicitly disposed.
+- The first attempts were test-harness issues, not product regressions: `Focus.of` was queried on child widgets without a Focus ancestor, the Models target text was not the intended control, and Semantics handles were left active after early exceptions. The helper now checks the actual focused semantics node and uses stable page-action ancestors.
+- Android run [45093466824](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45093466824), run 325, SHA `f4690770873e9362cab5e4c45f7d2649ad1c735f` — **success**: Format, strict analysis, **200/200 tests**, ARM64 APK, ABI-only and native-library duplicate checks, and APK upload all passed.
+- APK artifact [14782207705](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45093466824/artifacts/14782207705): 60,027,476 bytes; SHA-256 `6947d92f8022ff3299098a8dab12aef70698fd8534ca941260db1e9e76c2e304`. Exactly `arm64-v8a`, 10 unique libraries, GGML present, no duplicate basenames.
+- Coverage artifact [14782512316](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45093466824/artifacts/14782512316): 18,319 bytes; SHA-256 `ee958ac46288236376369faf22a874b9b2c82439cb4c754fc910e3f7093f994c`.
+- Desktop CI [45093466603](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45093466603), run 372 — **success** across all required checks.
+
+**Scope limit:** these assertions verify representative Tab reachability, Flutter's keyboard-highlight mode and focused semantics. They do not inventory every Tab stop or measure focus-ring visual contrast; those still require per-control review and physical-device inspection.
+
+### Current remaining Phase 9 gates
+
+- Per-page landscape and system-inset/safe-area checks at compact and wide sizes, with RTL/LTR and enlarged text.
+- Full interactive-control Tab order inventory and visual focus-indicator contrast/pixel review.
+- Physical handset visual/accessibility review on an actual ARM64 phone.

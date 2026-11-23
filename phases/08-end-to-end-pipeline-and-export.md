@@ -51,7 +51,7 @@ No UI may state an export succeeded until a real output file exists and passes v
 - Android `TimedCaptionOverlay` currently implements timed `karaoke_fill` word emphasis. The full range of Flutter Studio preview animation IDs is not yet pixel/behavior parity in the native renderer.
 - Caption Studio's Flutter preview and Android CanvasOverlay use separate layout/font implementations; a golden/pixel-identical visual comparison is not in place.
 - Output validation probes the file/metadata and video track; it does **not** yet fully decode every output frame and audio packet to end-of-stream.
-- Render sessions are held in an Activity-owned in-memory map. Cancellation and progress work while the process remains alive, but robust process-death recovery, foreground/background execution, durable render-session reconstruction and notifications remain open.
+- Historical snapshot dated 2026-11-21: render sessions were then held in an Activity-owned in-memory map. This blocker was superseded by the WorkManager foreground-render/durable-completion implementation recorded below on 2026-11-22; it is not the current architecture.
 - Per-clip retry/manual re-render, output management UI and cleanup/retention acceptance remain open.
 - Fixture coverage still needs short/long, portrait/landscape, VFR, audio-only/no-speech, silence, corrupt/truncated source, scene cuts, missing-face intervals and Arabic/English/RTL cases.
 - Physical ARM64 testing for memory/thermal/load, audio presence, frame decode, output duration/dimensions and Android OEM/background restrictions has not been completed.
@@ -78,7 +78,7 @@ Do not mark Phase 8 accepted until the remaining full-decode, output-fixture, ba
 ### Still open before Phase 8 acceptance
 
 - MediaCodec full-decode must be exercised on real ARM64 fixtures and devices, including VFR, long files, no-audio, silent audio, rotated footage and deliberately truncated/corrupt output.
-- Full process-death/background execution and notification behavior are not yet implemented as a durable foreground WorkManager service; the current Activity-owned Transformer session is cancelled when the Activity is destroyed. Reopening Review and invoking its resume action restarts from validated checkpoints, but does not continue the same live native Transformer process in the background.
+- Historical snapshot dated 2026-11-21: foreground/background WorkManager execution and process-death handoff had not yet been implemented at that point. This was superseded by the 2026-11-22 WorkManager implementation below. Real-device process-death/force-stop and OEM acceptance remain open.
 - Per-clip retry/export management UI, render cancellation from Android system notifications, and physical subtitle/crop continuity checks remain open.
 - Caption overlay styling still does not match every Flutter preview animation/pixel layout.
 
@@ -90,7 +90,7 @@ Do not mark Phase 8 accepted until the remaining full-decode, output-fixture, ba
 - Flutter validates the native full-decode evidence and the pipeline persists decoded buffer counts in export records/manifests.
 - Automated gate passed on Mobile Android workflow 44865751038 (Phase 8 full-decode patch), and the subsequent Stage 9/10 ARM64 build workflows also passed.
 - Physical codec/format acceptance is still open: VFR, long duration, rotated input, silent/no-audio, AAC/other audio tracks and corrupt/truncated MP4 fixtures must be tested on actual ARM64 devices.
-- Background WorkManager execution, notification cancellation and process-death reconstruction of a live render are still not implemented; a destroyed Activity still cancels the in-memory Media3 session. Resume relies on persisted checkpoints and revalidation when the app is reopened.
+- Historical status dated 2026-11-21: WorkManager notification cancellation and durable completion handoff were not implemented in that snapshot. The following 2026-11-22 section supersedes this; the current code uses NativeRenderWorker, foreground progress/cancellation and durable completion records. Physical-device behavior remains unverified.
 
 
 ## WorkManager foreground rendering and durable completion — 2026-11-22
@@ -120,3 +120,12 @@ Do not mark Phase 8 accepted until the remaining full-decode, output-fixture, ba
 - Per-clip retry and full export delivery/cleanup management remain product work. Caption Studio preview and native export do not yet have pixel-identical parity across the complete animation catalogue.
 
 **Decision:** accept the WorkManager/background-render code slice as passing automated gates. Do not mark Phase 8 globally complete until the physical-device and remaining product/media acceptance items above are satisfied.
+
+
+## Current status clarification — 2026-11-23
+
+The three historical bullets above that describe an Activity-owned render map or state that WorkManager was not implemented are dated snapshots from 2026-11-21. They are **superseded** by the 2026-11-22 section titled “WorkManager foreground rendering and durable completion” and must not be used as the current implementation status.
+
+Current source uses `NativeRenderEngine` and `NativeRenderWorker` through WorkManager long-running foreground work, project-tagged cancellation, progress/cancel notification, and durable completion handoff. Flutter validates and persists the export/checkpoint before acknowledging the durable completion.
+
+Phase 8 is still not globally accepted: physical ARM64 background/relaunch/force-stop/OEM tests, notification and cancellation behavior, real media fixture/decode/crop/caption evidence, per-clip retry/management and preview/export parity remain open.

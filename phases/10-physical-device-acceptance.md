@@ -61,7 +61,7 @@ Widget tests cover a 320dp viewport with enlarged text, RTL, long build identifi
 - No physical Whisper WER/timing, candidate quality, crop continuity or full MP4 decode score has been collected.
 - No sustained memory, battery, thermal or processing-time measurement exists.
 - No process-death recovery, SAF force-stop/relaunch, Keystore backup/restore/reinstall/key-rotation or consent-blocking end-to-end physical result is attached.
-- Activity-owned renderer sessions are cancelled when the Activity is destroyed; durable background render execution and session reconstruction remain Phase 8 work, not Phase 10 evidence.
+- Historical note (2026-11-21): Activity-owned renderer sessions were cancelled when the Activity was destroyed. This was superseded by the 2026-11-22 WorkManager foreground worker/durable completion handoff in Phase 8. Physical handset background, relaunch/force-stop and OEM behavior remain unverified and are still Phase 10 evidence requirements.
 
 ## Required field procedure
 
