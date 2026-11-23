@@ -459,15 +459,16 @@ Future<void> expectFullTabOrder(
 }) async {
   final scrollable = find.byType(Scrollable).first;
   for (final target in targets) {
+    final uniqueTarget = target.first;
     await tester.scrollUntilVisible(
-      target,
+      uniqueTarget,
       220,
       scrollable: scrollable,
     );
     await tester.pump();
     await _tabUntilFocused(
       tester,
-      target,
+      uniqueTarget,
       maxTabs: maxTabsPerTarget,
     );
   }
@@ -615,13 +616,13 @@ void fullPageTabOrderTests() {
     }
 
     await expectFullTabOrder(tester, [
-      find.bySemanticsLabel(RegExp('محلي')),
-      find.bySemanticsLabel(RegExp('سحابي')),
+      find.bySemanticsLabel(RegExp('محلي')).first,
+      find.bySemanticsLabel(RegExp('سحابي')).first,
       find.ancestor(
         of: find.text('أوافق على إرسال مقتطفات نص التفريغ للمزوّد الخارجي'),
         matching: find.byType(CheckboxListTile),
       ).first,
-      find.byType(DropdownButtonFormField<AiProviderId>),
+      find.byType(DropdownButtonFormField<AiProviderId>).first,
       find.byType(TextField).last,
       find.ancestor(
         of: find.text('حفظ الإعدادات بأمان'),
