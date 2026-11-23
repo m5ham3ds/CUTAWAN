@@ -446,6 +446,13 @@ void main() {
         matching: find.byType(IconButton),
       ).first;
       await _tabUntilFocused(tester, refresh);
+
+      final copyReport = find.ancestor(
+        of: find.text('نسخ تقرير التشخيص JSON'),
+        matching: find.byType(FilledButton),
+      ).first;
+      await expectFullTabOrder(tester, [copyReport]);
+
       expect(tester.takeException(), isNull);
       semantics.dispose();
       await tester.pumpWidget(const SizedBox.shrink());
@@ -697,6 +704,77 @@ void fullPageTabOrderTests() {
     semantics.dispose();
     await tester.pumpWidget(const SizedBox.shrink());
   });
+
+
+  testWidgets(
+    'Models Center exposes installed-model and saved-key removal controls',
+    (tester) async {
+      setPhoneViewport(tester);
+      addTearDown(() => resetPhoneViewport(tester));
+      final semantics = tester.ensureSemantics();
+      final storage = _MemoryCredentialStorage();
+      final credentials = AiCredentialStore(storage: storage);
+      await credentials.saveApiKey(AiProviderId.openAi, 'test-only-api-key');
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: CutawanTheme.dark(),
+          home: ModelsPage(
+            credentials: credentials,
+            checkWhisperInstalled: () async => true,
+            checkQwenInstalled: () async => true,
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 60));
+
+      for (final modelTitle in [
+        'Whisper Base متعدد اللغات',
+        'Qwen2.5-0.5B-Instruct Q4_K_M',
+      ]) {
+        final titleFinder = find.text(modelTitle).first;
+        await tester.scrollUntilVisible(
+          titleFinder,
+          220,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.pump();
+        final modelCard = find.ancestor(
+          of: titleFinder,
+          matching: find.byType(Card),
+        ).first;
+        final removeButton = find.descendant(
+          of: modelCard,
+          matching: find.byType(TextButton),
+        ).first;
+        await _tabUntilFocused(tester, removeButton, maxTabs: 64);
+      }
+
+      await expectFullTabOrder(tester, [
+        find.ancestor(
+          of: find.text('حفظ الإعدادات بأمان'),
+          matching: find.byType(FilledButton),
+        ).first,
+        find.ancestor(
+          of: find.text('حذف المفتاح'),
+          matching: find.byType(TextButton),
+        ).first,
+        find.ancestor(
+          of: find.text('جلب النماذج'),
+          matching: find.byType(OutlinedButton),
+        ).first,
+        find.ancestor(
+          of: find.text('إعادة فحص النماذج المحلية'),
+          matching: find.byType(TextButton),
+        ).first,
+      ], maxTabsPerTarget: 64);
+
+      expect(tester.takeException(), isNull);
+      semantics.dispose();
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
 
 }
 
