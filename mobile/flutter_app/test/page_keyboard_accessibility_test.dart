@@ -452,7 +452,7 @@ void main() {
   );
 
 
-Future<void> _expectFullTabOrder(
+Future<void> expectFullTabOrder(
   WidgetTester tester,
   List<Finder> targets, {
   int maxTabsPerTarget = 48,
@@ -473,17 +473,17 @@ Future<void> _expectFullTabOrder(
   }
 }
 
-Finder _pageTile(String label) => find.ancestor(
+Finder pageTile(String label) => find.ancestor(
       of: find.text(label),
       matching: find.byType(ListTile),
     ).first;
 
-void _setPhoneViewport(WidgetTester tester) {
+void setPhoneViewport(WidgetTester tester) {
   tester.view.physicalSize = const Size(390, 844);
   tester.view.devicePixelRatio = 1;
 }
 
-void _resetPhoneViewport(WidgetTester tester) {
+void resetPhoneViewport(WidgetTester tester) {
   tester.view.resetPhysicalSize();
   tester.view.resetDevicePixelRatio();
 }
@@ -491,8 +491,8 @@ void _resetPhoneViewport(WidgetTester tester) {
 void fullPageTabOrderTests() {
   testWidgets('Dashboard exposes every interactive control in reading order',
       (tester) async {
-    _setPhoneViewport(tester);
-    addTearDown(() => _resetPhoneViewport(tester));
+    setPhoneViewport(tester);
+    addTearDown(() => resetPhoneViewport(tester));
     final semantics = tester.ensureSemantics();
     final projects = ValueNotifier<List<CutawanProject>>([]);
     addTearDown(projects.dispose);
@@ -516,13 +516,13 @@ void fullPageTabOrderTests() {
     );
     await tester.pump();
 
-    await _expectFullTabOrder(tester, [
+    await expectFullTabOrder(tester, [
       find.byTooltip('الإعدادات'),
       find.byKey(const ValueKey('dashboard-create-project')),
       find.byKey(const ValueKey('dashboard-refresh-storage')),
-      _pageTile('المهام والمشاريع'),
-      _pageTile('المراجعة والتحرير'),
-      _pageTile('مركز النماذج'),
+      pageTile('المهام والمشاريع'),
+      pageTile('المراجعة والتحرير'),
+      pageTile('مركز النماذج'),
       find.ancestor(
         of: find.text('عرض الكل'),
         matching: find.byType(TextButton),
@@ -536,8 +536,8 @@ void fullPageTabOrderTests() {
 
   testWidgets('Settings exposes navigation, theme and accessibility controls in order',
       (tester) async {
-    _setPhoneViewport(tester);
-    addTearDown(() => _resetPhoneViewport(tester));
+    setPhoneViewport(tester);
+    addTearDown(() => resetPhoneViewport(tester));
     final semantics = tester.ensureSemantics();
     final store = AppPreferencesStore.inMemory();
     addTearDown(store.dispose);
@@ -554,9 +554,9 @@ void fullPageTabOrderTests() {
     );
     await tester.pump();
 
-    await _expectFullTabOrder(tester, [
-      _pageTile('تشخيص وقبول Android'),
-      _pageTile('مركز النماذج والاتصالات'),
+    await expectFullTabOrder(tester, [
+      pageTile('تشخيص وقبول Android'),
+      pageTile('مركز النماذج والاتصالات'),
       find.byKey(const ValueKey('settings-theme-system')),
       find.byKey(const ValueKey('settings-theme-light')),
       find.byKey(const ValueKey('settings-theme-dark')),
@@ -570,8 +570,8 @@ void fullPageTabOrderTests() {
 
   testWidgets('Models Center exposes local and remote controls in reading order',
       (tester) async {
-    _setPhoneViewport(tester);
-    addTearDown(() => _resetPhoneViewport(tester));
+    setPhoneViewport(tester);
+    addTearDown(() => resetPhoneViewport(tester));
     final semantics = tester.ensureSemantics();
     final credentials = AiCredentialStore(
       storage: _MemoryCredentialStorage(),
@@ -595,7 +595,7 @@ void fullPageTabOrderTests() {
       matching: find.byType(FilledButton),
     );
 
-    await _expectFullTabOrder(tester, [
+    await expectFullTabOrder(tester, [
       downloadButtons.at(0),
       downloadButtons.at(1),
       find.bySemanticsLabel(RegExp('محلي')),
@@ -627,8 +627,8 @@ void fullPageTabOrderTests() {
 
   testWidgets('Device Diagnostics exposes refresh and report actions in order',
       (tester) async {
-    _setPhoneViewport(tester);
-    addTearDown(() => _resetPhoneViewport(tester));
+    setPhoneViewport(tester);
+    addTearDown(() => resetPhoneViewport(tester));
     final semantics = tester.ensureSemantics();
     final service = _CountingDeviceAcceptanceService();
 
@@ -641,7 +641,7 @@ void fullPageTabOrderTests() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 60));
 
-    await _expectFullTabOrder(tester, [
+    await expectFullTabOrder(tester, [
       find.byTooltip('إعادة الفحص'),
       find.ancestor(
         of: find.text('نسخ تقرير التشخيص JSON'),
