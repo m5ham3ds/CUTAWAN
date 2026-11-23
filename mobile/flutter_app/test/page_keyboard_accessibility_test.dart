@@ -897,7 +897,7 @@ void fullPageTabOrderTests() {
         of: testModelLabel,
         matching: find.byType(FilledButton),
       ).first;
-      await _tabUntilFocused(tester, testModelButton, maxTabs: 64);
+      await tabUntilFocusWithin(tester, testModelButton, maxTabs: 64);
       await tester.sendKeyEvent(LogicalKeyboardKey.enter);
       await tester.pumpAndSettle();
 
