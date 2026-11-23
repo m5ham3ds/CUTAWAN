@@ -220,3 +220,16 @@ This record supersedes the older Dashboard/Settings items in the original next-s
 - CI [45086449397](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45086449397), run 359: success.
 
 **Current next Phase 9 slice:** page-level goldens for Dashboard/Settings/Models/Diagnostics, followed by page focus, keyboard, landscape and safe-area coverage. Physical handset UI review remains separate.
+
+
+## Page-specific keyboard activation — 2026-11-23
+
+- Added `test/page_keyboard_accessibility_test.dart` with one real keyboard action on each responsive page: Dashboard create-project, Settings diagnostics navigation, Models Center local-model recheck, and Device Diagnostics refresh.
+- Each test requests focus on the actionable control, verifies that it becomes the primary focus, sends Enter, and asserts the resulting callback or service invocation. Credential/model checks and diagnostics collection are injected fakes; the suite performs no network request and no filesystem operation.
+- These tests establish keyboard activation for the four selected actions. They do **not** establish the complete Tab traversal order or prove the visible focus indicator styling on every control; those remain open.
+- Android run [45087696784](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45087696784), run 315, source SHA `e3fde4acc0f071f8eaf38e221031e0bd0644b004` — **success**: Format, `flutter analyze --fatal-infos`, **192/192 tests**, ARM64 debug APK, ABI/native-library validation and artifact upload all passed.
+- APK artifact [14780067920](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45087696784/artifacts/14780067920): 60,028,683 bytes; ZIP SHA-256 `b316544128f52c01da425ad7db897248a0a2bbbc0bee06df42b9ddf97feb54d8`. Exactly `arm64-v8a`, 10 unique native libraries including GGML, no duplicate basenames.
+- Coverage artifact [14780201541](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45087696784/artifacts/14780201541): 18,253 bytes; ZIP SHA-256 `17a35196f30ff45702bddd288e0a81179446a143afab4295047386f66b11e17e`.
+- Desktop CI [45087696844](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45087696844), run 362 — **success** across checks, Xvfb UI smoke, offline FFmpeg/caption/render and Apple Silicon package validation.
+
+**Current open Phase 9 work:** page goldens, complete Tab traversal/visible focus, landscape/safe-area, and physical handset visual acceptance. Phase 9 remains in progress.

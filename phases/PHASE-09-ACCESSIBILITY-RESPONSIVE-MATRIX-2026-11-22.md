@@ -69,3 +69,23 @@
 - Physical handset UI review remains separate from emulator/widget/golden test evidence.
 
 **Decision:** accept Dashboard storage/quick-resume and Settings persistence as automated responsive slices. Phase 9 and the full accessibility matrix remain in progress.
+
+
+## Page-specific keyboard activation slice — 2026-11-23
+
+- Added four page-level keyboard tests in `page_keyboard_accessibility_test.dart`: Dashboard create-project, Settings diagnostics route, Models Center local-model refresh, and Device Diagnostics refresh.
+- Each test focuses the intended control, confirms it owns primary focus, sends Enter, and asserts the actual callback/service action. Fakes are injected for the credential and diagnostics dependencies.
+- Android run [45087696784](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45087696784), run 315, SHA `e3fde4acc0f071f8eaf38e221031e0bd0644b004` — **success**, **192/192 tests**, format, strict analysis, ARM64 APK, ARM64-only ABI and duplicate-library checks, and APK upload all passed.
+- APK artifact [14780067920](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45087696784/artifacts/14780067920): 60,028,683 bytes; SHA-256 `b316544128f52c01da425ad7db897248a0a2bbbc0bee06df42b9ddf97feb54d8`. Exactly `arm64-v8a`, 10 unique native libraries, GGML runtime present, no duplicate basenames.
+- Root/desktop CI [45087696844](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45087696844), run 362 — **success**.
+
+**Scope limit:** these tests prove Enter activation after explicitly requesting focus. They do not prove correct Tab order or visible-focus styling for every page control.
+
+## Remaining matrix / page work
+
+- Page golden comparisons for light/dark and RTL/LTR at compact/regular/wide widths.
+- Full page-level Tab-order traversal and visible-focus state for interactive controls.
+- Per-page landscape and Android safe-area/system-inset acceptance.
+- Physical handset UI review remains separate from emulator/widget/golden test evidence.
+
+**Decision:** accept the four page-specific Enter-activation checks as an automated slice. The complete accessibility matrix and Phase 9 remain in progress.
