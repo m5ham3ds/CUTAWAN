@@ -453,6 +453,55 @@ void main() {
   );
 
 
+bool _primaryFocusIsWithin(WidgetTester tester, Finder target) {
+  final targets = target.evaluate().toSet();
+  final focusedContext = FocusManager.instance.primaryFocus?.context;
+  if (focusedContext == null || targets.isEmpty) {
+    return false;
+  }
+
+  var found = false;
+  focusedContext.visitAncestorElements((ancestor) {
+    if (targets.contains(ancestor)) {
+      found = true;
+      return false;
+    }
+    return true;
+  });
+  return found;
+}
+
+Future<void> tabUntilFocusWithin(
+  WidgetTester tester,
+  Finder target, {
+  int maxTabs = 64,
+}) async {
+  var reached = false;
+
+  for (var index = 0; index < maxTabs; index++) {
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.pump();
+
+    if (_primaryFocusIsWithin(tester, target)) {
+      reached = true;
+      break;
+    }
+  }
+
+  expect(
+    reached,
+    isTrue,
+    reason:
+        'Natural Tab traversal did not enter the requested composite control: '
+        '${target.describeMatch(Plurality.one)}',
+  );
+  expect(
+    FocusManager.instance.highlightMode,
+    FocusHighlightMode.traditional,
+    reason: 'Keyboard navigation must activate the visible focus mode.',
+  );
+}
+
 Future<void> expectFullTabOrder(
   WidgetTester tester,
   List<Finder> targets, {
@@ -616,9 +665,14 @@ void fullPageTabOrderTests() {
       await _tabUntilFocused(tester, installButton, maxTabs: 64);
     }
 
-    await expectFullTabOrder(tester, [
-      // SegmentedButton is one Tab stop; arrow keys move between its segments.
+    // SegmentedButton has internal segment semantics; assert focus entered
+    // the composite control rather than asking for a non-existent group node.
+    await tabUntilFocusWithin(
+      tester,
       find.byType(SegmentedButton<String>).first,
+    );
+
+    await expectFullTabOrder(tester, [
       find.ancestor(
         of: find.text('أوافق على إرسال مقتطفات نص التفريغ للمزوّد الخارجي'),
         matching: find.byType(CheckboxListTile),
