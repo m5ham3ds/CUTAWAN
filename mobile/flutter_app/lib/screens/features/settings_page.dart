@@ -44,7 +44,11 @@ class _SettingsPageState extends State<SettingsPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('إعدادات CUTAWAN'),
+        title: const Text(
+          'إعدادات CUTAWAN',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
         centerTitle: false,
       ),
       body: Center(
@@ -129,10 +133,12 @@ class _SettingsPageState extends State<SettingsPage> {
                               children: [
                                 Icon(Icons.dark_mode_outlined, color: scheme.primary),
                                 const SizedBox(width: 9),
-                                Text(
-                                  'وضع الألوان',
-                                  style: theme.textTheme.titleSmall?.copyWith(
-                                    fontWeight: FontWeight.w800,
+                                Expanded(
+                                  child: Text(
+                                    'وضع الألوان',
+                                    style: theme.textTheme.titleSmall?.copyWith(
+                                      fontWeight: FontWeight.w800,
+                                    ),
                                   ),
                                 ),
                               ],
