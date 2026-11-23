@@ -6,15 +6,16 @@
 
 ## Baseline and latest verified Android state
 
-- Latest accepted Mobile Android run: [45093466824](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45093466824), run **325**, source SHA `f4690770873e9362cab5e4c45f7d2649ad1c735f` — **success**.
+- Latest accepted Mobile Android run: [45096664414](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45096664414), run **330**, source SHA `91429dce5f4917b75072f54e6b79b231c17649e2` — **success**.
 - Dart format and `flutter analyze --fatal-infos`: passed.
-- Flutter unit/widget suite: **200/200 tests passed**. This includes 24 committed page golden comparisons, four explicit focus-plus-Enter actions, and four natural Tab-traversal/focused-semantics checks across Dashboard, Settings, Models Center and Device Diagnostics.
+- Flutter unit/widget suite: **204/204 tests passed**. This includes 24 committed page golden comparisons, four focus-plus-Enter actions, four natural Tab/focused-semantics checks and four page landscape/safe-area widget tests.
+- Landscape matrix: Dashboard, Settings, Models Center and Device Diagnostics were tested at 720×320 RTL/light/1.5× text and 844×390 LTR/dark/1.0× text, with horizontal, top and bottom insets simulated through `MediaQuery.padding/viewPadding`. Key page viewports/actions remained within the modeled safe rectangle and no Flutter layout exceptions occurred.
 - ARM64 debug APK: built and uploaded; exactly `arm64-v8a`, **10 unique native libraries**, no duplicate basenames, and `libggml-cpu.so`, `libggml.so`, `libggml-base.so` present.
-- APK artifact [14782207705](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45093466824/artifacts/14782207705): **60,027,476 bytes**; archive SHA-256 `6947d92f8022ff3299098a8dab12aef70698fd8534ca941260db1e9e76c2e304`.
-- Coverage artifact [14782512316](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45093466824/artifacts/14782512316): **18,319 bytes**; archive SHA-256 `ee958ac46288236376369faf22a874b9b2c82439cb4c754fc910e3f7093f994c`.
-- Root/desktop CI [45093466603](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45093466603), run **372** — **success** across checks, Xvfb UI smoke, offline FFmpeg/caption/render pipeline and Apple Silicon package validation.
-- Automated Tab tests confirm that representative actions on all four pages can be reached via Tab and publish focused semantics while Flutter enters traditional keyboard-highlight mode. They do not prove every Tab stop or focus-indicator contrast/pixels across every control.
-- Golden/widget tests are automated rendering evidence only; physical handset visuals, landscape/safe-area, OEM background behavior, media-quality/performance and Phase 10 field evidence remain separate.
+- APK artifact [14783514048](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45096664414/artifacts/14783514048): **60,028,674 bytes**; archive SHA-256 `54b52d795659ac3f699344c63ad77c81ff21fdc60ccd5dbab76cb49e45f43023`.
+- Coverage artifact [14784045542](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45096664414/artifacts/14784045542): **18,526 bytes**; archive SHA-256 `1d533fc46f7cd9241b5bc796f9765cea87a7ae7e069015a33e59e6348508e896`.
+- Root/desktop CI [45096664356](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45096664356), run **377** — **success** across checks, Xvfb UI smoke, offline FFmpeg/caption/render pipeline and Apple Silicon package validation.
+- The safe-area matrix simulates system insets in widget tests; it does not substitute for actual cutouts, gesture navigation bars, OEM edge-to-edge behavior or physical handset review.
+- Full per-control Tab-order and focus-indicator contrast/pixel review, physical handset visual/accessibility, OEM background behavior, media quality/performance and Phase 10 field evidence remain open.
 
 ## Phase matrix
 
@@ -28,8 +29,8 @@
 | 6 | Caption Studio visual presets, motion preview, RTL and preference persistence | Studio preview now loads saved transcript words/timing and groups them using live style/font/scale settings | Not synchronized to actual video playback; Studio and Android overlay are not yet pixel-identical |
 | 7 | Multi-provider model selection, secure user credentials, consented cloud editorial annotations | Provider-scoped model/key storage, consent gates on outbound requests, local fallback on key deletion; latest Android CI passed | Physical Keystore/backup/rotation tests, real provider account/model compatibility, billing and policy acceptance remain open |
 | 8 | End-to-end pipeline, job orchestration and clip export | Media3 full-track decode validation, deterministic checkpoints, WorkManager foreground worker, durable completion handoff, project-scoped cancellation and render notifications implemented; automated Android gates passed on run 267 | Physical ARM64 fixture/lifecycle/OEM tests remain open; targeted per-clip retry remains open |
-| 9 | Professional UI redesign and navigation/component architecture | Accepted page workflows, Dashboard storage/quick-resume, persisted Settings, four Enter actions, 24 saved page goldens and representative natural Tab/focused-semantics checks; Android run 325 passed 200/200 tests and ARM64 packaging | Continue: full per-control Tab inventory/focus-indicator review, per-page landscape/safe-area and physical handset UI acceptance |
-| 10 | Physical-device quality, security, performance and Arabic/English acceptance | Diagnostic report remains a baseline metadata snapshot plus one temporary secure-storage canary; physical acceptance incomplete | Android run 325 passed automated gates; still needs human-confirmed handset report, hashed media corpus, WER/timing, full decode, thermal/battery and lifecycle/consent evidence |
+| 9 | Professional UI redesign and navigation/component architecture | Accepted workflows, Dashboard storage/quick-resume, persisted Settings, Enter/Tab/focused-semantics checks, 24 page goldens and automated four-page landscape/safe-area matrix; Android run 330 passed 204/204 tests and ARM64 packaging | Continue: complete per-control Tab/focus-indicator review and physical handset visual/accessibility acceptance |
+| 10 | Physical-device quality, security, performance and Arabic/English acceptance | Diagnostic report remains a baseline metadata snapshot plus one temporary secure-storage canary; physical acceptance incomplete | Android run 330 passed automated gates; still needs human-confirmed handset report, hashed media corpus, WER/timing, full decode, thermal/battery and lifecycle/consent evidence |
 
 ## Global engineering constraints
 
@@ -53,7 +54,7 @@ Implement and gate in this order: Phases 1–3 together; then Phases 4–5; then
 1. Phase 8's full-decode, durable WorkManager render worker, foreground progress notification, project cancellation and process-recovery handoff are implemented and have passed automated Android/desktop CI. Do not repeat this implementation.
 2. Keep Phase 8 acceptance open until a physical ARM64 device run validates background completion, relaunch/recovery, cancellation notification, long/VFR/rotated/no-audio/silent/corrupt fixtures, crop/caption continuity, audio and full decode. Targeted per-clip retry remains separate product work.
 3. Phase 9 HomeShell extraction is accepted on `d30695cf38c7fb1dd009427c3da8c029921e4a17`; see `PHASE-09-HOME-SHELL-SCREEN-EXTRACTION-RECORD-2026-11-22.md`. Do not repeat the page extraction or redesign the accepted Create, Review, Clip Editor, Caption Studio or Jobs workflows unless a regression is found.
-4. Dashboard storage/quick-resume, persisted Settings preferences, four page-specific Enter actions, 24 page goldens and representative natural Tab/focused-semantics tests are accepted by Android run 325 (200/200). Do not repeat them. Continue with complete per-control Tab order/focus-indicator review, then landscape/safe-area and physical handset review.
+4. Dashboard storage/quick-resume, persisted Settings preferences, Enter and representative Tab/focused-semantics tests, 24 page goldens, and the four-page landscape/safe-area widget matrix are accepted by Android run 330 (204/204). Do not repeat them. Continue with complete per-control Tab/focus-indicator review and physical handset visual/accessibility review.
 5. Finish Phase 10 with physical ARM64 accuracy, privacy, thermal, battery, lifecycle and performance acceptance.
 
 Phases 1–7 have a successful automated Android gate on SHA `80e182b`; physical-device checks and phase-specific quality acceptance are still separate and must not be inferred from CI.
@@ -203,8 +204,7 @@ The page workflow sequence is tracked separately from the broader phase matrix. 
 
 ### Next Phase 9 engineering slice — current as of 2026-11-23
 
-- Accepted and do not repeat: Dashboard storage/quick-resume, persisted Settings theme/reduced-motion, four explicit focus-plus-Enter actions, 24 saved page goldens, and one representative natural Tab/focused-semantics path on each of Dashboard, Settings, Models Center and Device Diagnostics. Android run 325 passed all 200 tests.
-- The current Tab tests prove that these four representative actions are reachable by natural Tab and expose focused semantics; they do not prove every control's position in the traversal sequence or visually inspect focus-ring contrast/pixels.
-- Next test each page in landscape with representative horizontal/top/bottom Android system insets and large text, ensuring key actions and content remain inside the safe region.
-- After automated landscape/safe-area coverage, perform actual handset visual/focus review. Widget goldens and emulator results do not constitute physical-device acceptance.
+- Accepted and do not repeat: Dashboard storage/quick-resume, persisted Settings theme/reduced-motion, four focus-plus-Enter actions, 24 saved page goldens, four representative natural Tab/focused-semantics paths, and four landscape/safe-area page checks. Android run 330 passed all 204 tests.
+- The landscape tests cover 720×320 and 844×390 with modeled horizontal/top/bottom insets, RTL/LTR, light/dark themes and 1.5×/1.0× text scaling. They assert page viewport/action bounds against the simulated safe rectangle.
+- Next complete the per-control Tab-stop inventory and visual focus-indicator contrast/pixel review, then perform physical ARM64 handset visual/accessibility review using actual Android system bars/cutouts and OEM behavior.
 - Phase 9 and Phase 10 remain in progress.

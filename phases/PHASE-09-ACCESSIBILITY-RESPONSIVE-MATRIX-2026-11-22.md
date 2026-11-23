@@ -120,3 +120,21 @@
 - Physical handset visual/accessibility review remains separate from emulator/widget/golden test evidence.
 
 **Decision:** accept this representative Tab/focused-semantics slice. Phase 9 and the full accessibility matrix remain in progress.
+
+
+## Landscape and simulated safe-area matrix — 2026-11-23
+
+- Added four page tests for Dashboard, Settings, Models Center and Device Diagnostics. Each is run at 720×320 RTL/light/1.5× text and 844×390 LTR/dark/1.0× text.
+- Simulated horizontal/top/bottom insets are passed as both `MediaQuery.padding` and `viewPadding`; page viewports and representative actions are asserted inside the resulting safe rectangle.
+- Android run [45096664414](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45096664414), run 330, SHA `91429dce5f4917b75072f54e6b79b231c17649e2` — **success**, **204/204 tests**, format, strict analysis, ARM64 APK, ARM64-only/unique-native-library checks and APK upload passed.
+- APK artifact [14783514048](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45096664414/artifacts/14783514048): 60,028,674 bytes; SHA-256 `54b52d795659ac3f699344c63ad77c81ff21fdc60ccd5dbab76cb49e45f43023`. Exactly `arm64-v8a`, 10 unique native libraries, GGML present, no duplicate basenames.
+- CI [45096664356](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45096664356), run 377 — **success**.
+
+**Scope limit:** this validates simulated inset handling in Flutter widget tests. It does not replace physical handset testing of actual cutouts, gesture navigation bars, edge-to-edge or OEM-specific behavior.
+
+## Remaining matrix / page work
+
+- Complete per-control Tab order inventory and visible-focus indicator contrast/pixel review.
+- Physical ARM64 handset landscape/safe-area and visual/accessibility acceptance with actual system bars/cutouts and OEM behavior.
+
+**Decision:** accept the four-page landscape/simulated-safe-area widget slice. Phase 9 and Phase 10 remain in progress.

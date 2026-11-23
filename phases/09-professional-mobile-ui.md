@@ -266,3 +266,22 @@ This record supersedes the older Dashboard/Settings items in the original next-s
 - Per-page landscape and system-inset/safe-area checks at compact and wide sizes, with RTL/LTR and enlarged text.
 - Full interactive-control Tab order inventory and visual focus-indicator contrast/pixel review.
 - Physical handset visual/accessibility review on an actual ARM64 phone.
+
+
+## Landscape layout and system-inset widget acceptance — 2026-11-23
+
+- Added `test/page_landscape_safe_area_test.dart` with four page-level cases: Dashboard, Settings, Models Center and Device Diagnostics.
+- Each page is exercised in two horizontal variants: 720×320 RTL/light/1.5× text with 28dp side, 12dp top and 20dp bottom insets; and 844×390 LTR/dark/1.0× text with 36dp side, 10dp top and 24dp bottom insets.
+- The test harness applies the modeled insets to both `MediaQuery.padding` and `viewPadding`, wraps the page in `SafeArea`, and asserts the primary page scrollable and representative page actions remain inside the safe rectangle. All four page tests assert no Flutter exception/overflow.
+- Two failed attempts were test-harness issues: theme constructors were placed inside a `const` list (corrected to `final`), and a lazy Settings list tile was accessed before it was built. The final Settings check validates the AppBar title and the settings-list viewport instead of dragging a lazy child in a short landscape window. No production layout code change was required.
+- Android run [45096664414](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45096664414), run 330, SHA `91429dce5f4917b75072f54e6b79b231c17649e2` — **success**: Format, strict analysis, **204/204 tests**, ARM64 APK, ABI/native-library verification and upload all passed.
+- APK artifact [14783514048](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45096664414/artifacts/14783514048): 60,028,674 bytes; SHA-256 `54b52d795659ac3f699344c63ad77c81ff21fdc60ccd5dbab76cb49e45f43023`. Exactly `arm64-v8a`, 10 unique native libraries including GGML, no duplicate basenames.
+- Coverage artifact [14784045542](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45096664414/artifacts/14784045542): 18,526 bytes; SHA-256 `1d533fc46f7cd9241b5bc796f9765cea87a7ae7e069015a33e59e6348508e896`.
+- Desktop CI [45096664356](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45096664356), run 377 — **success**.
+
+**Scope limit:** system cutouts/navigation insets are simulated through widget-test MediaQuery values. This is automated layout evidence, not proof of real Android edge-to-edge/OEM handling or physical-device visual acceptance.
+
+### Remaining Phase 9 gates
+
+- Complete interactive-control Tab order inventory and visual focus-indicator contrast/pixel review.
+- Physical ARM64 handset landscape/safe-area and visual/accessibility acceptance with actual system bars, gesture insets, cutouts and OEM behavior.
