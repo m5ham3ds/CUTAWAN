@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [CUTAWAN-TEST]
+    branches: [main]
   pull_request:
-    branches: [CUTAWAN-TEST]
+    branches: [main]
     # labeled/unlabeled so adding "no release notes" re-runs the check.
     types: [opened, synchronize, reopened, labeled, unlabeled]
   workflow_dispatch:
@@ -43,7 +43,6 @@ jobs:
         with:
           name: mac-package-check
           path: .tmp/mac-package-check/
-
   checks:
     runs-on: ubuntu-latest
     steps:
@@ -56,7 +55,6 @@ jobs:
       - run: npm run typecheck
       - run: npm run lint
       - run: npm test
-
   pipeline:
     name: offline pipeline test (ffmpeg, captions, renders)
     runs-on: ubuntu-latest
@@ -68,7 +66,6 @@ jobs:
           cache: npm
       - run: npm ci --prefer-offline --fetch-retries=5 --fetch-timeout=120000
       - run: npx tsx --tsconfig tsconfig.node.json scripts/test-pipeline.ts
-
   smoke:
     name: UI smoke test (Xvfb screenshots)
     runs-on: ubuntu-latest
