@@ -453,7 +453,7 @@ void main() {
   );
 
 
-bool _primaryFocusIsWithin(WidgetTester tester, Finder target) {
+bool primaryFocusIsWithin(WidgetTester tester, Finder target) {
   final targets = target.evaluate().toSet();
   final focusedContext = FocusManager.instance.primaryFocus?.context;
   if (focusedContext == null || targets.isEmpty) {
@@ -482,7 +482,7 @@ Future<void> tabUntilFocusWithin(
     await tester.sendKeyEvent(LogicalKeyboardKey.tab);
     await tester.pump();
 
-    if (_primaryFocusIsWithin(tester, target)) {
+    if (primaryFocusIsWithin(tester, target)) {
       reached = true;
       break;
     }
