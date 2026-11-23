@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:cutawan_mobile/domain/clip_preferences.dart';
 import 'package:cutawan_mobile/domain/project_contract.dart';
 import 'package:cutawan_mobile/screens/device_acceptance_page.dart';
 import 'package:cutawan_mobile/screens/features/dashboard_page.dart';
