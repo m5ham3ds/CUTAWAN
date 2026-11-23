@@ -191,8 +191,8 @@ jobs:
             }
 
             const files = listPngFiles(root).sort();
-            if (files.length !== 24) {
-              core.setFailed('Expected 24 page golden PNGs; found ' + files.length);
+            if (files.length !== 32) {
+              core.setFailed('Expected 32 page golden PNGs (24 layout + 8 focused states); found ' + files.length);
               return;
             }
 
