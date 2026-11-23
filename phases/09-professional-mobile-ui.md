@@ -64,7 +64,12 @@ The phase has delivered the workflow and responsive UI slices recorded below; th
 
 **Latest automated baseline:** Mobile Android run [45267350030](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45267350030), run 366, source SHA `8593354bdaf583178ad4d86c20c6767dcd1b4e0e`, passed format, strict analysis, **214/214 Flutter tests**, ARM64-only APK packaging and artifact upload. The suite includes the page-level Tab target inventory in `test/page_keyboard_accessibility_test.dart`, plus the separate conditional remote-model keyboard test.
 
-**Remaining Phase 9 gate:** an actual ARM64 handset review is still required for hardware Tab behavior, visible focus rendering across controls (particularly ListTile, SwitchListTile and chips), RTL/large-text/landscape presentation, Android system bars, gesture insets, cutouts and OEM behavior. The focus goldens cover representative controls in light/RTL and dark/LTR; the theme contract test does not measure rasterized focus pixels for every control type. Do not start Phase 10 until this handset gate is recorded.
+**Remaining Phase 9 gates are in two groups:**
+
+1. **Editor product scope:** the accepted Clip Editor slice supports real playback, source-time trim, aspect ratio, automatic/fit/manual-static framing, caption controls and per-clip persistence. The original phase target still calls for a filmstrip/timeline thumbnail experience, keyframed manual focus/reframe, transitions and validated preview/export parity; the dated implementation record below explicitly says those pieces are not complete. Caption Studio's animated preview is a timed example workspace rather than a live-video synchronized preview, and only Static/Karaoke Fill are represented as export-supported motion modes.
+2. **Physical handset acceptance:** verify actual hardware Tab behavior and visible focus across controls (especially ListTile, SwitchListTile and chips), RTL/large-text/landscape presentation, Android system bars, gesture insets, cutouts and OEM behavior. Existing focus goldens cover representative controls in light/RTL and dark/LTR; the theme contract test does not measure rasterized focus pixels for every control type.
+
+CI success does not close either group. Do not start Phase 10 until the remaining Phase 9 product scope is implemented/accepted and the handset gate is recorded.
 
 ## Implementation update — 2026-11-21
 
@@ -332,4 +337,4 @@ This record supersedes the older Dashboard/Settings items in the original next-s
 - The current focus goldens show representative page controls in light/RTL and dark/LTR. Theme assertions measure configured button/input outline widths and 3:1 contrast; ListTile/SwitchListTile/chip rasterized focus appearance is not measured by that unit test.
 - Android run [45267350030](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45267350030), run 366, SHA `8593354bdaf583178ad4d86c20c6767dcd1b4e0e` — **success**, **214/214 tests**, strict analysis, ARM64-only APK verification and upload.
 
-**Decision:** accept the automated page-level Tab target inventory as an implemented test slice. Phase 9 remains open for physical ARM64 handset verification of actual Tab behavior and rendered focus visibility/contrast, including RTL, large text, landscape, system bars/cutouts and OEM behavior. Phase 10 must not start until this gate has field evidence.
+**Decision:** accept the automated page-level Tab target inventory as an implemented test slice. It closes the automated inventory item, not Phase 9 as a whole. The remaining Phase 9 work also includes the Clip Editor product gaps listed in the current status (filmstrip/timeline thumbnails, keyframed focus, transitions and preview/export parity), plus physical ARM64 handset verification of actual Tab behavior and rendered focus visibility/contrast, RTL, large text, landscape, system bars/cutouts and OEM behavior. Phase 10 must not start until these remaining gates have evidence.

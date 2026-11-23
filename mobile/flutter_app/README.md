@@ -57,18 +57,27 @@ Direct URL import accepts a direct video-file endpoint only. It does not extract
 - The editor preview currently uses a centered crop for the selected aspect ratio. Dynamic reframe segments and burned captions remain part of the export pipeline; exact preview/export parity is not claimed.
 - Candidate timing participates in caption and render fingerprints. Editing a trim range regenerates subtitle sidecars and invalidates affected exports without rerunning discovery or overwriting manual edits.
 
-## Known limitations — do not describe as completed
+## Current Phase 8–10 implementation and remaining acceptance
 
-The mobile app has real source import, local project persistence, job records, caption configuration and model-management foundations. However, the following still require implementation and acceptance:
+### Phase 8 — pipeline and background rendering
 
-- Full end-to-end pipeline integration on device for transcription, candidate discovery, reframing, caption render, and export.
-- Complete interactive clip editor with trim handles, crop/focus controls, timeline and preview.
-- Full screen-by-screen production redesign and navigation architecture.
-- Persistent background processing and reliable resume after Android process death.
-- Physical device tests for SAF permission persistence, media metadata and playback, model installation, memory/thermal behavior and export.
-- Full bilingual/RTL, accessibility, text scale, narrow-width, keyboard and landscape golden/widget test matrix.
+- The pipeline has Media3 full-track decode validation, deterministic checkpoints, a WorkManager foreground render worker, progress/cancellation notification handling, project-scoped cancellation, and a durable completion handoff so Flutter can adopt a render that finishes while its UI process is absent.
+- These behaviors have automated Android/desktop CI coverage. They are not proof of physical-device OEM background behavior, explicit force-stop semantics, process-death recovery, notification action delivery or real-media quality. Those field checks remain open; targeted per-clip retry is also tracked as separate outstanding work.
 
-Never claim these functions are complete until implemented and tested.
+### Phase 9 — current Clip Editor and Caption Studio scope
+
+- The Clip Editor uses `video_player` on the selected SAF URI/local file/network source, plays/pauses/seeks, trims the source-time interval with a bounded range slider and start/end actions, changes output aspect ratio, supports automatic/fit/manual-static focus framing, applies caption cues against the playing source position, and saves candidate/clip-local preferences.
+- Remaining editor features from the phase target: filmstrip/timeline thumbnails, keyframed manual focus/reframe, transitions/multitrack editing and measured preview/export parity. The current static focus sliders are not keyframes; do not describe them as such.
+- Caption Studio loads saved transcript word timings into a project-scoped animated preview, but that sample/group preview is not synchronized to live video playback. Only Static and Karaoke Fill are export-supported motion modes; other catalogue animations remain preview-only and are reported as such.
+- The responsive/accessibility automated baseline on source SHA `8593354bdaf583178ad4d86c20c6767dcd1b4e0e` passed **214/214 Flutter tests**, strict analysis, and ARM64-only APK/native-library verification. It includes 24 page goldens, page-level Tab target inventory and four-page simulated landscape/safe-area coverage. These are widget/emulator/CI checks, not actual handset evidence.
+
+### Physical acceptance still required
+
+- Phase 8: validate long/VFR/rotated/silent/no-audio/corrupt media, full decode and crop/caption/audio continuity, WorkManager completion and notifications, project cancellation, relaunch/recovery and OEM restrictions on the target ARM64 handset.
+- Phase 9: verify real hardware Tab traversal, rasterized focus visibility for every relevant control, RTL/LTR, large text, landscape, cutouts, gesture/system bars and OEM behavior.
+- Phase 10: collect a hash-locked Arabic/English media corpus, manually reviewed transcripts/word timings, WER and timing scores, candidate/crop quality, full MP4 decode results, sustained PSS/RAM/processing/battery/thermal measurements, process-death/SAF/Keystore lifecycle and cloud-consent end-to-end results.
+
+Never claim physical acceptance from CI, widget tests, mock gateways or simulated insets. Record the device, Android/API version, build SHA, fixture hashes, method, measurements and limitations for every field result.
 
 ## Build and validation
 
