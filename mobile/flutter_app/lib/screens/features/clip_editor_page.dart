@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter/services.dart';
+
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 
@@ -36,6 +38,10 @@ class ClipEditorPage extends StatefulWidget {
 
 class _ClipEditorPageState extends State<ClipEditorPage> {
   VideoPlayerController? _player;
+  final Map<int, Uint8List> _filmstripFrames = <int, Uint8List>{};
+  bool _filmstripLoading = false;
+  String? _filmstripError;
+  int _filmstripGeneration = 0;
   late final TextEditingController _titleController;
   late int _startMs;
   late int _endMs;
@@ -105,6 +111,58 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
         _error = error.toString();
         _loading = false;
       });
+    }
+  }
+
+  Future<void> _loadFilmstripFrames() async {
+    final player = _player;
+    if (player == null || !player.value.isInitialized || _filmstripLoading) {
+      return;
+    }
+    final generation = ++_filmstripGeneration;
+    final duration = player.value.duration.inMilliseconds;
+    if (duration <= 0) return;
+    final sampleCount = duration < 10000 ? 5 : 7;
+    final sampleTimes = List<int>.generate(
+      sampleCount,
+      (sampleIndex) => ((duration - 1) * sampleIndex / (sampleCount - 1)).round(),
+    );
+    final wasPlaying = player.value.isPlaying;
+    final previousPosition = player.value.position;
+    final frames = <int, Uint8List>{};
+    setState(() {
+      _filmstripLoading = true;
+      _filmstripError = null;
+    });
+    try {
+      if (wasPlaying) await player.pause();
+      for (final timeMs in sampleTimes) {
+        if (!mounted || generation != _filmstripGeneration) return;
+        await player.seekTo(Duration(milliseconds: timeMs));
+        await Future<void>.delayed(const Duration(milliseconds: 40));
+        final frame = await player.getSnapshot();
+        if (frame != null && frame.isNotEmpty) {
+          frames[timeMs] = frame;
+        }
+      }
+      if (!mounted || generation != _filmstripGeneration) return;
+      setState(() {
+        _filmstripFrames
+          ..clear()
+          ..addAll(frames);
+        _filmstripLoading = false;
+      });
+    } catch (error) {
+      if (!mounted || generation != _filmstripGeneration) return;
+      setState(() {
+        _filmstripLoading = false;
+        _filmstripError = 'تعذّر إنشاء الصور المصغرة: $error';
+      });
+    } finally {
+      if (mounted && generation == _filmstripGeneration) {
+        await player.seekTo(previousPosition);
+        if (wasPlaying) await player.play();
+      }
     }
   }
 
@@ -679,6 +737,56 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
               ),
             ],
           ),
+          const SizedBox(height: 12),
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: Text(
+              'إطارات الخط الزمني',
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          if (_filmstripLoading)
+            const LinearProgressIndicator(minHeight: 2)
+          else if (_filmstripError != null)
+            Row(
+              children: [
+                Expanded(child: Text(_filmstripError!, style: Theme.of(context).textTheme.bodySmall)),
+                TextButton(onPressed: _loadFilmstripFrames, child: const Text('إعادة المحاولة')),
+              ],
+            )
+          else if (_filmstripFrames.isEmpty)
+            OutlinedButton.icon(
+              onPressed: _loadFilmstripFrames,
+              icon: const Icon(Icons.movie_creation_outlined),
+              label: const Text('إنشاء صور الخط الزمني'),
+            )
+          else
+            SizedBox(
+              height: 72,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: _filmstripFrames.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 6),
+                itemBuilder: (context, itemIndex) {
+                  final entry = _filmstripFrames.entries.elementAt(itemIndex);
+                  return Semantics(
+                    button: true,
+                    label: 'إطار ${itemIndex + 1}',
+                    child: InkWell(
+                      onTap: () => _seekTo(entry.key),
+                      borderRadius: BorderRadius.circular(8),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.memory(entry.value, width: 104, height: 72, fit: BoxFit.cover, gaplessPlayback: true),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
           Slider(
             value: sourcePosition.clamp(_startMs, _endMs).toDouble(),
             min: _startMs.toDouble(),
@@ -1026,6 +1134,7 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
 
   @override
   void dispose() {
+    _filmstripGeneration++;
     _titleController.dispose();
     final player = _player;
     if (player != null) {
