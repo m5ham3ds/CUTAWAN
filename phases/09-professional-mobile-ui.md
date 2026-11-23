@@ -233,3 +233,16 @@ This record supersedes the older Dashboard/Settings items in the original next-s
 - Desktop CI [45087696844](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45087696844), run 362 — **success** across checks, Xvfb UI smoke, offline FFmpeg/caption/render and Apple Silicon package validation.
 
 **Current open Phase 9 work:** page goldens, complete Tab traversal/visible focus, landscape/safe-area, and physical handset visual acceptance. Phase 9 remains in progress.
+
+
+## Responsive page golden baselines — 2026-11-23
+
+- Added real Flutter-rendered golden PNG baselines for Dashboard, Settings, Models Center and Device Diagnostics. Each page has six variants covering 320/390/720dp, RTL/LTR, light/dark and large text on compact/regular layouts.
+- One-time capture used `--update-goldens` only while the first baseline was absent. The runner uploaded the PNGs and committed 24 files to `main` in [commit 18c802456498ac7185d975f68a1d36505c7484da](https://github.com/m5ham3ds/CUTAWAN/commit/18c802456498ac7185d975f68a1d36505c7484da). Future runs leave the capture flag false.
+- Capture run [45089102964](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45089102964), run 318 — **196/196 tests**, ARM64 APK and package validation passed. Golden artifact [14781020409](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45089102964/artifacts/14781020409): 676,053 bytes.
+- Run [45089841288](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45089841288), run 319, then tested the committed images in normal mode (without `--update-goldens`) — **196/196 tests passed**.
+- APK artifact [14780344052](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45089841288/artifacts/14780344052): 60,029,458 bytes; SHA-256 `7b0a49eae512ee4b163efdc38859d9ae71d606b543792b486582ad71c18ffcb0`; exactly `arm64-v8a`, 10 unique native libraries, GGML present, no duplicates.
+- Coverage [14780842110](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45089841288/artifacts/14780842110): 18,306 bytes.
+- CI [45089841836](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45089841836), run 366 — **success**.
+
+**Remaining Phase 9 gates:** full Tab traversal/visible focus, per-page landscape/safe-area, and physical handset visual review. This golden slice is accepted; Phase 9 remains in progress.

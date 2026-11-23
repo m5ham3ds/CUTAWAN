@@ -89,3 +89,14 @@
 - Physical handset UI review remains separate from emulator/widget/golden test evidence.
 
 **Decision:** accept the four page-specific Enter-activation checks as an automated slice. The complete accessibility matrix and Phase 9 remain in progress.
+
+
+## Saved page golden baseline slice — 2026-11-23
+
+- 24 Flutter golden PNGs are committed under `mobile/flutter_app/test/goldens/pages/`: four screens × six compact/regular/wide, RTL/LTR, light/dark variants.
+- Capture run [45089102964](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45089102964), run 318 — **196/196 tests passed**; images were committed at `18c802456498ac7185d975f68a1d36505c7484da`.
+- Normal comparison run [45089841288](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45089841288), run 319, used the saved images without `--update-goldens` and passed **196/196 tests**.
+- APK artifact [14780344052](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45089841288/artifacts/14780344052): 60,029,458 bytes; SHA-256 `7b0a49eae512ee4b163efdc38859d9ae71d606b543792b486582ad71c18ffcb0`. Exactly `arm64-v8a`, 10 unique native libraries, GGML present, no duplicate basenames.
+- CI [45089841836](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45089841836), run 366 — **success**.
+
+**Scope limit:** these are deterministic widget rendering baselines, not physical handset screenshots. Full Tab-order/visible-focus, landscape/safe-area and handset validation remain open.
