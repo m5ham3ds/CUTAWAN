@@ -876,9 +876,16 @@ void fullPageTabOrderTests() {
       );
       await tester.pumpAndSettle();
 
+      // Models Center is a lazy ListView; build the provider controls before
+      // resolving or tapping them.
       final fetchModelsLabel = find.text('جلب النماذج');
+      await tester.scrollUntilVisible(
+        fetchModelsLabel,
+        240,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pump();
       expect(fetchModelsLabel, findsOneWidget);
-      await tester.ensureVisible(fetchModelsLabel);
       await tester.tap(fetchModelsLabel);
       await tester.pumpAndSettle();
       expect(gateway.listCalls, 1);
@@ -887,6 +894,12 @@ void fullPageTabOrderTests() {
       // focuses on the conditional action that only exists after a model is
       // returned by the provider.
       final testModelLabel = find.text('اختبار النموذج فعلياً');
+      await tester.scrollUntilVisible(
+        testModelLabel,
+        220,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pump();
       expect(testModelLabel, findsOneWidget);
       final testModelButton = find.ancestor(
         of: testModelLabel,
