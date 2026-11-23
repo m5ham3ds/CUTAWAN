@@ -34,12 +34,36 @@ class CutawanTheme {
     );
     final surface = dark ? panel : Colors.white;
     final border = scheme.outlineVariant;
+    final keyboardFocusFill =
+        scheme.primary.withValues(alpha: dark ? 0.30 : 0.16);
+    final keyboardFocusOverlay = WidgetStateProperty.resolveWith<Color?>(
+      (states) {
+        if (states.contains(WidgetState.focused)) return keyboardFocusFill;
+        if (states.contains(WidgetState.hovered)) {
+          return scheme.primary.withValues(alpha: dark ? 0.18 : 0.09);
+        }
+        return null;
+      },
+    );
+    final keyboardFocusOutline = WidgetStateProperty.resolveWith<BorderSide?>(
+      (states) => states.contains(WidgetState.focused)
+          ? BorderSide(color: scheme.onSurface, width: 2.2)
+          : null,
+    );
+    final keyboardFocusFilledOutline =
+        WidgetStateProperty.resolveWith<BorderSide?>(
+      (states) => states.contains(WidgetState.focused)
+          ? BorderSide(color: scheme.onPrimary, width: 2.2)
+          : null,
+    );
     final text = ThemeData(brightness: brightness, useMaterial3: true).textTheme;
     return ThemeData(
       useMaterial3: true,
       brightness: brightness,
       colorScheme: scheme,
       scaffoldBackgroundColor: scheme.surface,
+      focusColor: keyboardFocusFill,
+      hoverColor: scheme.primary.withValues(alpha: dark ? 0.16 : 0.08),
       visualDensity: VisualDensity.standard,
       splashFactory: InkSparkle.splashFactory,
       fontFamily: 'Poppins',
@@ -58,6 +82,17 @@ class CutawanTheme {
         elevation: 0, scrolledUnderElevation: 0, centerTitle: false,
         titleTextStyle: TextStyle(color: scheme.onSurface, fontSize: 18, fontWeight: FontWeight.w800, letterSpacing: -0.4),
         iconTheme: IconThemeData(color: scheme.onSurface),
+      ),
+      listTileTheme: ListTileThemeData(
+        focusColor: keyboardFocusFill,
+        hoverColor: scheme.primary.withValues(alpha: dark ? 0.16 : 0.08),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      ),
+      iconButtonTheme: IconButtonThemeData(
+        style: ButtonStyle(
+          overlayColor: keyboardFocusOverlay,
+          side: keyboardFocusOutline,
+        ),
       ),
       cardTheme: CardThemeData(
         color: surface, elevation: 0, margin: EdgeInsets.zero, clipBehavior: Clip.antiAlias,
@@ -94,15 +129,27 @@ class CutawanTheme {
         minimumSize: const Size(0, 52), padding: const EdgeInsets.symmetric(horizontal: 19, vertical: 14),
         textStyle: const TextStyle(fontWeight: FontWeight.w800, letterSpacing: 0.1),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(17)),
+      ).copyWith(
+        overlayColor: keyboardFocusOverlay,
+        side: keyboardFocusFilledOutline,
       )),
       outlinedButtonTheme: OutlinedButtonThemeData(style: OutlinedButton.styleFrom(
         foregroundColor: scheme.onSurface, minimumSize: const Size(0, 48),
         side: BorderSide(color: border), textStyle: const TextStyle(fontWeight: FontWeight.w700),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      ).copyWith(
+        overlayColor: keyboardFocusOverlay,
+        side: WidgetStateProperty.resolveWith<BorderSide?>((states) =>
+          states.contains(WidgetState.focused)
+              ? BorderSide(color: scheme.onSurface, width: 2.2)
+              : BorderSide(color: border)),
       )),
       textButtonTheme: TextButtonThemeData(style: TextButton.styleFrom(
         foregroundColor: scheme.primary, textStyle: const TextStyle(fontWeight: FontWeight.w700),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(13)),
+      ).copyWith(
+        overlayColor: keyboardFocusOverlay,
+        side: keyboardFocusOutline,
       )),
       switchTheme: SwitchThemeData(
         thumbColor: WidgetStateProperty.resolveWith((states) => states.contains(WidgetState.selected) ? scheme.onPrimary : null),
