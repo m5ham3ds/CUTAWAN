@@ -6,39 +6,32 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
-  actions: write
+  contents: read
 
 concurrency:
   group: branch-policy-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
-  validate-main:
-    name: Dispatch validation on main
+  enforce-single-main-branch:
+    name: Verify main is the only branch
     runs-on: ubuntu-latest
     steps:
-      - name: Dispatch Android and desktop validation on main
+      - name: Assert that no secondary branches exist
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            await Promise.all([
-              github.rest.actions.createWorkflowDispatch({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                workflow_id: 'mobile-android.yml',
-                ref: 'main',
-                inputs: {
-                  validation_batch: 'main-' + context.sha.slice(0, 7),
-                  capture_page_goldens: false,
-                },
-              }),
-              github.rest.actions.createWorkflowDispatch({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                workflow_id: 'ci.yml',
-                ref: 'main',
-              }),
-            ]);
-            core.notice('Dispatched Mobile Android and desktop CI on main: ' + context.sha);
+            const { owner, repo } = context.repo;
+            const branches = await github.paginate(
+              github.rest.repos.listBranches,
+              { owner, repo, per_page: 100 },
+            );
+            const names = branches.map((branch) => branch.name).sort();
+            if (names.length !== 1 || names[0] !== 'main') {
+              core.setFailed(
+                'Expected exactly one branch named main; found: ' + names.join(', '),
+              );
+              return;
+            }
+            core.notice('Branch policy passed: main is the only branch.');
