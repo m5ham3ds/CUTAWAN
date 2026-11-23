@@ -301,3 +301,17 @@ This record supersedes the older Dashboard/Settings items in the original next-s
 - Branch Policy [45209870742](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45209870742) — **success**; `main` is the only branch.
 
 **Decision:** accept this automated test/focus-contract slice. Phase 9 remains in progress until the remaining conditional-control inventory, raster/visual focus review and actual ARM64 handset visual/accessibility checks are evidenced. Phase 10 must not be treated as accepted or complete from these CI results.
+
+
+## Latest conditional provider-action keyboard gate — 2026-11-23
+
+- The conditional Models Center action **اختبار النموذج فعلياً** is now exercised after the lazy provider list is scrolled into view and a fake gateway returns one model. The test enters the rendered button through natural Tab focus, sends Enter, and asserts exactly one fake gateway test call.
+- The test uses an in-memory credential store, a test-only API key, explicit test consent and a fake `AiModelGateway`; it performs no network request and does not read real user credentials.
+- The first failed attempts were test-harness issues, not product regressions: `DropdownButtonFormField`/button wrappers did not expose the semantics/finder shape the test assumed, and the provider controls are in a lazy `ListView`. The final test finds the rendered labels only after `scrollUntilVisible`, taps the already-covered model-fetch action, then tests the conditional model-test button with the composite-focus helper.
+- Android run [45267350030](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45267350030), run 366, source SHA `8593354bdaf583178ad4d86c20c6767dcd1b4e0e` — **success**: Dart Format, `flutter analyze --fatal-infos`, **214/214 tests**, Coverage Upload, ARM64 debug APK build, ARM64-only ABI verification, 10 unique native libraries/no duplicate basenames, and APK upload all passed.
+- APK artifact [14862589238](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45267350030/artifacts/14862589238): 60,026,013 bytes (artifact archive); SHA-256 `b3a222233501c9f3865cfe35ef48433cbeb83e8d9b3bfafded0b27e1b5f486b8`. Verified ABI: exactly `arm64-v8a`; GGML libraries `libggml-cpu.so`, `libggml.so`, `libggml-base.so` present.
+- Coverage artifact [14862963339](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45267350030/artifacts/14862963339): 18,667 bytes; SHA-256 `ad150d6495a3b3985ef36609a8901f9620080afd9f2eaa7b7fbc12c3307f1e0b`.
+- Desktop CI [45267349925](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45267349925), run 416 — **success** across checks, Xvfb UI smoke, offline FFmpeg/caption/render pipeline and Apple Silicon package verification.
+- Branch Policy [45267349999](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45267349999), run 66 — **success**; `main` is the only branch.
+
+**Decision:** accept this additional automated conditional-action slice. Phase 9 remains open only for the remaining exhaustive Tab-stop review and actual handset visual/accessibility acceptance. Do not start Phase 10 until those Phase 9 device gates have evidence.
