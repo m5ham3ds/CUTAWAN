@@ -876,12 +876,10 @@ void fullPageTabOrderTests() {
       );
       await tester.pumpAndSettle();
 
-      final fetchModels = find.ancestor(
-        of: find.text('جلب النماذج'),
-        matching: find.byType(OutlinedButton),
-      ).first;
-      await tester.ensureVisible(fetchModels);
-      await tester.tap(fetchModels);
+      final fetchModelsLabel = find.text('جلب النماذج');
+      expect(fetchModelsLabel, findsOneWidget);
+      await tester.ensureVisible(fetchModelsLabel);
+      await tester.tap(fetchModelsLabel);
       await tester.pumpAndSettle();
       expect(gateway.listCalls, 1);
 
@@ -892,7 +890,9 @@ void fullPageTabOrderTests() {
       expect(testModelLabel, findsOneWidget);
       final testModelButton = find.ancestor(
         of: testModelLabel,
-        matching: find.byType(FilledButton),
+        matching: find.byWidgetPredicate(
+          (widget) => widget is ButtonStyleButton,
+        ),
       ).first;
       await tabUntilFocusWithin(tester, testModelButton, maxTabs: 64);
       await tester.sendKeyEvent(LogicalKeyboardKey.enter);
