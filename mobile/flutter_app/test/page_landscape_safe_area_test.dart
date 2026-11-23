@@ -278,18 +278,11 @@ void main() {
           variant,
         );
 
-        final diagnosticsTitle = find.text('تشخيص وقبول Android');
-        await tester.scrollUntilVisible(
-          diagnosticsTitle,
-          120,
-          scrollable: find.byType(Scrollable).first,
+        _expectInsideSafeRegion(
+          tester,
+          find.text('إعدادات CUTAWAN'),
+          variant,
         );
-        await tester.pump();
-        final diagnostics = find.ancestor(
-          of: diagnosticsTitle,
-          matching: find.byType(ListTile),
-        ).first;
-        _expectInsideSafeRegion(tester, diagnostics, variant);
       }
 
       await tester.pumpWidget(const SizedBox.shrink());
