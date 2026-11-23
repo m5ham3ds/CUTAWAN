@@ -124,7 +124,7 @@ Future<void> _tabUntilFocused(
     reached,
     isTrue,
     reason:
-        'Natural Tab traversal did not focus the requested page action: ${target.description}',
+        'Natural Tab traversal did not focus the requested page action: ${target.describeMatch(Plurality.one)}',
   );
   expect(
     FocusManager.instance.highlightMode,
