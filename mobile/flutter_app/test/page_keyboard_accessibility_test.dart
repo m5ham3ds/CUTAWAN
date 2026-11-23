@@ -885,7 +885,9 @@ void fullPageTabOrderTests() {
       await tester.pumpAndSettle();
       expect(gateway.listCalls, 1);
 
-      final selectedModel = find.byType(DropdownButtonFormField<String>);
+      // The form-field wrapper is not itself a semantics node; target the
+      // inner DropdownButton that owns keyboard focus and semantics.
+      final selectedModel = find.byType(DropdownButton<String>);
       expect(selectedModel, findsOneWidget);
       await _tabUntilFocused(tester, selectedModel, maxTabs: 64);
 
