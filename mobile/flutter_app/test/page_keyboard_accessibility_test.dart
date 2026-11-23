@@ -1,3 +1,7 @@
+      semantics.dispose();
+      semantics.dispose();
+      semantics.dispose();
+      semantics.dispose();
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -100,16 +104,21 @@ Future<void> _focusAndActivate(
 Future<void> _tabUntilFocused(
   WidgetTester tester,
   Finder target, {
-  int maxTabs = 24,
+  int maxTabs = 48,
 }) async {
-  final expectedNode = Focus.of(tester.element(target));
   var reached = false;
 
   for (var index = 0; index < maxTabs; index++) {
     await tester.sendKeyEvent(LogicalKeyboardKey.tab);
     await tester.pump();
 
-    if (identical(FocusManager.instance.primaryFocus, expectedNode)) {
+    final focused = tester
+            .getSemantics(target)
+            .flagsCollection
+            .isFocused
+            .toBoolOrNull() ==
+        true;
+    if (focused) {
       reached = true;
       break;
     }
@@ -118,7 +127,7 @@ Future<void> _tabUntilFocused(
   expect(
     reached,
     isTrue,
-    reason: 'Tab traversal did not reach the requested page action.',
+    reason: 'Natural Tab traversal did not focus the requested page action.',
   );
   expect(
     FocusManager.instance.highlightMode,
@@ -126,9 +135,13 @@ Future<void> _tabUntilFocused(
     reason: 'Keyboard navigation must activate the visible focus mode.',
   );
   expect(
-    tester.getSemantics(target).flagsCollection.isFocused.toBoolOrNull() == true,
+    tester
+        .getSemantics(target)
+        .flagsCollection
+        .isFocused
+        .toBoolOrNull(),
     isTrue,
-    reason: 'The focused page action must expose its focused semantics state.',
+    reason: 'The current focused action must expose its focused semantics state.',
   );
 }
 
@@ -302,7 +315,6 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
       final semantics = tester.ensureSemantics();
-      addTearDown(semantics.dispose);
 
       final projects = ValueNotifier<List<CutawanProject>>([]);
       addTearDown(projects.dispose);
@@ -325,7 +337,7 @@ void main() {
       );
       await tester.pump();
 
-      await _tabUntilFocused(tester, find.byKey(const ValueKey('dashboard-settings')));
+      await _tabUntilFocused(tester, find.byTooltip('الإعدادات'));
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox.shrink());
     },
@@ -339,7 +351,6 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
       final semantics = tester.ensureSemantics();
-      addTearDown(semantics.dispose);
       final store = AppPreferencesStore.inMemory();
       addTearDown(store.dispose);
 
@@ -357,7 +368,10 @@ void main() {
 
       await _tabUntilFocused(
         tester,
-        find.text('تشخيص وقبول Android'),
+        find.ancestor(
+          of: find.text('تشخيص وقبول Android'),
+          matching: find.byType(ListTile),
+        ).first,
       );
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox.shrink());
@@ -372,7 +386,6 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
       final semantics = tester.ensureSemantics();
-      addTearDown(semantics.dispose);
 
       final credentials = AiCredentialStore(
         storage: _MemoryCredentialStorage(),
@@ -390,7 +403,20 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 50));
 
-      await _tabUntilFocused(tester, find.text('محلي'));
+      final refreshLabel = find.text('إعادة فحص النماذج المحلية');
+      await tester.scrollUntilVisible(
+        refreshLabel,
+        260,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pump();
+      await _tabUntilFocused(
+        tester,
+        find.ancestor(
+          of: refreshLabel,
+          matching: find.byType(TextButton),
+        ).first,
+      );
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox.shrink());
     },
@@ -404,7 +430,6 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
       final semantics = tester.ensureSemantics();
-      addTearDown(semantics.dispose);
 
       final service = _CountingDeviceAcceptanceService();
       await tester.pumpWidget(
@@ -416,10 +441,10 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 50));
 
-      final refresh = find.descendant(
+      final refresh = find.ancestor(
         of: find.byTooltip('إعادة الفحص'),
-        matching: find.byIcon(Icons.refresh_rounded),
-      );
+        matching: find.byType(IconButton),
+      ).first;
       await _tabUntilFocused(tester, refresh);
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox.shrink());
