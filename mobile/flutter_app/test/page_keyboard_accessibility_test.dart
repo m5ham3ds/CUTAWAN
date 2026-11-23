@@ -451,4 +451,217 @@ void main() {
     },
   );
 
+
+Future<void> _expectFullTabOrder(
+  WidgetTester tester,
+  List<Finder> targets, {
+  int maxTabsPerTarget = 48,
+}) async {
+  final scrollable = find.byType(Scrollable).first;
+  for (final target in targets) {
+    await tester.scrollUntilVisible(
+      target,
+      220,
+      scrollable: scrollable,
+    );
+    await tester.pump();
+    await _tabUntilFocused(
+      tester,
+      target,
+      maxTabs: maxTabsPerTarget,
+    );
+  }
+}
+
+Finder _pageTile(String label) => find.ancestor(
+      of: find.text(label),
+      matching: find.byType(ListTile),
+    ).first;
+
+Finder _pageButton(String label, Type buttonType) => find.ancestor(
+      of: find.text(label),
+      matching: find.byWidgetPredicate(
+        (widget) => widget.runtimeType == buttonType,
+      ),
+    ).first;
+
+void _setPhoneViewport(WidgetTester tester) {
+  tester.view.physicalSize = const Size(390, 844);
+  tester.view.devicePixelRatio = 1;
+}
+
+void _resetPhoneViewport(WidgetTester tester) {
+  tester.view.resetPhysicalSize();
+  tester.view.resetDevicePixelRatio();
+}
+
+void fullPageTabOrderTests() {
+  testWidgets('Dashboard exposes every interactive control in reading order',
+      (tester) async {
+    _setPhoneViewport(tester);
+    addTearDown(() => _resetPhoneViewport(tester));
+    final semantics = tester.ensureSemantics();
+    final projects = ValueNotifier<List<CutawanProject>>([]);
+    addTearDown(projects.dispose);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: CutawanTheme.light(),
+        home: Scaffold(
+          body: DashboardPage(
+            projects: projects,
+            onCreate: () {},
+            onOpenJobs: () {},
+            onOpenReview: () {},
+            onOpenModels: () {},
+            onOpenSettings: () {},
+            onOpenProject: (_) {},
+            storageUsageBytes: () async => 0,
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    await _expectFullTabOrder(tester, [
+      find.byTooltip('الإعدادات'),
+      find.byKey(const ValueKey('dashboard-create-project')),
+      find.byKey(const ValueKey('dashboard-refresh-storage')),
+      _pageTile('المهام والمشاريع'),
+      _pageTile('المراجعة والتحرير'),
+      _pageTile('مركز النماذج'),
+      find.ancestor(
+        of: find.text('عرض الكل'),
+        matching: find.byType(TextButton),
+      ).first,
+    ]);
+
+    expect(tester.takeException(), isNull);
+    semantics.dispose();
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('Settings exposes navigation, theme and accessibility controls in order',
+      (tester) async {
+    _setPhoneViewport(tester);
+    addTearDown(() => _resetPhoneViewport(tester));
+    final semantics = tester.ensureSemantics();
+    final store = AppPreferencesStore.inMemory();
+    addTearDown(store.dispose);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: CutawanTheme.light(),
+        home: SettingsPage(
+          store: store,
+          onDiagnostics: () {},
+          onModels: () {},
+        ),
+      ),
+    );
+    await tester.pump();
+
+    await _expectFullTabOrder(tester, [
+      _pageTile('تشخيص وقبول Android'),
+      _pageTile('مركز النماذج والاتصالات'),
+      find.byKey(const ValueKey('settings-theme-system')),
+      find.byKey(const ValueKey('settings-theme-light')),
+      find.byKey(const ValueKey('settings-theme-dark')),
+      find.byKey(const ValueKey('settings-reduce-motion')),
+    ]);
+
+    expect(tester.takeException(), isNull);
+    semantics.dispose();
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('Models Center exposes local and remote controls in reading order',
+      (tester) async {
+    _setPhoneViewport(tester);
+    addTearDown(() => _resetPhoneViewport(tester));
+    final semantics = tester.ensureSemantics();
+    final credentials = AiCredentialStore(
+      storage: _MemoryCredentialStorage(),
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: CutawanTheme.dark(),
+        home: ModelsPage(
+          credentials: credentials,
+          checkWhisperInstalled: () async => false,
+          checkQwenInstalled: () async => false,
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 60));
+
+    final downloadButtons = find.ancestor(
+      of: find.text('تنزيل والتحقق'),
+      matching: find.byType(FilledButton),
+    );
+
+    await _expectFullTabOrder(tester, [
+      downloadButtons.at(0),
+      downloadButtons.at(1),
+      find.bySemanticsLabel(RegExp('محلي')),
+      find.bySemanticsLabel(RegExp('سحابي')),
+      find.ancestor(
+        of: find.text('أوافق على إرسال مقتطفات نص التفريغ للمزوّد الخارجي'),
+        matching: find.byType(CheckboxListTile),
+      ).first,
+      find.byType(DropdownButtonFormField<AiProviderId>),
+      find.byType(TextField).last,
+      find.ancestor(
+        of: find.text('حفظ الإعدادات بأمان'),
+        matching: find.byType(FilledButton),
+      ).first,
+      find.ancestor(
+        of: find.text('جلب النماذج'),
+        matching: find.byType(OutlinedButton),
+      ).first,
+      find.ancestor(
+        of: find.text('إعادة فحص النماذج المحلية'),
+        matching: find.byType(TextButton),
+      ).first,
+    ], maxTabsPerTarget: 64);
+
+    expect(tester.takeException(), isNull);
+    semantics.dispose();
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('Device Diagnostics exposes refresh and report actions in order',
+      (tester) async {
+    _setPhoneViewport(tester);
+    addTearDown(() => _resetPhoneViewport(tester));
+    final semantics = tester.ensureSemantics();
+    final service = _CountingDeviceAcceptanceService();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: CutawanTheme.light(),
+        home: DeviceAcceptancePage(service: service),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 60));
+
+    await _expectFullTabOrder(tester, [
+      find.byTooltip('إعادة الفحص'),
+      find.ancestor(
+        of: find.text('نسخ تقرير التشخيص JSON'),
+        matching: find.byType(FilledButton),
+      ).first,
+    ]);
+
+    expect(tester.takeException(), isNull);
+    semantics.dispose();
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+}
+
+
+  fullPageTabOrderTests();
 }
