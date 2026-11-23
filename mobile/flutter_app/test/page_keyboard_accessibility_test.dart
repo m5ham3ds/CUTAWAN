@@ -889,7 +889,7 @@ void fullPageTabOrderTests() {
       // inner DropdownButton that owns keyboard focus and semantics.
       final selectedModel = find.byType(DropdownButton<String>);
       expect(selectedModel, findsOneWidget);
-      await _tabUntilFocused(tester, selectedModel, maxTabs: 64);
+      await tabUntilFocusWithin(tester, selectedModel, maxTabs: 64);
 
       final testModelLabel = find.text('اختبار النموذج فعلياً');
       expect(testModelLabel, findsOneWidget);
