@@ -60,7 +60,11 @@ Preserve schema compatibility and existing project data. Never fabricate AI resu
 
 ## Current status
 
-Redesign is **not complete**. Existing Flutter shell and feature parts are an initial implementation only. The current UI is not evidence that the target information architecture or editor has been delivered. Do not mark Phase 9 done until all applicable acceptance criteria pass.
+The phase has delivered the workflow and responsive UI slices recorded below; the original target remains broader than any single widget-test pass. The phase is **still in progress**, but the early statement that the UI is only an initial shell is no longer an accurate summary of the repository's present state.
+
+**Latest automated baseline:** Mobile Android run [45267350030](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45267350030), run 366, source SHA `8593354bdaf583178ad4d86c20c6767dcd1b4e0e`, passed format, strict analysis, **214/214 Flutter tests**, ARM64-only APK packaging and artifact upload. The suite includes the page-level Tab target inventory in `test/page_keyboard_accessibility_test.dart`, plus the separate conditional remote-model keyboard test.
+
+**Remaining Phase 9 gate:** an actual ARM64 handset review is still required for hardware Tab behavior, visible focus rendering across controls (particularly ListTile, SwitchListTile and chips), RTL/large-text/landscape presentation, Android system bars, gesture insets, cutouts and OEM behavior. The focus goldens cover representative controls in light/RTL and dark/LTR; the theme contract test does not measure rasterized focus pixels for every control type. Do not start Phase 10 until this handset gate is recorded.
 
 ## Implementation update — 2026-11-21
 
@@ -73,7 +77,7 @@ A first product-facing redesign slice is delivered in Flutter:
 - Candidate timing is included in caption fingerprints. Changing aspect ratio does not rerun discovery and overwrite manually edited candidate ranges.
 - Added tests for candidate trim updates, out-of-source range rejection, Dashboard-to-import navigation and Settings navigation.
 
-**Still not complete:** feature-state extraction from the shared `part` library, filmstrip thumbnails, manual crop/focus keyframes and transitions, caption playback synchronized with video, exact preview/export parity, full light/dark + RTL/LTR golden matrix, accessibility audit, keyboard/landscape coverage and physical-device acceptance. The current editor preview is a centered crop; final exports use the saved reframe timeline.
+**Historical gap snapshot (2026-11-21; superseded in part by later delivery records below):** feature-state extraction from the shared `part` library, filmstrip thumbnails, manual crop/focus keyframes and transitions, caption playback synchronization, exact preview/export parity, complete goldens, accessibility and keyboard/landscape checks, and physical-device acceptance were open at this point. Use the current status above and the later dated delivery records below for the present acceptance state. The centered-crop preview versus saved export reframe limitation remains a known product limitation unless separately resolved.
 
 
 ## Workflow-page implementation — Create and Review — 2026-11-21
@@ -315,3 +319,17 @@ This record supersedes the older Dashboard/Settings items in the original next-s
 - Branch Policy [45267349999](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45267349999), run 66 — **success**; `main` is the only branch.
 
 **Decision:** accept this additional automated conditional-action slice. Phase 9 remains open only for the remaining exhaustive Tab-stop review and actual handset visual/accessibility acceptance. Do not start Phase 10 until those Phase 9 device gates have evidence.
+
+
+## Current Tab target inventory and handset gate — 2026-11-24
+
+- Review of `mobile/flutter_app/test/page_keyboard_accessibility_test.dart` confirms that `fullPageTabOrderTests()` is invoked from the test entry point and contributes to the 214-test Android suite.
+- Dashboard target sequence covers Settings, create project, storage refresh, task/project navigation, review/edit, Models Center and the view-all action.
+- Settings target sequence covers diagnostics and Models Center routes, system/light/dark theme choices, and the reduced-motion row.
+- Models Center coverage includes local model install/removal actions, the segmented mode control, external-cloud consent, provider selection, API-key entry, save/delete, model fetch and local-model refresh. The conditional remote-model test action is separately reached through keyboard focus and activated with Enter using an in-memory credential store and fake gateway.
+- Device Diagnostics coverage reaches refresh, opens technical details with Enter, and reaches JSON report copy.
+- These tests verify reachability of the declared current page-control targets in the recorded sequence. They do not prove every possible platform/OS focus stop, hardware-keyboard behavior on Android, or visual focus pixel contrast on a physical device.
+- The current focus goldens show representative page controls in light/RTL and dark/LTR. Theme assertions measure configured button/input outline widths and 3:1 contrast; ListTile/SwitchListTile/chip rasterized focus appearance is not measured by that unit test.
+- Android run [45267350030](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45267350030), run 366, SHA `8593354bdaf583178ad4d86c20c6767dcd1b4e0e` — **success**, **214/214 tests**, strict analysis, ARM64-only APK verification and upload.
+
+**Decision:** accept the automated page-level Tab target inventory as an implemented test slice. Phase 9 remains open for physical ARM64 handset verification of actual Tab behavior and rendered focus visibility/contrast, including RTL, large text, landscape, system bars/cutouts and OEM behavior. Phase 10 must not start until this gate has field evidence.

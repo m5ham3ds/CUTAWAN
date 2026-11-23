@@ -151,4 +151,4 @@
 - Desktop CI [45267349925](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45267349925), run 416 — **success** across checks, Xvfb UI smoke, offline FFmpeg/caption/render pipeline and Apple Silicon package verification.
 - Branch Policy [45267349999](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45267349999), run 66 — **success**; `main` is the only branch.
 
-**Decision:** accept this additional automated conditional-action slice. Phase 9 remains open only for the remaining exhaustive Tab-stop review and actual handset visual/accessibility acceptance. Do not start Phase 10 until those Phase 9 device gates have evidence.
+**Decision:** accept this additional automated conditional-action slice. The 214-test suite also includes the page-level Tab target inventory documented in the current Phase 9 summary. Phase 9 remains open for physical handset Tab behavior and rendered focus/accessibility acceptance. Do not start Phase 10 until those Phase 9 device gates have field evidence.
