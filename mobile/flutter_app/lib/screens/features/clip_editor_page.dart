@@ -50,6 +50,8 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
   double _focusX = 0.5;
   double _focusY = 0.5;
   List<ClipFocusKeyframe> _focusKeyframes = const [];
+  int _fadeInMs = 0;
+  int _fadeOutMs = 0;
   CutawanTranscript? _transcript;
   ReframePlan? _reframePlan;
   List<Map<String, Object?>> _previewCues = const [];
@@ -258,6 +260,9 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
           _focusX = overrides.focusX;
           _focusY = overrides.focusY;
           _focusKeyframes = overrides.focusKeyframes;
+          _fadeInMs = overrides.fadeInMs;
+          _fadeOutMs = overrides.fadeOutMs;
+          _clampFadeDurationsToTrim(_endMs - _startMs);
         }
         _loadingArtifacts = false;
       });
@@ -384,6 +389,13 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
     );
   }
 
+  void _clampFadeDurationsToTrim(int durationMs) {
+    final maximumFadeIn = durationMs.clamp(0, 1500).toInt();
+    _fadeInMs = _fadeInMs.clamp(0, maximumFadeIn).toInt();
+    final maximumFadeOut = (durationMs - _fadeInMs).clamp(0, 1500).toInt();
+    _fadeOutMs = _fadeOutMs.clamp(0, maximumFadeOut).toInt();
+  }
+
   void _updateTrim(RangeValues values) {
     final player = _player;
     if (player == null || !player.value.isInitialized) return;
@@ -401,6 +413,7 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
     setState(() {
       _startMs = start;
       _endMs = end;
+      _clampFadeDurationsToTrim(end - start);
       _rebuildPreviewCues();
     });
   }
@@ -411,6 +424,7 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
     final value = player.value.position.inMilliseconds.clamp(0, _endMs - 500).toInt();
     setState(() {
       _startMs = value;
+      _clampFadeDurationsToTrim(_endMs - _startMs);
       _rebuildPreviewCues();
     });
     await _seekTo(_startMs);
@@ -426,6 +440,7 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
         .toInt();
     setState(() {
       _endMs = value;
+      _clampFadeDurationsToTrim(_endMs - _startMs);
       _rebuildPreviewCues();
     });
     await _seekTo(_endMs);
@@ -758,6 +773,8 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
       focusX: _focusX,
       focusY: _focusY,
       focusKeyframes: _focusKeyframes,
+      fadeInMs: _fadeInMs,
+      fadeOutMs: _fadeOutMs,
     );
     overrides.validate();
 
@@ -847,6 +864,12 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
     final player = _player!;
     final size = value.size;
     final sourcePosition = value.position.inMilliseconds;
+    final fadeOpacity = ClipEditOverrides.blackFadeOpacity(
+      localPositionMs: sourcePosition - _startMs,
+      durationMs: _endMs - _startMs,
+      fadeInMs: _fadeInMs,
+      fadeOutMs: _fadeOutMs,
+    );
     return _sectionPanel(
       context: context,
       title: 'معاينة المقطع',
@@ -876,6 +899,12 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
                           ),
                         ),
                         _captionOverlay(sourcePosition, context),
+                        if (fadeOpacity > 0)
+                          Positioned.fill(
+                            child: ColoredBox(
+                              color: Colors.black.withValues(alpha: fadeOpacity),
+                            ),
+                          ),
                         Positioned(
                           top: 10,
                           right: 10,
@@ -993,6 +1022,63 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
           Text(
             'مدة المقطع الناتجة: ${_formatTime(_endMs - _startMs)}',
             style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w800),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTransitionPanel(BuildContext context) {
+    final theme = Theme.of(context);
+    final clipDurationMs = _endMs - _startMs;
+    String durationLabel(int value) =>
+        value == 0 ? 'إيقاف' : (value / 1000).toStringAsFixed(1) + ' ثانية';
+    return _sectionPanel(
+      context: context,
+      title: 'تلاشي الصورة',
+      subtitle: 'تلاشي بصري تدريجي من الأسود عند البداية وإلى الأسود عند النهاية. لا يغيّر مستوى الصوت.',
+      icon: Icons.gradient_rounded,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('تلاشي الدخول · ' + durationLabel(_fadeInMs),
+              style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w800)),
+          Slider(
+            value: _fadeInMs.toDouble(),
+            min: 0,
+            max: 1500,
+            divisions: 15,
+            label: durationLabel(_fadeInMs),
+            onChanged: (value) {
+              setState(() {
+                _fadeInMs = value.round().clamp(
+                  0,
+                  (clipDurationMs - _fadeOutMs).clamp(0, 1500),
+                ).toInt();
+              });
+            },
+          ),
+          const SizedBox(height: 4),
+          Text('تلاشي الخروج · ' + durationLabel(_fadeOutMs),
+              style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w800)),
+          Slider(
+            value: _fadeOutMs.toDouble(),
+            min: 0,
+            max: 1500,
+            divisions: 15,
+            label: durationLabel(_fadeOutMs),
+            onChanged: (value) {
+              setState(() {
+                _fadeOutMs = value.round().clamp(
+                  0,
+                  (clipDurationMs - _fadeInMs).clamp(0, 1500),
+                ).toInt();
+              });
+            },
+          ),
+          Text(
+            'يمكن ضبط كل تلاشي حتى 1.5 ثانية، ويُحفظ مع إعدادات هذا المقطع فقط.',
+            style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
           ),
         ],
       ),
@@ -1404,6 +1490,7 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
                         _buildPreview(context, value),
                         _buildTrimPanel(context, duration),
                         _buildFilmstripPanel(context),
+                        _buildTransitionPanel(context),
                         _buildFramingPanel(context),
                         _sectionPanel(
                           context: context,

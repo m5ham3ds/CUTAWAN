@@ -135,6 +135,55 @@ void main() {
     );
   });
 
+  test('schema 2 keyframes migrate while transition values default to zero', () {
+    final migrated = ClipEditOverrides.fromJson({
+      'schemaVersion': 2,
+      'clipId': 'clip_001',
+      'framingMode': 'manualFocus',
+      'focusX': 0.4,
+      'focusY': 0.6,
+      'focusKeyframes': [
+        {'timestampMs': 1200, 'focusX': 0.2, 'focusY': 0.3},
+        {'timestampMs': 2400, 'focusX': 0.8, 'focusY': 0.7},
+      ],
+    });
+    expect(migrated.focusKeyframes, hasLength(2));
+    expect(migrated.fadeInMs, 0);
+    expect(migrated.fadeOutMs, 0);
+    expect(migrated.toJson()['schemaVersion'], 3);
+  });
+
+  test('visual black fade opacity is calculated on the clip timeline', () {
+    expect(ClipEditOverrides.blackFadeOpacity(
+      localPositionMs: 0, durationMs: 5000, fadeInMs: 600, fadeOutMs: 800,
+    ), 1);
+    expect(ClipEditOverrides.blackFadeOpacity(
+      localPositionMs: 300, durationMs: 5000, fadeInMs: 600, fadeOutMs: 800,
+    ), closeTo(0.5, 0.0001));
+    expect(ClipEditOverrides.blackFadeOpacity(
+      localPositionMs: 600, durationMs: 5000, fadeInMs: 600, fadeOutMs: 800,
+    ), 0);
+    expect(ClipEditOverrides.blackFadeOpacity(
+      localPositionMs: 4600, durationMs: 5000, fadeInMs: 600, fadeOutMs: 800,
+    ), closeTo(0.5, 0.0001));
+    expect(ClipEditOverrides.blackFadeOpacity(
+      localPositionMs: 5000, durationMs: 5000, fadeInMs: 600, fadeOutMs: 800,
+    ), 1);
+  });
+
+  test('visual fades are bounded and must fit inside selected clip', () {
+    expect(() => const ClipEditOverrides(
+      clipId: 'clip_001', fadeInMs: 1600,
+    ).validate(), throwsFormatException);
+    expect(() => const ClipEditOverrides(
+      clipId: 'clip_001', fadeInMs: 1200, fadeOutMs: 900,
+    ).toExportShots(
+      durationMs: 2000,
+      sourceAspectRatio: 16 / 9,
+      targetAspectRatio: 9 / 16,
+    ), throwsFormatException);
+  });
+
   test('manual focus keyframes round-trip and reject duplicate timestamps', () {
     const original = ClipEditOverrides(
       clipId: 'clip_001',
@@ -143,6 +192,8 @@ void main() {
         ClipFocusKeyframe(timestampMs: 1000, focusX: 0.2, focusY: 0.3),
         ClipFocusKeyframe(timestampMs: 4000, focusX: 0.8, focusY: 0.7),
       ],
+      fadeInMs: 500,
+      fadeOutMs: 700,
     );
     final restored = ClipEditOverrides.fromJson(
       Map<String, dynamic>.from(original.toJson()),
@@ -150,6 +201,8 @@ void main() {
     expect(restored.focusKeyframes.length, 2);
     expect(restored.focusKeyframes.last.timestampMs, 4000);
     expect(restored.focusKeyframes.last.focusX, 0.8);
+    expect(restored.fadeInMs, 500);
+    expect(restored.fadeOutMs, 700);
     expect(
       () => const ClipEditOverrides(
         clipId: 'clip_001',

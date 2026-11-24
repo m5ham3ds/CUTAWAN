@@ -95,6 +95,8 @@ class VideoExportService {
     required double aspectRatio,
     double? sourceAspectRatio,
     List<Map<String, Object?>> reframeShots = const [],
+    int fadeInMs = 0,
+    int fadeOutMs = 0,
     List<Map<String, Object?>> captionCues = const [],
     Map<String, Object?>? captionStyle,
     String captionAnimationId = 'static',
@@ -110,6 +112,11 @@ class VideoExportService {
         sourceUri.trim().isEmpty ||
         startMs < 0 ||
         endMs <= startMs ||
+        fadeInMs < 0 ||
+        fadeInMs > 1500 ||
+        fadeOutMs < 0 ||
+        fadeOutMs > 1500 ||
+        fadeInMs + fadeOutMs > endMs - startMs ||
         !aspectRatio.isFinite ||
         aspectRatio <= 0 ||
         !(sourceAspectRatio ?? aspectRatio).isFinite ||
@@ -148,6 +155,8 @@ class VideoExportService {
         'aspectRatio': aspectRatio,
         'sourceAspectRatio': sourceAspectRatio ?? aspectRatio,
         'reframeShots': reframeShots,
+        'fadeInMs': fadeInMs,
+        'fadeOutMs': fadeOutMs,
         'captionCues': captionCues,
         'captionStyle': captionStyle,
         'captionAnimationId': captionAnimationId,

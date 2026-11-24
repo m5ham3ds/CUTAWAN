@@ -147,6 +147,15 @@ class NativeRenderEngine(context: Context) : ContextWrapper(context.applicationC
             parseCaptionStyle(request["captionStyle"] as? Map<*, *>)
         }
         val captionAnimationId = request["captionAnimationId"] as? String ?: "static"
+        val fadeInMs = (request["fadeInMs"] as? Number)?.toLong() ?: 0L
+        val fadeOutMs = (request["fadeOutMs"] as? Number)?.toLong() ?: 0L
+        if (fadeInMs !in 0L..1500L || fadeOutMs !in 0L..1500L ||
+            fadeInMs + fadeOutMs > endMs - startMs
+        ) {
+            throw IllegalArgumentException(
+                "Visual fades must be 0–1500ms each and fit inside the selected clip."
+            )
+        }
         val sourceUri = Uri.parse(rawUri)
         validateReadableSource(sourceUri)
 
@@ -180,10 +189,15 @@ class NativeRenderEngine(context: Context) : ContextWrapper(context.applicationC
             createReframeTransformation(reframeSegments, sourceAspectRatio, aspectRatio),
             Presentation.createForAspectRatio(aspectRatio, Presentation.LAYOUT_STRETCH_TO_FIT)
         )
+        val overlays = mutableListOf<CanvasOverlay>()
         if (captionStyle != null && captionCues.isNotEmpty()) {
-            videoEffects.add(
-                OverlayEffect(listOf(TimedCaptionOverlay(captionCues, captionStyle, captionAnimationId)))
-            )
+            overlays.add(TimedCaptionOverlay(captionCues, captionStyle, captionAnimationId))
+        }
+        if (fadeInMs > 0L || fadeOutMs > 0L) {
+            overlays.add(TimedBlackFadeOverlay(endMs - startMs, fadeInMs, fadeOutMs))
+        }
+        if (overlays.isNotEmpty()) {
+            videoEffects.add(OverlayEffect(overlays))
         }
         val editedItem = EditedMediaItem.Builder(mediaItem)
             .setEffects(Effects(emptyList(), videoEffects))
@@ -567,6 +581,35 @@ class NativeRenderEngine(context: Context) : ContextWrapper(context.applicationC
             throw IllegalArgumentException("Caption " + name + " must be #RRGGBB.")
         }
         return Color.parseColor(value)
+    }
+
+    private class TimedBlackFadeOverlay(
+        private val durationMs: Long,
+        private val fadeInMs: Long,
+        private val fadeOutMs: Long
+    ) : CanvasOverlay(true) {
+        override fun onDraw(canvas: Canvas, presentationTimeUs: Long) {
+            val timeMs = (presentationTimeUs / 1000L).coerceAtLeast(0L)
+            var opacity = 0f
+            if (fadeInMs > 0L) {
+                val incoming = (1f - timeMs.toFloat() / fadeInMs.toFloat())
+                    .coerceIn(0f, 1f)
+                opacity = maxOf(opacity, incoming)
+            }
+            if (fadeOutMs > 0L) {
+                val fadeOutStartMs = durationMs - fadeOutMs
+                val outgoing = ((timeMs - fadeOutStartMs).toFloat() / fadeOutMs.toFloat())
+                    .coerceIn(0f, 1f)
+                opacity = maxOf(opacity, outgoing)
+            }
+            val alpha = (opacity * 255f).toInt().coerceIn(0, 255)
+            if (alpha == 0) return
+            val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = Color.argb(alpha, 0, 0, 0)
+                style = Paint.Style.FILL
+            }
+            canvas.drawRect(0f, 0f, canvas.width.toFloat(), canvas.height.toFloat(), paint)
+        }
     }
 
     private class TimedCaptionOverlay(

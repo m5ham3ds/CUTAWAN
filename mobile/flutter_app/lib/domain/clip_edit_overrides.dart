@@ -46,21 +46,27 @@ class ClipEditOverrides {
     this.focusX = 0.5,
     this.focusY = 0.5,
     this.focusKeyframes = const [],
+    this.fadeInMs = 0,
+    this.fadeOutMs = 0,
   });
 
-  static const currentSchemaVersion = 2;
+  static const currentSchemaVersion = 3;
 
   final String clipId;
   final ClipFramingMode framingMode;
   final double focusX;
   final double focusY;
   final List<ClipFocusKeyframe> focusKeyframes;
+  final int fadeInMs;
+  final int fadeOutMs;
 
   ClipEditOverrides copyWith({
     ClipFramingMode? framingMode,
     double? focusX,
     double? focusY,
     List<ClipFocusKeyframe>? focusKeyframes,
+    int? fadeInMs,
+    int? fadeOutMs,
   }) =>
       ClipEditOverrides(
         clipId: clipId,
@@ -68,7 +74,35 @@ class ClipEditOverrides {
         focusX: focusX ?? this.focusX,
         focusY: focusY ?? this.focusY,
         focusKeyframes: focusKeyframes ?? this.focusKeyframes,
+        fadeInMs: fadeInMs ?? this.fadeInMs,
+        fadeOutMs: fadeOutMs ?? this.fadeOutMs,
       );
+
+  static double blackFadeOpacity({
+    required int localPositionMs,
+    required int durationMs,
+    required int fadeInMs,
+    required int fadeOutMs,
+  }) {
+    if (durationMs <= 0 || localPositionMs < 0 || localPositionMs > durationMs) {
+      return 0;
+    }
+    var opacity = 0.0;
+    if (fadeInMs > 0) {
+      final incoming = (1 - localPositionMs / fadeInMs)
+          .clamp(0.0, 1.0)
+          .toDouble();
+      opacity = incoming > opacity ? incoming : opacity;
+    }
+    if (fadeOutMs > 0) {
+      final fadeOutStartMs = durationMs - fadeOutMs;
+      final outgoing = ((localPositionMs - fadeOutStartMs) / fadeOutMs)
+          .clamp(0.0, 1.0)
+          .toDouble();
+      opacity = outgoing > opacity ? outgoing : opacity;
+    }
+    return opacity;
+  }
 
   void validate() {
     if (!RegExp(r'^[A-Za-z0-9_-]{3,160}$').hasMatch(clipId) ||
@@ -78,7 +112,11 @@ class ClipEditOverrides {
         focusX > 1 ||
         focusY < 0 ||
         focusY > 1 ||
-        focusKeyframes.length > 120) {
+        focusKeyframes.length > 120 ||
+        fadeInMs < 0 ||
+        fadeInMs > 1500 ||
+        fadeOutMs < 0 ||
+        fadeOutMs > 1500) {
       throw const FormatException('Clip framing overrides are invalid.');
     }
     var previousTimestamp = -1;
@@ -101,18 +139,21 @@ class ClipEditOverrides {
         'focusY': focusY,
         'focusKeyframes':
             focusKeyframes.map((keyframe) => keyframe.toJson()).toList(),
+        'fadeInMs': fadeInMs,
+        'fadeOutMs': fadeOutMs,
       };
 
   factory ClipEditOverrides.fromJson(Map<String, dynamic> json) {
     final version = (json['schemaVersion'] as num?)?.toInt();
     final modeName = json['framingMode'] as String? ?? 'automatic';
     final modes = ClipFramingMode.values.where((item) => item.name == modeName);
-    if ((version != 1 && version != currentSchemaVersion) || modes.isEmpty) {
+    if ((version != 1 && version != 2 && version != currentSchemaVersion) ||
+        modes.isEmpty) {
       throw const FormatException('Clip framing override schema is unsupported.');
     }
 
     final keyframes = <ClipFocusKeyframe>[];
-    if (version == currentSchemaVersion) {
+    if (version != 1) {
       final rawKeyframes = json['focusKeyframes'];
       if (rawKeyframes != null && rawKeyframes is! List) {
         throw const FormatException('Manual focus keyframes must be an array.');
@@ -133,6 +174,12 @@ class ClipEditOverrides {
       focusX: (json['focusX'] as num?)?.toDouble() ?? 0.5,
       focusY: (json['focusY'] as num?)?.toDouble() ?? 0.5,
       focusKeyframes: List<ClipFocusKeyframe>.unmodifiable(keyframes),
+      fadeInMs: version == currentSchemaVersion
+          ? (json['fadeInMs'] as num?)?.toInt() ?? 0
+          : 0,
+      fadeOutMs: version == currentSchemaVersion
+          ? (json['fadeOutMs'] as num?)?.toInt() ?? 0
+          : 0,
     );
     value.validate();
     return value;
@@ -152,9 +199,10 @@ class ClipEditOverrides {
         !sourceAspectRatio.isFinite ||
         sourceAspectRatio <= 0 ||
         !targetAspectRatio.isFinite ||
-        targetAspectRatio <= 0) {
+        targetAspectRatio <= 0 ||
+        fadeInMs + fadeOutMs > durationMs) {
       throw const FormatException(
-        'Clip framing dimensions, start time or duration are invalid.',
+        'Clip framing, fade timing, dimensions or duration are invalid.',
       );
     }
     if (framingMode == ClipFramingMode.automatic) return const [];

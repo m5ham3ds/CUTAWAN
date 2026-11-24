@@ -100,6 +100,8 @@ void main() {
       aspectRatio: 9 / 16,
       sourceAspectRatio: 16 / 9,
       reframeShots: cropPlan,
+      fadeInMs: 500,
+      fadeOutMs: 750,
       captionCues: [
         <String, Object?>{
           'startMs': 0,
@@ -162,6 +164,8 @@ void main() {
     expect(arguments, containsPair('endMs', 16000));
     expect(arguments, containsPair('sourceAspectRatio', 16 / 9));
     expect(arguments['reframeShots'], cropPlan);
+    expect(arguments['fadeInMs'], 500);
+    expect(arguments['fadeOutMs'], 750);
     expect(arguments['captionAnimationId'], 'karaoke_fill');
     expect(arguments['captionCues'], isA<List<dynamic>>());
     final sentCues = arguments['captionCues'] as List<dynamic>;
@@ -248,6 +252,32 @@ void main() {
       ),
       throwsA(isA<FormatException>()),
     );
+    expect(calls, isEmpty);
+  });
+
+  test('rejects visual fades that exceed the selected clip range', () async {
+    final service = VideoExportService(channel: channel);
+    await expectLater(service.renderClip(
+      clipId: 'clip_bad_fade',
+      sourceUri: 'content://media/external/video/media/42',
+      startMs: 1000,
+      endMs: 5000,
+      aspectRatio: 9 / 16,
+      sourceAspectRatio: 16 / 9,
+      fadeInMs: 1500,
+      fadeOutMs: 1500,
+      outputPath: '/data/user/0/com.cutawan/files/exports/clip_bad_fade.mp4',
+    ), throwsA(isA<FormatException>()));
+    await expectLater(service.renderClip(
+      clipId: 'clip_bad_fade_limit',
+      sourceUri: 'content://media/external/video/media/42',
+      startMs: 1000,
+      endMs: 5000,
+      aspectRatio: 9 / 16,
+      sourceAspectRatio: 16 / 9,
+      fadeInMs: 1600,
+      outputPath: '/data/user/0/com.cutawan/files/exports/clip_bad_fade_limit.mp4',
+    ), throwsA(isA<FormatException>()));
     expect(calls, isEmpty);
   });
 

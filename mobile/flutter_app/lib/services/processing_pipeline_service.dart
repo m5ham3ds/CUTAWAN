@@ -336,7 +336,7 @@ class ProcessingPipelineService {
             'reframeShots': clipReframeShots,
             'clipEditOverrides': clipEdit.toJson(),
             'resolution': project.preferences.resolution,
-            'renderer': 'androidx-media3-transformer-1.11.1-reframe-v2',
+            'renderer': 'androidx-media3-transformer-1.11.1-reframe-v2-black-fade-v1',
             'subtitleStyle': project.preferences.captionStyleId,
             'subtitleAnimation': project.preferences.captionAnimationId,
             'captionStyle': captionStylePayload,
@@ -455,6 +455,8 @@ class ProcessingPipelineService {
             aspectRatio: _aspectRatio(project),
             sourceAspectRatio: sourceAspectRatio,
             reframeShots: clipReframeShots,
+            fadeInMs: clipEdit.fadeInMs,
+            fadeOutMs: clipEdit.fadeOutMs,
             captionCues: captionCuesByClip[candidate.id] ?? const [],
             captionStyle: captionStylePayload,
             captionAnimationId: project.preferences.captionAnimationId,
@@ -503,7 +505,7 @@ class ProcessingPipelineService {
           'endMs': candidate.endMs,
           'subtitleSrtPath': srtPaths[candidate.id],
           'subtitleAssPath': assPaths[candidate.id],
-          'renderer': 'androidx-media3-transformer-1.11.1',
+          'renderer': 'androidx-media3-transformer-1.11.1-reframe-v2-black-fade-v1',
           'createdAtUtc': DateTime.now().toUtc().toIso8601String(),
         };
         await _repository.saveExportRecord(projectId, record);
@@ -532,7 +534,7 @@ class ProcessingPipelineService {
       await _repository.saveExportManifest(projectId, {
         'schemaVersion': 1,
         'sourceSha256': sourceSha,
-        'renderer': 'androidx-media3-transformer-1.11.1',
+        'renderer': 'androidx-media3-transformer-1.11.1-reframe-v2-black-fade-v1',
         'candidateCount': candidates.candidates.length,
         'exportedCount': records.length,
         'exports': records,
