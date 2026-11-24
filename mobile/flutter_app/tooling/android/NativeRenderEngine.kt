@@ -283,7 +283,8 @@ class NativeRenderEngine(context: Context) : ContextWrapper(context.applicationC
                                     TimedBlackFadeOverlay(
                                         clipDurationMs,
                                         fadeInMs,
-                                        fadeOutMs
+                                        fadeOutMs,
+                                        timelineStartMs
                                     )
                                 )
                             )
@@ -911,10 +912,15 @@ class NativeRenderEngine(context: Context) : ContextWrapper(context.applicationC
     private class TimedBlackFadeOverlay(
         private val durationMs: Long,
         private val fadeInMs: Long,
-        private val fadeOutMs: Long
+        private val fadeOutMs: Long,
+        private val timelineStartMs: Long = 0L
     ) : CanvasOverlay(true) {
         override fun onDraw(canvas: Canvas, presentationTimeUs: Long) {
-            val timeMs = (presentationTimeUs / 1000L).coerceAtLeast(0L)
+            // Composition overlays receive the sequence presentation timestamp.
+            // Convert it to this item's local clock before evaluating its fades.
+            val timeMs = (
+                presentationTimeUs / 1000L - timelineStartMs
+            ).coerceIn(0L, durationMs)
             var opacity = 0f
             if (fadeInMs > 0L) {
                 val incoming = (1f - timeMs.toFloat() / fadeInMs.toFloat())
