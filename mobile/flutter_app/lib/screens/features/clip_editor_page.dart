@@ -49,6 +49,7 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
   ClipFramingMode _framingMode = ClipFramingMode.automatic;
   double _focusX = 0.5;
   double _focusY = 0.5;
+  List<ClipFocusKeyframe> _focusKeyframes = const [];
   CutawanTranscript? _transcript;
   ReframePlan? _reframePlan;
   List<Map<String, Object?>> _previewCues = const [];
@@ -256,6 +257,7 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
           _framingMode = overrides.framingMode;
           _focusX = overrides.focusX;
           _focusY = overrides.focusY;
+          _focusKeyframes = overrides.focusKeyframes;
         }
         _loadingArtifacts = false;
       });
@@ -451,6 +453,111 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
     return null;
   }
 
+  Offset _focusAtSourceTime(int sourceTimeMs) {
+    if (_focusKeyframes.isEmpty) return Offset(_focusX, _focusY);
+    final first = _focusKeyframes.first;
+    if (sourceTimeMs <= first.timestampMs) {
+      return Offset(first.focusX, first.focusY);
+    }
+    for (var index = 1; index < _focusKeyframes.length; index++) {
+      final previous = _focusKeyframes[index - 1];
+      final next = _focusKeyframes[index];
+      if (sourceTimeMs <= next.timestampMs) {
+        final progress = ((sourceTimeMs - previous.timestampMs) /
+                (next.timestampMs - previous.timestampMs))
+            .clamp(0.0, 1.0)
+            .toDouble();
+        return Offset(
+          previous.focusX + (next.focusX - previous.focusX) * progress,
+          previous.focusY + (next.focusY - previous.focusY) * progress,
+        );
+      }
+    }
+    final last = _focusKeyframes.last;
+    return Offset(last.focusX, last.focusY);
+  }
+
+  int _playheadSourceTimeMs() {
+    final player = _player;
+    final duration = player?.value.duration.inMilliseconds ?? _endMs;
+    return (player?.value.position.inMilliseconds ?? _startMs)
+        .clamp(0, duration)
+        .toInt();
+  }
+
+  void _upsertFocusKeyframeAtPlayhead({double? focusX, double? focusY}) {
+    final timestampMs = _playheadSourceTimeMs();
+    final current = _focusAtSourceTime(timestampMs);
+    final keyframe = ClipFocusKeyframe(
+      timestampMs: timestampMs,
+      focusX: (focusX ?? current.dx).clamp(0.0, 1.0).toDouble(),
+      focusY: (focusY ?? current.dy).clamp(0.0, 1.0).toDouble(),
+    );
+    final updated = List<ClipFocusKeyframe>.of(_focusKeyframes);
+    final existingIndex =
+        updated.indexWhere((item) => item.timestampMs == timestampMs);
+    if (existingIndex >= 0) {
+      updated[existingIndex] = keyframe;
+    } else {
+      if (updated.length >= 120) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('وصلت إلى الحد الأقصى وهو 120 إطار تركيز.')),
+        );
+        return;
+      }
+      updated.add(keyframe);
+    }
+    updated.sort((a, b) => a.timestampMs.compareTo(b.timestampMs));
+    setState(() {
+      _focusKeyframes = List<ClipFocusKeyframe>.unmodifiable(updated);
+      _focusX = keyframe.focusX;
+      _focusY = keyframe.focusY;
+    });
+  }
+
+  void _addFocusKeyframeAtPlayhead() {
+    final current = _focusAtSourceTime(_playheadSourceTimeMs());
+    _upsertFocusKeyframeAtPlayhead(
+      focusX: current.dx,
+      focusY: current.dy,
+    );
+  }
+
+  void _removeFocusKeyframe(int timestampMs) {
+    setState(() {
+      _focusKeyframes = List<ClipFocusKeyframe>.unmodifiable(
+        _focusKeyframes
+            .where((keyframe) => keyframe.timestampMs != timestampMs),
+      );
+    });
+  }
+
+  Alignment _manualFocusAlignment(int sourcePositionMs) {
+    final focus = _focusAtSourceTime(sourcePositionMs);
+    final sourceAspect = _player?.value.aspectRatio ?? 9 / 16;
+    final targetAspect = _targetAspectRatio();
+    var cropWidth = 1.0;
+    var cropHeight = 1.0;
+    if (sourceAspect > targetAspect) {
+      cropWidth = targetAspect / sourceAspect;
+    } else if (sourceAspect < targetAspect) {
+      cropHeight = sourceAspect / targetAspect;
+    }
+    final left = (focus.dx - cropWidth / 2)
+        .clamp(0.0, 1.0 - cropWidth)
+        .toDouble();
+    final top = (focus.dy - cropHeight / 2)
+        .clamp(0.0, 1.0 - cropHeight)
+        .toDouble();
+    final alignX = cropWidth >= 1
+        ? 0.0
+        : (2 * left / (1 - cropWidth) - 1).clamp(-1.0, 1.0);
+    final alignY = cropHeight >= 1
+        ? 0.0
+        : (2 * top / (1 - cropHeight) - 1).clamp(-1.0, 1.0);
+    return Alignment(alignX, alignY);
+  }
+
   BoxFit _previewFit(int sourcePositionMs) {
     if (_framingMode == ClipFramingMode.fullFrame) return BoxFit.contain;
     if (_framingMode == ClipFramingMode.manualFocus) return BoxFit.cover;
@@ -461,7 +568,7 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
 
   Alignment _previewAlignment(int sourcePositionMs) {
     if (_framingMode == ClipFramingMode.manualFocus) {
-      return Alignment(_focusX * 2 - 1, _focusY * 2 - 1);
+      return _manualFocusAlignment(sourcePositionMs);
     }
     final shot = _framingMode == ClipFramingMode.automatic
         ? _activeAutomaticShot(sourcePositionMs)
@@ -646,6 +753,7 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
       framingMode: _framingMode,
       focusX: _focusX,
       focusY: _focusY,
+      focusKeyframes: _focusKeyframes,
     );
     overrides.validate();
 
@@ -930,21 +1038,68 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
           ),
           if (_framingMode == ClipFramingMode.manualFocus) ...[
             const SizedBox(height: 12),
-            Text('مركز القص الأفقي · ${(_focusX * 100).round()}%'),
-            Slider(
-              value: _focusX,
-              min: 0,
-              max: 1,
-              divisions: 100,
-              onChanged: (value) => setState(() => _focusX = value),
-            ),
-            Text('مركز القص العمودي · ${(_focusY * 100).round()}%'),
-            Slider(
-              value: _focusY,
-              min: 0,
-              max: 1,
-              divisions: 100,
-              onChanged: (value) => setState(() => _focusY = value),
+            Builder(
+              builder: (context) {
+                final sourceTimeMs = _playheadSourceTimeMs();
+                final currentFocus = _focusAtSourceTime(sourceTimeMs);
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'مركز القص الأفقي · ${(currentFocus.dx * 100).round()}%',
+                    ),
+                    Slider(
+                      value: currentFocus.dx,
+                      min: 0,
+                      max: 1,
+                      divisions: 100,
+                      onChanged: (value) =>
+                          _upsertFocusKeyframeAtPlayhead(focusX: value),
+                    ),
+                    Text(
+                      'مركز القص العمودي · ${(currentFocus.dy * 100).round()}%',
+                    ),
+                    Slider(
+                      value: currentFocus.dy,
+                      min: 0,
+                      max: 1,
+                      divisions: 100,
+                      onChanged: (value) =>
+                          _upsertFocusKeyframeAtPlayhead(focusY: value),
+                    ),
+                    const SizedBox(height: 4),
+                    FilledButton.tonalIcon(
+                      onPressed: _addFocusKeyframeAtPlayhead,
+                      icon: const Icon(Icons.add_rounded),
+                      label: Text(
+                        'إضافة إطار تركيز عند ${_formatTime(sourceTimeMs)}',
+                      ),
+                    ),
+                    if (_focusKeyframes.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        'إطارات التركيز · ${_focusKeyframes.length}/120',
+                        style: theme.textTheme.labelLarge?.copyWith(
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: _focusKeyframes.map((keyframe) {
+                          return InputChip(
+                            label: Text(_formatTime(keyframe.timestampMs)),
+                            onPressed: () => _seekTo(keyframe.timestampMs),
+                            onDeleted: () =>
+                                _removeFocusKeyframe(keyframe.timestampMs),
+                          );
+                        }).toList(growable: false),
+                      ),
+                    ],
+                  ],
+                );
+              },
             ),
           ],
           const SizedBox(height: 6),
@@ -953,7 +1108,9 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
                 ? 'يستخدم التصدير مسار التأطير المحفوظ من تحليل المشهد. إذا غُيّرت النسبة فسيعاد التحليل عند تشغيل المعالجة.'
                 : _framingMode == ClipFramingMode.fullFrame
                     ? 'يحافظ التصدير على المشهد كاملاً مع ملاءمته داخل النسبة المختارة.'
-                    : 'يُطبّق التصدير قصّاً ثابتاً حول نقطة التركيز التي حددتها أعلاه.',
+                    : (_focusKeyframes.isEmpty
+                        ? 'يُطبّق التصدير قصّاً ثابتاً حول نقطة التركيز التي حددتها أعلاه.'
+                        : 'يستوفي التصدير الحركة بين إطارات التركيز الزمنية بسلاسة ويحافظ على توقيتها.'),
             style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
           ),
           if (_loadingArtifacts)

@@ -94,7 +94,11 @@ class MainActivity : FlutterActivity() {
         val x: Float = 0f,
         val y: Float = 0f,
         val width: Float = 1f,
-        val height: Float = 1f
+        val height: Float = 1f,
+        val endX: Float = x,
+        val endY: Float = y,
+        val endWidth: Float = width,
+        val endHeight: Float = height
     )
     private data class CaptionWordCue(
         val text: String,
@@ -1482,13 +1486,18 @@ class MainActivity : FlutterActivity() {
                 throw IllegalArgumentException("Reframe segments must be contiguous, ordered and within the clip.")
             }
             if (mode == "fit") {
-                if (map["region"] != null) {
-                    throw IllegalArgumentException("Fit segments cannot include a crop region.")
+                if (map["region"] != null || map["regionEnd"] != null) {
+                    throw IllegalArgumentException("Fit segments cannot include crop regions.")
                 }
                 result.add(ReframeSegment(start, end, mode))
             } else {
                 val region = map["region"] as? Map<*, *>
                     ?: throw IllegalArgumentException("Crop segments require a frame region.")
+                val rawEndRegion = map["regionEnd"]
+                if (rawEndRegion != null && rawEndRegion !is Map<*, *>) {
+                    throw IllegalArgumentException("End crop region must be an object.")
+                }
+                val endRegion = (rawEndRegion as? Map<*, *>) ?: region
                 val x = (region["x"] as? Number)?.toFloat()
                     ?: throw IllegalArgumentException("Crop region x is missing.")
                 val y = (region["y"] as? Number)?.toFloat()
@@ -1497,13 +1506,31 @@ class MainActivity : FlutterActivity() {
                     ?: throw IllegalArgumentException("Crop region width is missing.")
                 val height = (region["height"] as? Number)?.toFloat()
                     ?: throw IllegalArgumentException("Crop region height is missing.")
-                if (!x.isFinite() || !y.isFinite() || !width.isFinite() || !height.isFinite() ||
+                val endX = (endRegion["x"] as? Number)?.toFloat()
+                    ?: throw IllegalArgumentException("End crop region x is missing.")
+                val endY = (endRegion["y"] as? Number)?.toFloat()
+                    ?: throw IllegalArgumentException("End crop region y is missing.")
+                val endWidth = (endRegion["width"] as? Number)?.toFloat()
+                    ?: throw IllegalArgumentException("End crop region width is missing.")
+                val endHeight = (endRegion["height"] as? Number)?.toFloat()
+                    ?: throw IllegalArgumentException("End crop region height is missing.")
+                val values = listOf(x, y, width, height, endX, endY, endWidth, endHeight)
+                if (values.any { !it.isFinite() } ||
                     x < 0f || y < 0f || width <= 0f || height <= 0f ||
-                    x + width > 1.0001f || y + height > 1.0001f
+                    endX < 0f || endY < 0f || endWidth <= 0f || endHeight <= 0f ||
+                    x + width > 1.0001f || y + height > 1.0001f ||
+                    endX + endWidth > 1.0001f || endY + endHeight > 1.0001f ||
+                    kotlin.math.abs(width - endWidth) > 0.0005f ||
+                    kotlin.math.abs(height - endHeight) > 0.0005f
                 ) {
-                    throw IllegalArgumentException("Crop region must be normalized and remain inside the source frame.")
+                    throw IllegalArgumentException("Crop regions must be normalized, in-frame and keep a constant crop size.")
                 }
-                result.add(ReframeSegment(start, end, mode, x, y, width, height))
+                result.add(
+                    ReframeSegment(
+                        start, end, mode, x, y, width, height,
+                        endX, endY, endWidth, endHeight
+                    )
+                )
             }
             cursor = end
         }
@@ -1540,12 +1567,20 @@ class MainActivity : FlutterActivity() {
                         0f, 0f, 1f
                     )
                 } else {
-                    val scaleX = 1f / segment.width
-                    val scaleY = 1f / segment.height
-                    val translateX =
-                        (1f - 2f * segment.x - segment.width) / segment.width
-                    val translateY =
-                        (2f * segment.y + segment.height - 1f) / segment.height
+                    val segmentDuration = (segment.endMs - segment.startMs).coerceAtLeast(1L)
+                    val progress = (
+                        (timeMs - segment.startMs).toFloat() / segmentDuration.toFloat()
+                    ).coerceIn(0f, 1f)
+                    val x = segment.x + (segment.endX - segment.x) * progress
+                    val y = segment.y + (segment.endY - segment.y) * progress
+                    val width = segment.width +
+                        (segment.endWidth - segment.width) * progress
+                    val height = segment.height +
+                        (segment.endHeight - segment.height) * progress
+                    val scaleX = 1f / width
+                    val scaleY = 1f / height
+                    val translateX = (1f - 2f * x - width) / width
+                    val translateY = (2f * y + height - 1f) / height
                     floatArrayOf(
                         scaleX, 0f, translateX,
                         0f, scaleY, translateY,

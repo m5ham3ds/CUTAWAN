@@ -61,6 +61,104 @@ void main() {
     expect((16 / 9) * width / height, closeTo(9 / 16, 0.000001));
   });
 
+  test('manual focus keyframes export smooth contiguous regions using source time', () {
+    final value = ClipEditOverrides(
+      clipId: 'clip_001',
+      framingMode: ClipFramingMode.manualFocus,
+      focusKeyframes: const [
+        ClipFocusKeyframe(timestampMs: 10000, focusX: 0.2, focusY: 0.4),
+        ClipFocusKeyframe(timestampMs: 13000, focusX: 0.8, focusY: 0.6),
+        ClipFocusKeyframe(timestampMs: 16000, focusX: 0.5, focusY: 0.3),
+      ],
+    );
+    final shots = value.toExportShots(
+      durationMs: 6000,
+      clipStartMs: 10000,
+      sourceAspectRatio: 16 / 9,
+      targetAspectRatio: 9 / 16,
+    );
+
+    expect(shots, hasLength(2));
+    expect(shots[0]['startMs'], 0);
+    expect(shots[0]['endMs'], 3000);
+    expect(shots[1]['startMs'], 3000);
+    expect(shots[1]['endMs'], 6000);
+    final firstStart = Map<String, double>.from(shots[0]['region']! as Map);
+    final firstEnd = Map<String, double>.from(shots[0]['regionEnd']! as Map);
+    final secondStart = Map<String, double>.from(shots[1]['region']! as Map);
+    final secondEnd = Map<String, double>.from(shots[1]['regionEnd']! as Map);
+    expect(firstStart['x'], lessThan(firstEnd['x']!));
+    expect(firstEnd['x'], closeTo(secondStart['x']!, 0.000001));
+    expect(secondEnd['x'], lessThan(secondStart['x']!));
+    expect(firstStart['width'], firstEnd['width']);
+    expect(firstStart['height'], firstEnd['height']);
+  });
+
+  test('manual focus keyframes interpolate across a trim that excludes the first key', () {
+    const value = ClipEditOverrides(
+      clipId: 'clip_001',
+      framingMode: ClipFramingMode.manualFocus,
+      focusKeyframes: [
+        ClipFocusKeyframe(timestampMs: 8000, focusX: 0.1, focusY: 0.5),
+        ClipFocusKeyframe(timestampMs: 12000, focusX: 0.9, focusY: 0.5),
+      ],
+    );
+    final shot = value.toExportShots(
+      durationMs: 4000,
+      clipStartMs: 10000,
+      sourceAspectRatio: 16 / 9,
+      targetAspectRatio: 9 / 16,
+    ).single;
+    final start = Map<String, double>.from(shot['region']! as Map);
+    final end = Map<String, double>.from(shot['regionEnd']! as Map);
+    expect(start['x'], lessThan(end['x']!));
+  });
+
+  test('schema 1 static overrides migrate without losing their focus point', () {
+    final migrated = ClipEditOverrides.fromJson({
+      'schemaVersion': 1,
+      'clipId': 'clip_001',
+      'framingMode': 'manualFocus',
+      'focusX': 0.27,
+      'focusY': 0.61,
+    });
+    expect(migrated.focusX, 0.27);
+    expect(migrated.focusY, 0.61);
+    expect(migrated.focusKeyframes, isEmpty);
+    expect(
+      migrated.toJson()['schemaVersion'],
+      ClipEditOverrides.currentSchemaVersion,
+    );
+  });
+
+  test('manual focus keyframes round-trip and reject duplicate timestamps', () {
+    const original = ClipEditOverrides(
+      clipId: 'clip_001',
+      framingMode: ClipFramingMode.manualFocus,
+      focusKeyframes: [
+        ClipFocusKeyframe(timestampMs: 1000, focusX: 0.2, focusY: 0.3),
+        ClipFocusKeyframe(timestampMs: 4000, focusX: 0.8, focusY: 0.7),
+      ],
+    );
+    final restored = ClipEditOverrides.fromJson(
+      Map<String, dynamic>.from(original.toJson()),
+    );
+    expect(restored.focusKeyframes.length, 2);
+    expect(restored.focusKeyframes.last.timestampMs, 4000);
+    expect(restored.focusKeyframes.last.focusX, 0.8);
+    expect(
+      () => const ClipEditOverrides(
+        clipId: 'clip_001',
+        framingMode: ClipFramingMode.manualFocus,
+        focusKeyframes: [
+          ClipFocusKeyframe(timestampMs: 1000, focusX: 0.2, focusY: 0.3),
+          ClipFocusKeyframe(timestampMs: 1000, focusX: 0.8, focusY: 0.7),
+        ],
+      ).validate(),
+      throwsFormatException,
+    );
+  });
+
   test('clip overrides round-trip and reject invalid focus coordinates', () {
     const value = ClipEditOverrides(
       clipId: 'clip_001',

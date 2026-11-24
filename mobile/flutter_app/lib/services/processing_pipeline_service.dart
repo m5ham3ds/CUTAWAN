@@ -304,6 +304,7 @@ class ProcessingPipelineService {
           durationMs: candidate.durationMs,
           sourceAspectRatio: sourceAspectRatio,
           targetAspectRatio: targetAspectRatio,
+          clipStartMs: candidate.startMs,
         );
         final clipReframeShots = manualShots.isNotEmpty
             ? manualShots
@@ -335,7 +336,7 @@ class ProcessingPipelineService {
             'reframeShots': clipReframeShots,
             'clipEditOverrides': clipEdit.toJson(),
             'resolution': project.preferences.resolution,
-            'renderer': 'androidx-media3-transformer-1.11.1-reframe-v1',
+            'renderer': 'androidx-media3-transformer-1.11.1-reframe-v2',
             'subtitleStyle': project.preferences.captionStyleId,
             'subtitleAnimation': project.preferences.captionAnimationId,
             'captionStyle': captionStylePayload,
