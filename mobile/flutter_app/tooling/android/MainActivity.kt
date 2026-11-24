@@ -22,6 +22,7 @@ import androidx.media3.transformer.ExportResult
 import androidx.media3.transformer.ProgressHolder
 import androidx.media3.transformer.Transformer
 import java.io.FileInputStream
+import java.io.ByteArrayOutputStream
 import java.io.InputStream
 import java.security.MessageDigest
 import android.app.Activity
@@ -173,6 +174,19 @@ class MainActivity : FlutterActivity() {
                             result.error("INVALID_URI", "A video URI is required.", null)
                         } else {
                             extractAudio(rawUri, result)
+                        }
+                    }
+                    "createFilmstrip" -> {
+                        val rawUri = call.argument<String>("uri")
+                        val startMs = call.argument<Number>("startMs")?.toLong()
+                        val endMs = call.argument<Number>("endMs")?.toLong()
+                        val sampleCount = call.argument<Number>("sampleCount")?.toInt() ?: 7
+                        if (rawUri.isNullOrBlank() || startMs == null || endMs == null) {
+                            result.error("INVALID_FILMSTRIP", "A source URI and trim range are required.", null)
+                        } else if (startMs < 0L || endMs <= startMs || sampleCount !in 3..10) {
+                            result.error("INVALID_FILMSTRIP", "The requested filmstrip range or sample count is invalid.", null)
+                        } else {
+                            createFilmstrip(rawUri, startMs, endMs, sampleCount, result)
                         }
                     }
                     "analyzeFaces" -> {
@@ -747,6 +761,122 @@ class MainActivity : FlutterActivity() {
      * Bounded frontal-face sampling for conservative mobile reframing.
      * This is a focus-track signal, not an audiovisual active-speaker model.
      */
+    private fun createFilmstrip(
+        rawUri: String,
+        startMs: Long,
+        endMs: Long,
+        sampleCount: Int,
+        reply: MethodChannel.Result
+    ) {
+        ioExecutor.execute {
+            val retriever = MediaMetadataRetriever()
+            try {
+                val uri = Uri.parse(rawUri)
+                when (uri.scheme) {
+                    "content" -> {
+                        val hasGrant = contentResolver.persistedUriPermissions.any {
+                            it.uri == uri && it.isReadPermission
+                        }
+                        if (!hasGrant) {
+                            throw SecurityException("The video read permission is no longer available.")
+                        }
+                        retriever.setDataSource(this, uri)
+                    }
+                    "file" -> {
+                        val selectedFile = File(uri.path ?: throw IllegalArgumentException("File URI has no path."))
+                        val canonicalPath = selectedFile.canonicalPath
+                        val filesRoot = File(filesDir, "app_flutter").canonicalPath
+                        val filesBase = filesDir.canonicalPath
+                        val cacheBase = cacheDir.canonicalPath
+                        val allowed = canonicalPath.startsWith(filesRoot + File.separator) ||
+                            canonicalPath.startsWith(filesBase + File.separator) ||
+                            canonicalPath.startsWith(cacheBase + File.separator)
+                        if (!selectedFile.isFile || !allowed) {
+                            throw SecurityException("Local video is outside Cutawan's private storage.")
+                        }
+                        retriever.setDataSource(selectedFile.absolutePath)
+                    }
+                    "http", "https" -> retriever.setDataSource(rawUri, emptyMap())
+                    else -> throw IllegalArgumentException("Unsupported filmstrip source URI scheme.")
+                }
+
+                val durationMs = retriever.extractMetadata(
+                    MediaMetadataRetriever.METADATA_KEY_DURATION
+                )?.toLongOrNull() ?: 0L
+                if (durationMs <= 0L || startMs >= durationMs || endMs > durationMs) {
+                    throw IllegalArgumentException("The filmstrip trim range is outside the source duration.")
+                }
+
+                val frames = mutableListOf<Map<String, Any>>()
+                for (index in 0 until sampleCount) {
+                    val timestampMs = startMs +
+                        ((endMs - startMs - 1L) * index / (sampleCount - 1).toLong())
+                    val sourceFrame = retriever.getFrameAtTime(
+                        timestampMs * 1000L,
+                        MediaMetadataRetriever.OPTION_CLOSEST
+                    ) ?: continue
+
+                    try {
+                        val scale = minOf(
+                            1.0,
+                            240.0 / sourceFrame.width.toDouble(),
+                            240.0 / sourceFrame.height.toDouble()
+                        )
+                        val width = max(1, (sourceFrame.width * scale).toInt())
+                        val height = max(1, (sourceFrame.height * scale).toInt())
+                        val previewFrame = if (
+                            width == sourceFrame.width && height == sourceFrame.height
+                        ) {
+                            sourceFrame
+                        } else {
+                            Bitmap.createScaledBitmap(sourceFrame, width, height, true)
+                        }
+
+                        try {
+                            val output = ByteArrayOutputStream()
+                            if (!previewFrame.compress(Bitmap.CompressFormat.JPEG, 68, output)) {
+                                throw IllegalStateException("Could not encode a filmstrip thumbnail.")
+                            }
+                            val bytes = output.toByteArray()
+                            if (bytes.isEmpty() || bytes.size > 1024 * 1024) {
+                                throw IllegalStateException("A filmstrip thumbnail exceeded its size limit.")
+                            }
+                            frames.add(
+                                mapOf(
+                                    "timestampMs" to timestampMs,
+                                    "imageBytes" to bytes,
+                                    "width" to width,
+                                    "height" to height
+                                )
+                            )
+                        } finally {
+                            if (previewFrame !== sourceFrame && !previewFrame.isRecycled) {
+                                previewFrame.recycle()
+                            }
+                        }
+                    } finally {
+                        if (!sourceFrame.isRecycled) sourceFrame.recycle()
+                    }
+                }
+
+                if (frames.isEmpty()) {
+                    throw IllegalStateException("Android could not decode any frame in the selected trim range.")
+                }
+                mainHandler.post { reply.success(frames) }
+            } catch (error: Exception) {
+                mainHandler.post {
+                    reply.error(
+                        "FILMSTRIP_EXTRACTION_FAILED",
+                        error.message ?: "Android filmstrip extraction failed.",
+                        rawUri
+                    )
+                }
+            } finally {
+                try { retriever.release() } catch (_: Exception) { }
+            }
+        }
+    }
+
     private fun analyzeFaces(rawUri: String, reply: MethodChannel.Result) {
         ioExecutor.execute {
             val retriever = MediaMetadataRetriever()

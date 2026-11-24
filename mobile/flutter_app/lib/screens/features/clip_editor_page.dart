@@ -11,6 +11,7 @@ import '../../domain/clip_preferences.dart';
 import '../../domain/project_contract.dart';
 import '../../domain/reframe_contract.dart';
 import '../../domain/transcript_contract.dart';
+import '../../services/android_filmstrip_service.dart';
 import '../../services/caption_sidecar_generator.dart';
 import '../../services/local_project_repository.dart';
 
@@ -36,6 +37,11 @@ class ClipEditorPage extends StatefulWidget {
 
 class _ClipEditorPageState extends State<ClipEditorPage> {
   VideoPlayerController? _player;
+  final AndroidFilmstripService _filmstripService = const AndroidFilmstripService();
+  List<FilmstripFrame> _filmstripFrames = const [];
+  bool _filmstripLoading = false;
+  String? _filmstripError;
+  int _filmstripRequestId = 0;
   late final TextEditingController _titleController;
   late int _startMs;
   late int _endMs;
@@ -98,6 +104,7 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
         _loading = false;
         _rebuildPreviewCues();
       });
+      unawaited(_loadFilmstripFrames());
     } catch (error) {
       await controller?.dispose();
       if (!mounted) return;
@@ -106,6 +113,130 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
         _loading = false;
       });
     }
+  }
+
+  Future<void> _loadFilmstripFrames() async {
+    final requestId = ++_filmstripRequestId;
+    setState(() {
+      _filmstripLoading = true;
+      _filmstripError = null;
+    });
+    try {
+      final frames = await _filmstripService.generate(
+        sourceUri: widget.project.source.uri,
+        startMs: _startMs,
+        endMs: _endMs,
+        sampleCount: 7,
+      );
+      if (!mounted || requestId != _filmstripRequestId) return;
+      setState(() {
+        _filmstripFrames = frames;
+        _filmstripLoading = false;
+      });
+    } catch (error) {
+      if (!mounted || requestId != _filmstripRequestId) return;
+      setState(() {
+        _filmstripLoading = false;
+        _filmstripError = error.toString();
+      });
+    }
+  }
+
+  Widget _buildFilmstripPanel(BuildContext context) {
+    final theme = Theme.of(context);
+    return _sectionPanel(
+      context: context,
+      title: 'إطارات الخط الزمني',
+      subtitle: 'صور مصغرة من الفيديو الأصلي؛ اضغط على أي إطار للانتقال إلى توقيته.',
+      icon: Icons.movie_creation_outlined,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (_filmstripLoading)
+            const LinearProgressIndicator(minHeight: 2)
+          else if (_filmstripError != null)
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'تعذّر استخراج الإطارات: ' + _filmstripError!,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.error,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  tooltip: 'إعادة استخراج الإطارات',
+                  onPressed: _loadFilmstripFrames,
+                  icon: const Icon(Icons.refresh_rounded),
+                ),
+              ],
+            )
+          else if (_filmstripFrames.isEmpty)
+            OutlinedButton.icon(
+              onPressed: _loadFilmstripFrames,
+              icon: const Icon(Icons.refresh_rounded),
+              label: const Text('استخراج الإطارات'),
+            )
+          else
+            SizedBox(
+              height: 92,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: _filmstripFrames.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 8),
+                itemBuilder: (context, index) {
+                  final frame = _filmstripFrames[index];
+                  final currentPosition =
+                      _player?.value.position.inMilliseconds ?? -1;
+                  final active =
+                      (currentPosition - frame.timestampMs).abs() < 180;
+                  return Semantics(
+                    button: true,
+                    label: 'إطار عند ' + _formatTime(frame.timestampMs),
+                    child: InkWell(
+                      onTap: () => _seekTo(frame.timestampMs),
+                      borderRadius: BorderRadius.circular(10),
+                      child: SizedBox(
+                        width: 112,
+                        child: Column(
+                          children: [
+                            Expanded(
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(9),
+                                  border: Border.all(
+                                    color: active
+                                        ? theme.colorScheme.primary
+                                        : theme.colorScheme.outlineVariant,
+                                    width: active ? 2 : 1,
+                                  ),
+                                ),
+                                clipBehavior: Clip.antiAlias,
+                                child: Image.memory(
+                                  frame.imageBytes,
+                                  width: 112,
+                                  fit: BoxFit.cover,
+                                  gaplessPlayback: true,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              _formatTime(frame.timestampMs),
+                              style: theme.textTheme.labelSmall,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+        ],
+      ),
+    );
   }
 
   Future<void> _loadEditorArtifacts() async {
@@ -280,6 +411,7 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
       _rebuildPreviewCues();
     });
     await _seekTo(_startMs);
+    unawaited(_loadFilmstripFrames());
   }
 
   Future<void> _markTrimEnd() async {
@@ -294,6 +426,7 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
       _rebuildPreviewCues();
     });
     await _seekTo(_endMs);
+    unawaited(_loadFilmstripFrames());
   }
 
   double _targetAspectRatio() => switch (_draftPreferences.aspectRatio) {
@@ -716,6 +849,7 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
               if (current < _startMs || current > _endMs) {
                 unawaited(_seekTo(_startMs));
               }
+              unawaited(_loadFilmstripFrames());
             },
           ),
           Row(
@@ -1026,6 +1160,7 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
 
   @override
   void dispose() {
+    _filmstripRequestId++;
     _titleController.dispose();
     final player = _player;
     if (player != null) {
@@ -1106,6 +1241,7 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
                         ),
                         _buildPreview(context, value),
                         _buildTrimPanel(context, duration),
+                        _buildFilmstripPanel(context),
                         _buildFramingPanel(context),
                         _sectionPanel(
                           context: context,
