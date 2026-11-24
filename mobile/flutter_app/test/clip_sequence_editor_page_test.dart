@@ -8,6 +8,18 @@ import 'package:cutawan_mobile/domain/project_contract.dart';
 import 'package:cutawan_mobile/screens/features/clip_sequence_editor_page.dart';
 import 'package:cutawan_mobile/services/local_project_repository.dart';
 
+Future<void> pumpSequenceUntilVisible(
+  WidgetTester tester,
+  Finder finder,
+) async {
+  for (var attempt = 0; attempt < 40; attempt++) {
+    await tester.pump();
+    if (finder.evaluate().isNotEmpty) return;
+    await tester.pump(const Duration(milliseconds: 250));
+  }
+  expect(finder, findsOneWidget);
+}
+
 Future<void> pumpSequenceTransition(WidgetTester tester) async {
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 500));
@@ -112,7 +124,10 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
 
     await tester.pumpWidget(buildPage());
-    await pumpSequenceTransition(tester);
+    await pumpSequenceUntilVisible(
+      tester,
+      find.byKey(const ValueKey('sequence-add-track-video')),
+    );
     expect(find.text('Main video'), findsOneWidget);
     await tapSequenceControl(tester, find.byKey(const ValueKey('sequence-add-clip-track_video_main')));
     await pumpSequenceTransition(tester);
@@ -136,7 +151,10 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
 
     await tester.pumpWidget(buildPage());
-    await pumpSequenceTransition(tester);
+    await pumpSequenceUntilVisible(
+      tester,
+      find.byKey(const ValueKey('sequence-add-track-video')),
+    );
     await tapSequenceControl(tester, find.byKey(const ValueKey('sequence-add-track-audio')));
     await pumpSequenceTransition(tester);
 
@@ -157,7 +175,10 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
 
     await tester.pumpWidget(buildPage());
-    await pumpSequenceTransition(tester);
+    await pumpSequenceUntilVisible(
+      tester,
+      find.byKey(const ValueKey('sequence-add-track-video')),
+    );
     final add = find.byKey(const ValueKey('sequence-add-clip-track_video_main'));
     await tapSequenceControl(tester, add);
     await pumpSequenceTransition(tester);
