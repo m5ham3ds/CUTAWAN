@@ -8,6 +8,86 @@ import 'package:cutawan_mobile/domain/project_contract.dart';
 import 'package:cutawan_mobile/services/local_project_repository.dart';
 
 void main() {
+  test('preview crop alignment matches the native crop rectangle at all edges', () {
+    const width = 9 / 16 / (16 / 9);
+    const height = 1.0;
+    final left = ClipEditOverrides.previewAlignmentForCropRegion(
+      x: 0,
+      y: 0,
+      width: width,
+      height: height,
+    );
+    final center = ClipEditOverrides.previewAlignmentForCropRegion(
+      x: (1 - width) / 2,
+      y: 0,
+      width: width,
+      height: height,
+    );
+    final right = ClipEditOverrides.previewAlignmentForCropRegion(
+      x: 1 - width,
+      y: 0,
+      width: width,
+      height: height,
+    );
+
+    expect(left['x'], -1);
+    expect(center['x'], closeTo(0, 0.000001));
+    expect(right['x'], 1);
+    expect(left['y'], 0);
+    expect(center['y'], 0);
+    expect(right['y'], 0);
+  });
+
+  test('preview crop alignment handles vertical crops and full-frame axes', () {
+    const height = (9 / 16) / (16 / 9);
+    final top = ClipEditOverrides.previewAlignmentForCropRegion(
+      x: 0,
+      y: 0,
+      width: 1,
+      height: height,
+    );
+    final center = ClipEditOverrides.previewAlignmentForCropRegion(
+      x: 0,
+      y: (1 - height) / 2,
+      width: 1,
+      height: height,
+    );
+    final bottom = ClipEditOverrides.previewAlignmentForCropRegion(
+      x: 0,
+      y: 1 - height,
+      width: 1,
+      height: height,
+    );
+
+    expect(top['x'], 0);
+    expect(center['x'], 0);
+    expect(bottom['x'], 0);
+    expect(top['y'], -1);
+    expect(center['y'], closeTo(0, 0.000001));
+    expect(bottom['y'], 1);
+  });
+
+  test('preview crop alignment rejects non-finite and out-of-frame regions', () {
+    expect(
+      () => ClipEditOverrides.previewAlignmentForCropRegion(
+        x: double.nan,
+        y: 0,
+        width: 0.5,
+        height: 1,
+      ),
+      throwsFormatException,
+    );
+    expect(
+      () => ClipEditOverrides.previewAlignmentForCropRegion(
+        x: 0.6,
+        y: 0,
+        width: 0.5,
+        height: 1,
+      ),
+      throwsFormatException,
+    );
+  });
+
   test('automatic mode leaves the analyzed reframe timeline untouched', () {
     const value = ClipEditOverrides(clipId: 'clip_001');
     expect(

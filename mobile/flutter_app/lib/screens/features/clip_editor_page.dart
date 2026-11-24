@@ -564,17 +564,13 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
     final top = (focus.dy - cropHeight / 2)
         .clamp(0.0, 1.0 - cropHeight)
         .toDouble();
-    final alignX = cropWidth >= 1
-        ? 0.0
-        : (2 * left / (1 - cropWidth) - 1)
-            .clamp(-1.0, 1.0)
-            .toDouble();
-    final alignY = cropHeight >= 1
-        ? 0.0
-        : (2 * top / (1 - cropHeight) - 1)
-            .clamp(-1.0, 1.0)
-            .toDouble();
-    return Alignment(alignX, alignY);
+    final alignment = ClipEditOverrides.previewAlignmentForCropRegion(
+      x: left,
+      y: top,
+      width: cropWidth,
+      height: cropHeight,
+    );
+    return Alignment(alignment['x']!, alignment['y']!);
   }
 
   BoxFit _previewFit(int sourcePositionMs) {
@@ -594,9 +590,13 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
         : null;
     final region = shot?.region;
     if (region == null) return Alignment.center;
-    final centerX = region.x + region.width / 2;
-    final centerY = region.y + region.height / 2;
-    return Alignment(centerX * 2 - 1, centerY * 2 - 1);
+    final alignment = ClipEditOverrides.previewAlignmentForCropRegion(
+      x: region.x,
+      y: region.y,
+      width: region.width,
+      height: region.height,
+    );
+    return Alignment(alignment['x']!, alignment['y']!);
   }
 
   Map<String, Object?>? _activeCaptionCue(int sourcePositionMs) {

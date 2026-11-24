@@ -78,6 +78,41 @@ class ClipEditOverrides {
         fadeOutMs: fadeOutMs ?? this.fadeOutMs,
       );
 
+  /// Converts a normalized source crop rectangle into [FittedBox.alignment]
+  /// coordinates. FittedBox aligns overflow, so using the crop center directly
+  /// produces an offset that differs from the native export crop near edges.
+  static Map<String, double> previewAlignmentForCropRegion({
+    required double x,
+    required double y,
+    required double width,
+    required double height,
+  }) {
+    const tolerance = 0.000001;
+    if (!x.isFinite ||
+        !y.isFinite ||
+        !width.isFinite ||
+        !height.isFinite ||
+        width <= 0 ||
+        height <= 0 ||
+        width > 1 ||
+        height > 1 ||
+        x < 0 ||
+        y < 0 ||
+        x > 1 - width + tolerance ||
+        y > 1 - height + tolerance) {
+      throw const FormatException('Preview crop region is outside the source frame.');
+    }
+    final left = x.clamp(0.0, 1.0 - width).toDouble();
+    final top = y.clamp(0.0, 1.0 - height).toDouble();
+    final alignX = width >= 1
+        ? 0.0
+        : (2 * left / (1 - width) - 1).clamp(-1.0, 1.0).toDouble();
+    final alignY = height >= 1
+        ? 0.0
+        : (2 * top / (1 - height) - 1).clamp(-1.0, 1.0).toDouble();
+    return {'x': alignX, 'y': alignY};
+  }
+
   static double blackFadeOpacity({
     required int localPositionMs,
     required int durationMs,
