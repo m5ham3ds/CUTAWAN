@@ -8,6 +8,7 @@ import '../domain/transcript_contract.dart';
 import '../domain/clip_candidate.dart';
 import '../domain/reframe_contract.dart';
 import '../domain/clip_edit_overrides.dart';
+import '../domain/clip_sequence.dart';
 
 class LocalProjectRepository {
   LocalProjectRepository({Directory? rootDirectory})
@@ -296,6 +297,62 @@ class LocalProjectRepository {
       throw const FormatException('Clip edit artifact does not match its file name.');
     }
     return overrides;
+  }
+
+  Future<void> saveClipSequence(
+    String projectId,
+    ClipSequence sequence,
+  ) async {
+    final project = await load(projectId);
+    if (project == null) {
+      throw StateError('Project not found: $projectId');
+    }
+    final candidates = await loadCandidates(projectId);
+    if (candidates == null) {
+      throw StateError('Candidate data must exist before saving a clip sequence.');
+    }
+    sequence.validate(
+      candidateSet: candidates,
+      expectedSourceDurationMs: project.source.durationMs,
+    );
+    final directory = await _artifactDirectory(projectId);
+    final target = File(
+      '${directory.path}${Platform.pathSeparator}sequence.json',
+    );
+    final temporary = File('${target.path}.tmp');
+    await temporary.writeAsString(jsonEncode(sequence.toJson()), flush: true);
+    if (await target.exists()) {
+      await target.delete();
+    }
+    await temporary.rename(target.path);
+  }
+
+  Future<ClipSequence?> loadClipSequence(String projectId) async {
+    final project = await load(projectId);
+    if (project == null) {
+      throw StateError('Project not found: $projectId');
+    }
+    final directory = await _artifactDirectory(projectId);
+    final file = File(
+      '${directory.path}${Platform.pathSeparator}sequence.json',
+    );
+    if (!await file.exists()) return null;
+    final decoded = jsonDecode(await file.readAsString());
+    if (decoded is! Map<String, dynamic>) {
+      throw const FormatException('Sequence artifact root must be a JSON object.');
+    }
+    final sequence = ClipSequence.fromJson(decoded);
+    final candidates = await loadCandidates(projectId);
+    if (candidates == null) {
+      throw const FormatException(
+        'Sequence artifact has no candidate set to validate against.',
+      );
+    }
+    sequence.validate(
+      candidateSet: candidates,
+      expectedSourceDurationMs: project.source.durationMs,
+    );
+    return sequence;
   }
 
   Future<void> delete(String projectId) async {
