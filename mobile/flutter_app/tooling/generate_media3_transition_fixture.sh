@@ -11,7 +11,7 @@ ffmpeg -hide_banner -loglevel error -y \
   -f lavfi -i "color=c=blue:s=160x120:r=15:d=1" \
   -filter_complex "[0:v][1:v]concat=n=2:v=1:a=0,format=yuv420p" \
   -an -c:v libx264 -profile:v baseline -level 3.0 \
-  -preset ultrafast -tune zerolatency -crf 0 \
+  -preset ultrafast -tune zerolatency -crf 18 \
   -g 15 -keyint_min 15 -sc_threshold 0 \
   -movflags +faststart "$FIXTURE"
 
