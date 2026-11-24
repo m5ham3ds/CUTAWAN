@@ -66,15 +66,18 @@ Direct URL import accepts a direct video-file endpoint only. It does not extract
 
 ### Phase 9 — current Clip Editor and Caption Studio scope
 
-- The Clip Editor uses `video_player` on the selected SAF URI/local file/network source, plays/pauses/seeks, trims the source-time interval with a bounded range slider and start/end actions, changes output aspect ratio, supports automatic/fit/manual-static focus framing, applies caption cues against the playing source position, and saves candidate/clip-local preferences.
+- The Clip Editor uses `video_player` on the selected SAF URI/local file/network source, plays/pauses/seeks, trims the source-time interval, displays native-generated Filmstrip thumbnails, supports automatic/fit/manual framing with source-time manual-focus keyframes, applies caption cues, and persists clip-local settings.
+- Visual fade-in/fade-out settings (up to 1.5 seconds each) are persisted per clip and exported as a Media3 black overlay. They do not fade audio and are not transitions between separate clips.
+- Preview crop alignment uses a shared conversion from the same normalized crop rectangle used by export for both automatic and manual framing. The 228-test Android run covers horizontal/vertical crop edges and invalid region input; this establishes geometry consistency, not pixel-measured preview/export equivalence.
+- Remaining editor scope: true clip-to-clip transitions, an explicit multi-track/sequence composition model, measured preview/export pixel parity and physical ARM64 handset acceptance.
 - Remaining editor features from the phase target: filmstrip/timeline thumbnails, keyframed manual focus/reframe, transitions/multitrack editing and measured preview/export parity. The current static focus sliders are not keyframes; do not describe them as such.
 - Caption Studio loads saved transcript word timings into a project-scoped animated preview, but that sample/group preview is not synchronized to live video playback. Only Static and Karaoke Fill are export-supported motion modes; other catalogue animations remain preview-only and are reported as such.
-- The responsive/accessibility automated baseline on source SHA `8593354bdaf583178ad4d86c20c6767dcd1b4e0e` passed **214/214 Flutter tests**, strict analysis, and ARM64-only APK/native-library verification. It includes 24 page goldens, page-level Tab target inventory and four-page simulated landscape/safe-area coverage. These are widget/emulator/CI checks, not actual handset evidence.
+- The responsive/accessibility baseline includes 24 page goldens, page-level Tab target inventory and four-page simulated landscape/safe-area coverage. Latest Mobile Android run [45313033547](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45313033547), source SHA `7b6122f33d5aecb4e9d5be1ef3d0080a6b452376`, passed **228/228 Flutter tests**, strict analysis, ARM64-only ABI/native-library verification and APK upload. These are automated CI/widget checks, not actual handset evidence.
 
 ### Physical acceptance still required
 
 - Phase 8: validate long/VFR/rotated/silent/no-audio/corrupt media, full decode and crop/caption/audio continuity, WorkManager completion and notifications, project cancellation, relaunch/recovery and OEM restrictions on the target ARM64 handset.
-- Phase 9: verify real hardware Tab traversal, rasterized focus visibility for every relevant control, RTL/LTR, large text, landscape, cutouts, gesture/system bars and OEM behavior.
+- Phase 9: verify real hardware Tab traversal, rasterized focus visibility for every relevant control, RTL/LTR, large text, landscape, cutouts, gesture/system bars and OEM behavior; also measure crop/caption/fade preview against decoded export frames on a physical ARM64 handset.
 - Phase 10: collect a hash-locked Arabic/English media corpus, manually reviewed transcripts/word timings, WER and timing scores, candidate/crop quality, full MP4 decode results, sustained PSS/RAM/processing/battery/thermal measurements, process-death/SAF/Keystore lifecycle and cloud-consent end-to-end results.
 
 Never claim physical acceptance from CI, widget tests, mock gateways or simulated insets. Record the device, Android/API version, build SHA, fixture hashes, method, measurements and limitations for every field result.

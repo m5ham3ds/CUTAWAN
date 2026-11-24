@@ -62,14 +62,25 @@ Preserve schema compatibility and existing project data. Never fabricate AI resu
 
 The phase has delivered the workflow and responsive UI slices recorded below; the original target remains broader than any single widget-test pass. The phase is **still in progress**, but the early statement that the UI is only an initial shell is no longer an accurate summary of the repository's present state.
 
-**Latest automated baseline:** Mobile Android run [45267350030](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45267350030), run 366, source SHA `8593354bdaf583178ad4d86c20c6767dcd1b4e0e`, passed format, strict analysis, **214/214 Flutter tests**, ARM64-only APK packaging and artifact upload. The suite includes the page-level Tab target inventory in `test/page_keyboard_accessibility_test.dart`, plus the separate conditional remote-model keyboard test.
+**Latest automated baseline:** Mobile Android run [45313033547](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45313033547), run 379, source SHA `7b6122f33d5aecb4e9d5be1ef3d0080a6b452376`, passed Dart format, strict analysis, **228/228 Flutter tests**, ARM64 debug APK build, ARM64-only ABI verification, duplicate-native-library check and artifact upload. The test suite now also covers clip preview crop alignment for left/center/right and top/center/bottom regions, plus rejection of malformed crop geometry.
+
+- APK artifact [14883968118](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45313033547/artifacts/14883968118): **60,050,476 bytes** (artifact archive); SHA-256 `ddb8220ac7be93152208840913ba48e32457707d7d622338a756ff46d10a9eca`. The APK contains exactly `arm64-v8a`, **10 unique native libraries**, and the GGML runtime files `libggml-cpu.so`, `libggml.so`, `libggml-base.so`, with no duplicate native-library basenames.
+- Coverage artifact [14883749112](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45313033547/artifacts/14883749112): **19,611 bytes**; SHA-256 `2279ccb0a42bc59f96b9284d15db80c62b02a9b0e629f7e8a36f221131e4e5ff`.
+- Root/desktop CI [45313033480](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45313033480), run 431 — **success** across checks, Xvfb UI smoke, offline FFmpeg/caption/render pipeline and Apple Silicon packaging.
+- Branch Policy [45313033620](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45313033620), run 81 — **success**; `main` is the only branch.
+
+The full record of Filmstrip thumbnails, source-time focus keyframes, per-clip black fades and preview crop-geometry correction is in [PHASE-09-CLIP-EDITOR-THUMBNAILS-KEYFRAMES-TRANSITIONS-PREVIEW-GEOMETRY-2026-11-24.md](PHASE-09-CLIP-EDITOR-THUMBNAILS-KEYFRAMES-TRANSITIONS-PREVIEW-GEOMETRY-2026-11-24.md).
 
 **Remaining Phase 9 gates are in two groups:**
 
-1. **Editor product scope:** the accepted Clip Editor slice supports real playback, source-time trim, aspect ratio, automatic/fit/manual-static framing, caption controls and per-clip persistence. The original phase target still calls for a filmstrip/timeline thumbnail experience, keyframed manual focus/reframe, transitions and validated preview/export parity; the dated implementation record below explicitly says those pieces are not complete. Caption Studio's animated preview is a timed example workspace rather than a live-video synchronized preview, and only Static/Karaoke Fill are represented as export-supported motion modes.
+1. **Editor product scope:** the Clip Editor now has native-generated Filmstrip thumbnails, absolute source-time manual-focus keyframes, per-clip visual fade-in/fade-out, and crop-geometry alignment shared by automatic and manual preview framing. Fade settings are persisted and exported as a visual black overlay; they do not fade audio and do not create transitions between separate clips. The crop-alignment tests verify normalized rectangle placement, but pixel-measured preview/export parity is still open. True cross-clip transitions and multitrack/sequence composition are also still open. Caption Studio's animated preview remains a timed example workspace rather than live-video synchronization, and only Static/Karaoke Fill are export-supported motion modes.
 2. **Physical handset acceptance:** verify actual hardware Tab behavior and visible focus across controls (especially ListTile, SwitchListTile and chips), RTL/large-text/landscape presentation, Android system bars, gesture insets, cutouts and OEM behavior. Existing focus goldens cover representative controls in light/RTL and dark/LTR; the theme contract test does not measure rasterized focus pixels for every control type.
 
-CI success does not close either group. Do not start Phase 10 until the remaining Phase 9 product scope is implemented/accepted and the handset gate is recorded.
+CI success does not close either group. Do not start Phase 10 until multitrack/clip-to-clip transitions, measured preview/export parity and the physical handset gate are implemented and recorded.
+
+## Clip Editor timeline, keyframes, fades and preview crop geometry — 2026-11-24
+
+The dated acceptance record is [PHASE-09-CLIP-EDITOR-THUMBNAILS-KEYFRAMES-TRANSITIONS-PREVIEW-GEOMETRY-2026-11-24.md](PHASE-09-CLIP-EDITOR-THUMBNAILS-KEYFRAMES-TRANSITIONS-PREVIEW-GEOMETRY-2026-11-24.md). Filmstrip thumbnails, source-time keyframes, clip-local black fade-in/out, and preview crop-geometry alignment are now implemented and accepted by Android run 379 (228/228 tests, ARM64-only APK verification) and CI run 431. This does not establish pixel-measured preview/export parity or physical-device acceptance. True multi-track/sequence composition and clip-to-clip transitions remain open.
 
 ## Implementation update — 2026-11-21
 
