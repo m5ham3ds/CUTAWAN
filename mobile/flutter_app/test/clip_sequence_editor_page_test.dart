@@ -13,6 +13,13 @@ Future<void> pumpSequenceTransition(WidgetTester tester) async {
   await tester.pump(const Duration(milliseconds: 400));
 }
 
+Future<void> tapSequenceControl(
+  WidgetTester tester,
+  Finder finder,
+) async {
+  await tester.tapAt(tester.getCenter(finder));
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -106,13 +113,13 @@ void main() {
     await tester.pumpWidget(buildPage());
     await tester.pumpAndSettle();
     expect(find.text('Main video'), findsOneWidget);
-    await tester.tap(find.byKey(const ValueKey('sequence-add-clip-track_video_main')));
+    await tapSequenceControl(tester, find.byKey(const ValueKey('sequence-add-clip-track_video_main')));
     await pumpSequenceTransition(tester);
-    await tester.tap(find.byKey(const ValueKey('sequence-candidate-choice-clip_001')));
+    await tapSequenceControl(tester, find.byKey(const ValueKey('sequence-candidate-choice-clip_001')));
     await pumpSequenceTransition(tester);
 
     expect(find.byKey(const ValueKey('sequence-item-item_1')), findsOneWidget);
-    await tester.tap(find.byKey(const ValueKey('sequence-save-button')));
+    await tapSequenceControl(tester, find.byKey(const ValueKey('sequence-save-button')));
     await pumpSequenceTransition(tester);
 
     final restored = await repository.loadClipSequence(project.id);
@@ -129,13 +136,13 @@ void main() {
 
     await tester.pumpWidget(buildPage());
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('sequence-add-track-audio')));
+    await tapSequenceControl(tester, find.byKey(const ValueKey('sequence-add-track-audio')));
     await tester.pumpAndSettle();
 
     expect(find.text('مسار صوتي 1'), findsOneWidget);
-    await tester.tap(find.byKey(const ValueKey('sequence-add-clip-track_audio_1')));
+    await tapSequenceControl(tester, find.byKey(const ValueKey('sequence-add-clip-track_audio_1')));
     await pumpSequenceTransition(tester);
-    await tester.tap(find.byKey(const ValueKey('sequence-candidate-choice-clip_001')));
+    await tapSequenceControl(tester, find.byKey(const ValueKey('sequence-candidate-choice-clip_001')));
     await pumpSequenceTransition(tester);
 
     expect(find.byKey(const ValueKey('sequence-item-item_1')), findsOneWidget);
@@ -151,19 +158,19 @@ void main() {
     await tester.pumpWidget(buildPage());
     await tester.pumpAndSettle();
     final add = find.byKey(const ValueKey('sequence-add-clip-track_video_main'));
-    await tester.tap(add);
+    await tapSequenceControl(tester, add);
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('sequence-candidate-choice-clip_001')));
+    await tapSequenceControl(tester, find.byKey(const ValueKey('sequence-candidate-choice-clip_001')));
     await pumpSequenceTransition(tester);
-    await tester.tap(add);
+    await tapSequenceControl(tester, add);
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('sequence-candidate-choice-clip_002')));
+    await tapSequenceControl(tester, find.byKey(const ValueKey('sequence-candidate-choice-clip_002')));
     await tester.pumpAndSettle();
 
     final moveLeft = find.byKey(const ValueKey('sequence-move-left-item_2'));
     await tester.ensureVisible(moveLeft);
     await pumpSequenceTransition(tester);
-    await tester.tap(moveLeft);
+    await tapSequenceControl(tester, moveLeft);
     await pumpSequenceTransition(tester);
 
     expect(find.textContaining('لا يمكن تحريك المقطع فوق مقطع آخر'), findsOneWidget);
