@@ -1,11 +1,13 @@
 # Media3 transition test fixture
 
-- File: `red-blue-transition.mp4`
-- SHA-256: `f190217b68573ce3d92c9aed6f00001c3d391e7fa439a26e6054ad12e630b3ff`
-- Container: MP4
-- Video: H.264 Baseline, 160×120, 15 fps, 2.0 seconds, yuv420p
-- Content: solid red for the first second, then solid blue for the second second
-- Audio: none
-- Purpose: deterministic input for the Android Media3 composition instrumentation test. The test samples native-rendered output frames before, during and after a 600 ms dip-to-black transition.
+The binary fixture is generated during CI by:
 
-The source is generated locally with FFmpeg's `color` lavfi filters and H.264 encoder. The file is committed so CI tests use the same byte-for-byte input on every run.
+`tooling/generate_media3_transition_fixture.sh`
+
+It uses FFmpeg's `color` lavfi source and H.264 encoder to create a silent MP4 with:
+
+- 160×120 video at 15 fps
+- Solid red for the first second, followed by solid blue for the second second
+- H.264 Baseline, `yuv420p`, approximately 2 seconds
+
+The generator validates the container and stream properties with `ffprobe` before the Android project generator copies the file into `androidTest/assets`. The instrumentation test invokes the real Media3 composition renderer and samples frames before, during and after a 600 ms dip-to-black transition.

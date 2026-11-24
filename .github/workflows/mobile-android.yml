@@ -44,13 +44,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Validate Android generation script syntax
-        run: bash -n tooling/generate_android_platform.sh
+        run: bash -n tooling/generate_android_platform.sh tooling/generate_media3_transition_fixture.sh
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: stable
           flutter-version: "3.47.6"
           cache: true
+      - name: Install FFmpeg for deterministic Media3 test fixture
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+      - name: Generate and validate deterministic Media3 fixture
+        run: bash tooling/generate_media3_transition_fixture.sh
       - name: Install pinned Android NDK
         uses: android-actions/setup-android@v3
         with:
