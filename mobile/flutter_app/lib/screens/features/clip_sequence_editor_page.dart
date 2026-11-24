@@ -4,8 +4,10 @@ import 'package:flutter/material.dart';
 
 import '../../domain/clip_candidate.dart';
 import '../../domain/clip_sequence.dart';
+import '../../domain/clip_preferences.dart';
 import '../../domain/project_contract.dart';
 import '../../services/local_project_repository.dart';
+import '../../services/video_export_service.dart';
 
 class ClipSequenceEditorPage extends StatefulWidget {
   const ClipSequenceEditorPage({
@@ -14,6 +16,7 @@ class ClipSequenceEditorPage extends StatefulWidget {
     required this.repository,
     required this.onSaved,
     this.initialSequence,
+    this.exportService,
     super.key,
   });
 
@@ -22,6 +25,7 @@ class ClipSequenceEditorPage extends StatefulWidget {
   final LocalProjectRepository repository;
   final Future<void> Function() onSaved;
   final ClipSequence? initialSequence;
+  final VideoExportService? exportService;
 
   @override
   State<ClipSequenceEditorPage> createState() => _ClipSequenceEditorPageState();
@@ -32,7 +36,11 @@ class _ClipSequenceEditorPageState extends State<ClipSequenceEditorPage> {
   bool _loading = true;
   bool _saving = false;
   bool _dirty = false;
+  bool _exporting = false;
+  bool _cancelExportRequested = false;
+  double _exportProgress = 0;
   String? _error;
+  final VideoExportService _defaultExportService = VideoExportService();
 
   @override
   void initState() {
@@ -294,6 +302,137 @@ class _ClipSequenceEditorPageState extends State<ClipSequenceEditorPage> {
     }
   }
 
+  double _outputAspectRatio() {
+    final source = widget.project.source;
+    final rotated = source.rotationDegrees.abs() % 180 != 0;
+    final width = rotated ? source.height : source.width;
+    final height = rotated ? source.width : source.height;
+    return switch (widget.project.preferences.aspectRatio) {
+      ClipAspectRatio.portrait916 => 9 / 16,
+      ClipAspectRatio.square11 => 1,
+      ClipAspectRatio.landscape169 => 16 / 9,
+      ClipAspectRatio.original => width / height,
+    };
+  }
+
+  Future<void> _exportSequence() async {
+    var sequence = _sequence;
+    if (sequence == null || _saving || _exporting || sequence.clips.isEmpty) {
+      return;
+    }
+    setState(() {
+      _exporting = true;
+      _cancelExportRequested = false;
+      _exportProgress = 0;
+      _error = null;
+    });
+    try {
+      if (_dirty) {
+        await widget.repository.saveClipSequence(widget.project.id, sequence);
+        if (!mounted) return;
+        setState(() => _dirty = false);
+        await widget.onSaved();
+      }
+
+      sequence = _sequence ?? sequence;
+      sequence.validate(
+        candidateSet: widget.candidateSet,
+        expectedSourceDurationMs: widget.project.source.durationMs,
+      );
+      final expectedDurationMs = sequence.clips
+          .map((clip) => clip.timelineEndMs)
+          .fold<int>(0, (largest, value) => value > largest ? value : largest);
+      final tracks = sequence.tracks
+          .toList()
+        ..sort((a, b) {
+          final aPriority = a.type == ClipSequenceTrackType.video ? 0 : 1;
+          final bPriority = b.type == ClipSequenceTrackType.video ? 0 : 1;
+          final byType = aPriority.compareTo(bPriority);
+          return byType != 0 ? byType : a.order.compareTo(b.order);
+        });
+      final trackPayload = tracks.map((track) {
+        final clips = sequence!.clips
+            .where((clip) => clip.trackId == track.id)
+            .toList()
+          ..sort((a, b) => a.timelineStartMs.compareTo(b.timelineStartMs));
+        return <String, Object?>{
+          'id': track.id,
+          'type': track.type.name,
+          'clips': clips
+              .map((clip) => <String, Object?>{
+                    'itemId': clip.id,
+                    'candidateId': clip.candidateId,
+                    'sourceUri': widget.project.source.uri,
+                    'sourceStartMs': clip.sourceStartMs,
+                    'sourceEndMs': clip.sourceEndMs,
+                    'timelineStartMs': clip.timelineStartMs,
+                  })
+              .toList(growable: false),
+        };
+      }).toList(growable: false);
+      final outputPath = await widget.repository.exportFilePath(
+        widget.project.id,
+        'sequence',
+      );
+      final exporter = widget.exportService ?? _defaultExportService;
+      final result = await exporter.renderComposition(
+        projectId: widget.project.id,
+        compositionId: 'sequence',
+        tracks: trackPayload,
+        sourceDurationMs: widget.project.source.durationMs,
+        expectedDurationMs: expectedDurationMs,
+        aspectRatio: _outputAspectRatio(),
+        outputPath: outputPath,
+        onProgress: (value) {
+          if (mounted) setState(() => _exportProgress = value);
+        },
+        shouldCancel: () async => _cancelExportRequested,
+      );
+      await widget.repository.saveExportRecord(
+        widget.project.id,
+        <String, Object?>{
+          'clipId': 'sequence',
+          'projectId': widget.project.id,
+          'title': widget.project.title,
+          'outputUri': result.outputUri,
+          'displayName': result.displayName,
+          'sha256': result.sha256,
+          'sizeBytes': result.sizeBytes,
+          'durationMs': result.durationMs,
+          'width': result.width,
+          'height': result.height,
+          'hasAudio': result.hasAudio,
+          'fullyDecodeValidated': result.fullyDecodeValidated,
+          'decodedVideoBuffers': result.decodedVideoBuffers,
+          'decodedAudioBuffers': result.decodedAudioBuffers,
+          'validated': result.validated,
+          'startMs': 0,
+          'endMs': expectedDurationMs,
+          'renderer': 'androidx-media3-transformer-1.11.1-composition-v1',
+          'createdAtUtc': DateTime.now().toUtc().toIso8601String(),
+        },
+      );
+      if (!mounted) return;
+      setState(() {
+        _exporting = false;
+        _exportProgress = 1;
+      });
+      _showMessage('اكتمل تصدير التسلسل والتحقق من فك الصوت والصورة.');
+      await widget.onSaved();
+    } on VideoExportCancelled {
+      if (!mounted) return;
+      setState(() => _exporting = false);
+      _showMessage('تم إلغاء تصدير التسلسل.');
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _exporting = false;
+        _error = error.toString();
+      });
+      _showMessage('تعذّر تصدير التسلسل: $error', isError: true);
+    }
+  }
+
   Widget _buildTrackCard(ClipSequenceTrack track) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
@@ -434,7 +573,7 @@ class _ClipSequenceEditorPageState extends State<ClipSequenceEditorPage> {
           IconButton(
             key: const ValueKey('sequence-save-button'),
             tooltip: 'حفظ التسلسل',
-            onPressed: _loading || _saving || !_dirty ? null : _saveSequence,
+            onPressed: _loading || _saving || _exporting || !_dirty ? null : _saveSequence,
             icon: _saving
                 ? const SizedBox(
                     width: 20,
@@ -476,7 +615,7 @@ class _ClipSequenceEditorPageState extends State<ClipSequenceEditorPage> {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      'رتّب المقاطع على مسارات مستقلة. تُحفظ التعديلات مع المشروع، ويظل التصدير المركب غير متاح حتى اكتمال محرك التسلسل.',
+                      'رتّب المقاطع على المسارات ثم صدّرها كفيديو واحد عبر Media3. المعاينة المركبة وCrossfade بين المقاطع غير متاحين في هذه النسخة.',
                       style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant, height: 1.4),
                     ),
                     const SizedBox(height: 14),
@@ -493,7 +632,7 @@ class _ClipSequenceEditorPageState extends State<ClipSequenceEditorPage> {
                           SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              'هذه مساحة ترتيب وحفظ فقط. لا يوجد تشغيل معاينة مركّبة أو دمج نهائي للصوت والصورة في هذه المرحلة.',
+                              'التصدير المركب متاح للمسارات الخطية والفجوات الزمنية. لا توجد معاينة متزامنة متعددة الفيديوهات، ولا تدعم Media3 حالياً Crossfade للصوت أو الصورة.',
                             ),
                           ),
                         ],
@@ -548,10 +687,41 @@ class _ClipSequenceEditorPageState extends State<ClipSequenceEditorPage> {
                     const SizedBox(height: 16),
                     FilledButton.icon(
                       key: const ValueKey('sequence-save-bottom-button'),
-                      onPressed: _saving || !_dirty ? null : _saveSequence,
+                      onPressed: _saving || _exporting || !_dirty ? null : _saveSequence,
                       icon: const Icon(Icons.save_rounded),
                       label: Text(_saving ? 'جارٍ الحفظ…' : 'حفظ التسلسل'),
                     ),
+                    const SizedBox(height: 10),
+                    FilledButton.icon(
+                      key: const ValueKey('sequence-export-button'),
+                      onPressed: _saving || _exporting || sequence.clips.isEmpty
+                          ? null
+                          : _exportSequence,
+                      icon: _exporting
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.video_file_rounded),
+                      label: Text(
+                        _exporting ? 'جارٍ تصدير المسارات…' : 'تصدير MP4 مركّب',
+                      ),
+                    ),
+                    if (_exporting) ...[
+                      const SizedBox(height: 8),
+                      LinearProgressIndicator(value: _exportProgress),
+                      const SizedBox(height: 6),
+                      Align(
+                        alignment: AlignmentDirectional.centerEnd,
+                        child: TextButton.icon(
+                          key: const ValueKey('sequence-cancel-export-button'),
+                          onPressed: () => setState(() => _cancelExportRequested = true),
+                          icon: const Icon(Icons.stop_circle_outlined),
+                          label: const Text('إلغاء التصدير'),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
     );
