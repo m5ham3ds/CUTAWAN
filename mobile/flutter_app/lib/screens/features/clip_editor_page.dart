@@ -159,7 +159,7 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
               children: [
                 Expanded(
                   child: Text(
-                    'تعذّر استخراج الإطارات: ' + _filmstripError!,
+                    'تعذّر استخراج الإطارات: $_filmstripError',
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.error,
                     ),
@@ -184,16 +184,17 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 itemCount: _filmstripFrames.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 8),
+                separatorBuilder: (_, _) => const SizedBox(width: 8),
                 itemBuilder: (context, index) {
                   final frame = _filmstripFrames[index];
+                  final timestampLabel = _formatTime(frame.timestampMs);
                   final currentPosition =
                       _player?.value.position.inMilliseconds ?? -1;
                   final active =
                       (currentPosition - frame.timestampMs).abs() < 180;
                   return Semantics(
                     button: true,
-                    label: 'إطار عند ' + _formatTime(frame.timestampMs),
+                    label: 'إطار عند $timestampLabel',
                     child: InkWell(
                       onTap: () => _seekTo(frame.timestampMs),
                       borderRadius: BorderRadius.circular(10),

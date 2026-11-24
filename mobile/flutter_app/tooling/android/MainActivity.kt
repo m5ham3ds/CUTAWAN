@@ -757,10 +757,6 @@ class MainActivity : FlutterActivity() {
      * Compare low-resolution frames at a bounded sampling rate. This is scene
      * change evidence only, not semantic vision, face detection, or diarization.
      */
-    /**
-     * Bounded frontal-face sampling for conservative mobile reframing.
-     * This is a focus-track signal, not an audiovisual active-speaker model.
-     */
     private fun createFilmstrip(
         rawUri: String,
         startMs: Long,
@@ -877,6 +873,10 @@ class MainActivity : FlutterActivity() {
         }
     }
 
+    /**
+     * Bounded frontal-face sampling for conservative mobile reframing.
+     * This is a focus-track signal, not an audiovisual active-speaker model.
+     */
     private fun analyzeFaces(rawUri: String, reply: MethodChannel.Result) {
         ioExecutor.execute {
             val retriever = MediaMetadataRetriever()
