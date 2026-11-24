@@ -14,6 +14,7 @@ import '../../domain/transcript_contract.dart';
 import '../../services/android_filmstrip_service.dart';
 import '../../services/caption_sidecar_generator.dart';
 import '../../services/local_project_repository.dart';
+import '../../widgets/clip_preview_viewport.dart';
 
 class ClipEditorPage extends StatefulWidget {
   const ClipEditorPage({
@@ -889,7 +890,7 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
                     child: Stack(
                       fit: StackFit.expand,
                       children: [
-                        FittedBox(
+                        ClipPreviewViewport(
                           fit: _previewFit(sourcePosition),
                           alignment: _previewAlignment(sourcePosition),
                           child: SizedBox(

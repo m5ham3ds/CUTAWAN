@@ -88,7 +88,7 @@ jobs:
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
-      - name: Verify Media3 dip-to-black output frames on Android
+      - name: Verify Media3 transitions and Flutter preview/export pixels on Android
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 35
@@ -98,7 +98,10 @@ jobs:
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -camera-front none
           disable-animations: true
           working-directory: mobile/flutter_app/android
-          script: ./gradlew --no-daemon --stacktrace app:connectedDebugAndroidTest
+          script: |
+            ./gradlew --no-daemon --stacktrace app:connectedDebugAndroidTest
+            cd ..
+            flutter test integration_test/clip_preview_export_parity_test.dart -d emulator-5554 --reporter expanded
       - name: Verify APK contains ARM64 libraries only and no duplicated native libraries
         run: |
           python3 - <<'PY'

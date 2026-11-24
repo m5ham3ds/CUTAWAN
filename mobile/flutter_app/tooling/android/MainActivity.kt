@@ -777,10 +777,18 @@ class MainActivity : FlutterActivity() {
                         val hasGrant = contentResolver.persistedUriPermissions.any {
                             it.uri == uri && it.isReadPermission
                         }
-                        if (!hasGrant) {
-                            throw SecurityException("The video read permission is no longer available.")
+                        if (hasGrant) {
+                            retriever.setDataSource(this, uri)
+                        } else {
+                            // Published CUTAWAN exports are owned by this package,
+                            // not by a persisted SAF grant. Verify ownership first.
+                            val ownedExport = resolveOwnedExportTarget(rawUri)
+                            if (ownedExport.file != null) {
+                                retriever.setDataSource(ownedExport.file.absolutePath)
+                            } else {
+                                retriever.setDataSource(this, ownedExport.uri)
+                            }
                         }
-                        retriever.setDataSource(this, uri)
                     }
                     "file" -> {
                         val selectedFile = File(uri.path ?: throw IllegalArgumentException("File URI has no path."))
