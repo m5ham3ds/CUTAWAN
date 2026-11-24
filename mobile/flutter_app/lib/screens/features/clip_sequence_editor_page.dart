@@ -8,6 +8,8 @@ import '../../domain/clip_preferences.dart';
 import '../../domain/project_contract.dart';
 import '../../services/local_project_repository.dart';
 import '../../services/video_export_service.dart';
+import '../../services/video_composition_export_service.dart';
+import '../../services/video_composition_export_service.dart';
 
 class ClipSequenceEditorPage extends StatefulWidget {
   const ClipSequenceEditorPage({
@@ -25,7 +27,7 @@ class ClipSequenceEditorPage extends StatefulWidget {
   final LocalProjectRepository repository;
   final Future<void> Function() onSaved;
   final ClipSequence? initialSequence;
-  final VideoExportService? exportService;
+  final VideoCompositionExportService? exportService;
 
   @override
   State<ClipSequenceEditorPage> createState() => _ClipSequenceEditorPageState();
@@ -40,7 +42,7 @@ class _ClipSequenceEditorPageState extends State<ClipSequenceEditorPage> {
   bool _cancelExportRequested = false;
   double _exportProgress = 0;
   String? _error;
-  final VideoExportService _defaultExportService = VideoExportService();
+  final VideoCompositionExportService _defaultExportService = VideoCompositionExportService();
 
   @override
   void initState() {
