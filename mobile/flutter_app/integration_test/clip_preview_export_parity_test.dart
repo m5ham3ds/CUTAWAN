@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -101,8 +100,8 @@ void main() {
         } finally {
           outputCodec.dispose();
         }
-        expect(exportedImage!.width, referenceFrame.width);
-        expect(exportedImage!.height, referenceFrame.height);
+        expect(exportedImage.width, referenceFrame.width);
+        expect(exportedImage.height, referenceFrame.height);
 
         final previewKey = GlobalKey();
         await tester.binding.setSurfaceSize(
@@ -139,13 +138,13 @@ void main() {
         final boundary = previewKey.currentContext!.findRenderObject()
             as RenderRepaintBoundary;
         previewImage = await boundary.toImage(pixelRatio: 1);
-        expect(previewImage!.width, referenceFrame.width);
-        expect(previewImage!.height, referenceFrame.height);
+        expect(previewImage.width, referenceFrame.width);
+        expect(previewImage.height, referenceFrame.height);
 
-        final previewData = await previewImage!.toByteData(
+        final previewData = await previewImage.toByteData(
           format: ui.ImageByteFormat.rawRgba,
         );
-        final outputData = await exportedImage!.toByteData(
+        final outputData = await exportedImage.toByteData(
           format: ui.ImageByteFormat.rawRgba,
         );
         expect(previewData, isNotNull);
