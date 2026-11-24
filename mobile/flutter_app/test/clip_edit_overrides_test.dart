@@ -269,6 +269,10 @@ void main() {
         framingMode: ClipFramingMode.manualFocus,
         focusX: 0.24,
         focusY: 0.63,
+        focusKeyframes: [
+          ClipFocusKeyframe(timestampMs: 2000, focusX: 0.24, focusY: 0.63),
+          ClipFocusKeyframe(timestampMs: 4000, focusX: 0.74, focusY: 0.42),
+        ],
       );
       await repository.saveClipEditOverrides(project.id, override);
       final restored = await repository.loadClipEditOverrides(
@@ -278,6 +282,9 @@ void main() {
       expect(restored?.framingMode, ClipFramingMode.manualFocus);
       expect(restored?.focusX, 0.24);
       expect(restored?.focusY, 0.63);
+      expect(restored?.focusKeyframes, hasLength(2));
+      expect(restored?.focusKeyframes.last.timestampMs, 4000);
+      expect(restored?.focusKeyframes.last.focusX, 0.74);
     } finally {
       await root.delete(recursive: true);
     }

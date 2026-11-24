@@ -551,10 +551,14 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
         .toDouble();
     final alignX = cropWidth >= 1
         ? 0.0
-        : (2 * left / (1 - cropWidth) - 1).clamp(-1.0, 1.0);
+        : (2 * left / (1 - cropWidth) - 1)
+            .clamp(-1.0, 1.0)
+            .toDouble();
     final alignY = cropHeight >= 1
         ? 0.0
-        : (2 * top / (1 - cropHeight) - 1).clamp(-1.0, 1.0);
+        : (2 * top / (1 - cropHeight) - 1)
+            .clamp(-1.0, 1.0)
+            .toDouble();
     return Alignment(alignX, alignY);
   }
 
