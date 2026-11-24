@@ -4,34 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:cutawan_mobile/domain/clip_candidate.dart';
 import 'package:cutawan_mobile/domain/clip_preferences.dart';
+import 'package:cutawan_mobile/domain/clip_sequence.dart';
 import 'package:cutawan_mobile/domain/project_contract.dart';
 import 'package:cutawan_mobile/screens/features/clip_sequence_editor_page.dart';
 import 'package:cutawan_mobile/services/local_project_repository.dart';
-
-Future<void> pumpSequenceUntilVisible(
-  WidgetTester tester,
-  Finder finder,
-) async {
-  final errorFinder = find.textContaining('تعذّر تحميل التسلسل المحفوظ:');
-  for (var attempt = 0; attempt < 20; attempt++) {
-    await tester.runAsync(
-      () => Future<void>.delayed(const Duration(milliseconds: 50)),
-    );
-    await tester.pump();
-    if (finder.evaluate().isNotEmpty) return;
-    final errors = errorFinder.evaluate().toList();
-    if (errors.isNotEmpty) {
-      final message = (errors.single.widget as Text).data;
-      throw TestFailure('Sequence editor failed to load: $message');
-    }
-  }
-  final errors = errorFinder.evaluate().toList();
-  if (errors.isNotEmpty) {
-    final message = (errors.single.widget as Text).data;
-    throw TestFailure('Sequence editor failed to load: $message');
-  }
-  expect(finder, findsOneWidget);
-}
 
 Future<void> pumpSequenceTransition(WidgetTester tester) async {
   await tester.pump();
@@ -132,6 +108,9 @@ void main() {
             candidateSet: candidateSet,
             repository: repository,
             onSaved: onSaved ?? () async {},
+            initialSequence: ClipSequence.empty(
+              sourceDurationMs: project.source.durationMs,
+            ),
           ),
         ),
       );
@@ -143,10 +122,7 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
 
     await tester.pumpWidget(buildPage());
-    await pumpSequenceUntilVisible(
-      tester,
-      find.byKey(const ValueKey('sequence-add-track-video')),
-    );
+    await tester.pump();
     expect(find.text('Main video'), findsOneWidget);
     await tapSequenceControl(tester, find.byKey(const ValueKey('sequence-add-clip-track_video_main')));
     await pumpSequenceTransition(tester);
@@ -170,10 +146,7 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
 
     await tester.pumpWidget(buildPage());
-    await pumpSequenceUntilVisible(
-      tester,
-      find.byKey(const ValueKey('sequence-add-track-video')),
-    );
+    await tester.pump();
     await tapSequenceControl(tester, find.byKey(const ValueKey('sequence-add-track-audio')));
     await pumpSequenceTransition(tester);
 
@@ -194,10 +167,7 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
 
     await tester.pumpWidget(buildPage());
-    await pumpSequenceUntilVisible(
-      tester,
-      find.byKey(const ValueKey('sequence-add-track-video')),
-    );
+    await tester.pump();
     final add = find.byKey(const ValueKey('sequence-add-clip-track_video_main'));
     await tapSequenceControl(tester, add);
     await pumpSequenceTransition(tester);

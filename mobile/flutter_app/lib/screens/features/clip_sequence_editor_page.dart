@@ -13,6 +13,7 @@ class ClipSequenceEditorPage extends StatefulWidget {
     required this.candidateSet,
     required this.repository,
     required this.onSaved,
+    this.initialSequence,
     super.key,
   });
 
@@ -20,6 +21,7 @@ class ClipSequenceEditorPage extends StatefulWidget {
   final CandidateSet candidateSet;
   final LocalProjectRepository repository;
   final Future<void> Function() onSaved;
+  final ClipSequence? initialSequence;
 
   @override
   State<ClipSequenceEditorPage> createState() => _ClipSequenceEditorPageState();
@@ -35,7 +37,22 @@ class _ClipSequenceEditorPageState extends State<ClipSequenceEditorPage> {
   @override
   void initState() {
     super.initState();
-    unawaited(_loadSequence());
+    final initial = widget.initialSequence;
+    if (initial == null) {
+      unawaited(_loadSequence());
+      return;
+    }
+    try {
+      initial.validate(
+        candidateSet: widget.candidateSet,
+        expectedSourceDurationMs: widget.project.source.durationMs,
+      );
+      _sequence = initial;
+      _loading = false;
+    } catch (error) {
+      _loading = false;
+      _error = 'تعذّر تحميل التسلسل المحفوظ: $error';
+    }
   }
 
   Future<void> _loadSequence() async {
