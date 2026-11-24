@@ -145,7 +145,7 @@ void main() {
     );
   });
 
-  test('clips cannot overlap on the same video or audio track without transitions', () {
+  test('clips cannot overlap within the same track, including overlay tracks', () {
     final sequence = ClipSequence(
       schemaVersion: ClipSequence.currentSchemaVersion,
       sourceDurationMs: 90000,
@@ -178,6 +178,76 @@ void main() {
     );
     expect(
       () => sequence.validate(
+        candidateSet: makeCandidates(),
+        expectedSourceDurationMs: 90000,
+      ),
+      throwsFormatException,
+    );
+  });
+
+  test('overlay clips can overlap other tracks but not items in the same sequence', () {
+    final sequence = ClipSequence(
+      schemaVersion: ClipSequence.currentSchemaVersion,
+      sourceDurationMs: 90000,
+      tracks: const [
+        ClipSequenceTrack(
+          id: 'track_video_main',
+          type: ClipSequenceTrackType.video,
+          name: 'Video',
+          order: 0,
+        ),
+        ClipSequenceTrack(
+          id: 'track_overlay_main',
+          type: ClipSequenceTrackType.overlay,
+          name: 'Overlay',
+          order: 1,
+        ),
+      ],
+      clips: const [
+        ClipSequenceItem(
+          id: 'item_video_001',
+          candidateId: 'clip_001',
+          trackId: 'track_video_main',
+          sourceStartMs: 1000,
+          sourceEndMs: 3000,
+          timelineStartMs: 0,
+        ),
+        ClipSequenceItem(
+          id: 'item_overlay_001',
+          candidateId: 'clip_002',
+          trackId: 'track_overlay_main',
+          sourceStartMs: 8000,
+          sourceEndMs: 10000,
+          timelineStartMs: 1000,
+        ),
+      ],
+    );
+    expect(
+      () => sequence.validate(
+        candidateSet: makeCandidates(),
+        expectedSourceDurationMs: 90000,
+      ),
+      returnsNormally,
+    );
+
+    final overlappingOverlay = ClipSequence(
+      schemaVersion: sequence.schemaVersion,
+      sourceDurationMs: sequence.sourceDurationMs,
+      tracks: sequence.tracks,
+      clips: [
+        sequence.clips.last,
+        const ClipSequenceItem(
+          id: 'item_overlay_002',
+          candidateId: 'clip_001',
+          trackId: 'track_overlay_main',
+          sourceStartMs: 1000,
+          sourceEndMs: 3000,
+          timelineStartMs: 1500,
+        ),
+      ],
+    );
+    expect(
+      () => overlappingOverlay.validate(
         candidateSet: makeCandidates(),
         expectedSourceDurationMs: 90000,
       ),

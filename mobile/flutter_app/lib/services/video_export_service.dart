@@ -987,10 +987,18 @@ class VideoExportService {
           if (raw is! Map) {
             throw const FormatException('Android completed without composition metadata.');
           }
-          return VideoExportResult.fromJson(
+          final result = VideoExportResult.fromJson(
             renderId,
             Map<String, dynamic>.from(raw),
           );
+          final durationToleranceMs =
+              expectedDurationMs ~/ 10 > 1500 ? expectedDurationMs ~/ 10 : 1500;
+          if ((result.durationMs - expectedDurationMs).abs() > durationToleranceMs) {
+            throw const FormatException(
+              'Android composition duration differs from the saved sequence timeline.',
+            );
+          }
+          return result;
         }
         if (state == 'cancelled') throw const VideoExportCancelled();
         if (state == 'failed') {
