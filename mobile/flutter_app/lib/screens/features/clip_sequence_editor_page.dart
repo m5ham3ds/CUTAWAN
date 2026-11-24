@@ -9,7 +9,6 @@ import '../../domain/project_contract.dart';
 import '../../services/local_project_repository.dart';
 import '../../services/video_export_service.dart';
 import '../../services/video_composition_export_service.dart';
-import '../../services/video_composition_export_service.dart';
 
 class ClipSequenceEditorPage extends StatefulWidget {
   const ClipSequenceEditorPage({
