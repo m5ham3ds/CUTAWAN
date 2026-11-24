@@ -151,7 +151,7 @@ class ClipSequenceItem {
       transitionAfter: rawTransition == null
           ? null
           : ClipSequenceTransition.fromJson(
-              Map<String, dynamic>.from(rawTransition),
+              Map<String, dynamic>.from(rawTransition as Map),
             ),
     );
     item.validate();

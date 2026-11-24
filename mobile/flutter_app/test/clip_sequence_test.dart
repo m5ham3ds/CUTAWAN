@@ -478,7 +478,7 @@ void main() {
         sourceEndMs: second.sourceEndMs,
         timelineStartMs: second.timelineStartMs + 100,
       ),
-    ]);
+    ], [base.tracks.first]);
     expect(
       () => gap.validate(
         candidateSet: makeCandidates(),

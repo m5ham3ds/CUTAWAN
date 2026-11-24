@@ -638,7 +638,7 @@ class _ClipSequenceEditorPageState extends State<ClipSequenceEditorPage> {
                       child: Text('تعتيم 1200 ms'),
                     ),
                   ],
-                  icon: const Icon(Icons.transition_rounded),
+                  icon: const Icon(Icons.swap_horiz_rounded),
                 ),
               IconButton(
                 key: ValueKey<String>('sequence-move-left-${item.id}'),
