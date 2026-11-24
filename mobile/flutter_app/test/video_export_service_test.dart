@@ -261,7 +261,7 @@ void main() {
       clipId: 'clip_bad_fade',
       sourceUri: 'content://media/external/video/media/42',
       startMs: 1000,
-      endMs: 5000,
+      endMs: 3500,
       aspectRatio: 9 / 16,
       sourceAspectRatio: 16 / 9,
       fadeInMs: 1500,
