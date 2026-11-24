@@ -255,6 +255,7 @@ flutter pub get
 # Media3 Transformer powers native clip trimming and aspect-fit export.
 python3 - <<'PY'
 from pathlib import Path
+import re
 
 kts = Path('android/app/build.gradle.kts')
 groovy = Path('android/app/build.gradle')
