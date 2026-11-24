@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:cutawan_mobile/domain/clip_candidate.dart';
@@ -8,6 +6,21 @@ import 'package:cutawan_mobile/domain/clip_sequence.dart';
 import 'package:cutawan_mobile/domain/project_contract.dart';
 import 'package:cutawan_mobile/screens/features/clip_sequence_editor_page.dart';
 import 'package:cutawan_mobile/services/local_project_repository.dart';
+
+class _MemorySequenceRepository extends LocalProjectRepository {
+  ClipSequence? sequence;
+
+  @override
+  Future<void> saveClipSequence(
+    String projectId,
+    ClipSequence sequence,
+  ) async {
+    this.sequence = sequence;
+  }
+
+  @override
+  Future<ClipSequence?> loadClipSequence(String projectId) async => sequence;
+}
 
 Future<void> pumpSequenceTransition(WidgetTester tester) async {
   await tester.pump();
@@ -25,14 +38,12 @@ Future<void> tapSequenceControl(
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  late Directory directory;
-  late LocalProjectRepository repository;
+  late _MemorySequenceRepository repository;
   late CutawanProject project;
   late CandidateSet candidateSet;
 
   setUp(() async {
-    directory = await Directory.systemTemp.createTemp('cutawan-sequence-ui-');
-    repository = LocalProjectRepository(rootDirectory: directory);
+    repository = _MemorySequenceRepository();
     final now = DateTime.utc(2026, 11, 24);
     project = CutawanProject.create(
       source: VideoAssetMetadata(
@@ -86,18 +97,6 @@ void main() {
       visualEvidence: true,
       rankingEngine: 'test',
     );
-    await repository.save(project);
-    await repository.saveCandidates(project.id, candidateSet);
-    expect(await repository.load(project.id), isNotNull);
-    expect(
-      (await repository.loadCandidates(project.id))?.toJson(),
-      candidateSet.toJson(),
-    );
-    expect(await repository.loadClipSequence(project.id), isNull);
-  });
-
-  tearDown(() async {
-    if (await directory.exists()) await directory.delete(recursive: true);
   });
 
   Widget buildPage({Future<void> Function()? onSaved}) => MaterialApp(
