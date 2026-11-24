@@ -349,3 +349,19 @@ This record supersedes the older Dashboard/Settings items in the original next-s
 - Android run [45267350030](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45267350030), run 366, SHA `8593354bdaf583178ad4d86c20c6767dcd1b4e0e` — **success**, **214/214 tests**, strict analysis, ARM64-only APK verification and upload.
 
 **Decision:** accept the automated page-level Tab target inventory as an implemented test slice. It closes the automated inventory item, not Phase 9 as a whole. The remaining Phase 9 work also includes the Clip Editor product gaps listed in the current status (filmstrip/timeline thumbnails, keyframed focus, transitions and preview/export parity), plus physical ARM64 handset verification of actual Tab behavior and rendered focus visibility/contrast, RTL, large text, landscape, system bars/cutouts and OEM behavior. Phase 10 must not start until these remaining gates have evidence.
+
+
+## Phase 9 clip-sequence dip-to-black transition acceptance — 2026-11-25
+
+- Added a validated sequence-level clip-to-clip dip-to-black transition, with visual fade-out on the outgoing clip and fade-in on the incoming clip. Transition metadata remains attached to the clip boundary; duration and adjacency constraints are validated before export.
+- Media3 renders the fade on the final Composition timeline rather than on per-item timestamps. The composition overlay calculates opacity from each frame's presentation timestamp and clears its reusable CanvasOverlay bitmap with PorterDuff.Mode.CLEAR before drawing.
+- The clear is required because Media3 CanvasOverlay caches and reuses its backing bitmap and Canvas between getBitmap() calls. Without clearing, a previous fully black frame remains painted over later frames even when the calculated fade opacity decreases.
+- The transition is visual-only. It does not crossfade audio and does not implement a full multitrack audio mix.
+- Android instrumentation uses a deterministic FFmpeg-generated 160×120, 15fps red-to-blue MP4 and samples five exported frames: before fade-out (200ms), during fade-out (866ms), at the join (1000ms), during fade-in (1133ms), and after the transition (1800ms). All five pixel assertions passed on the Android 15 emulator.
+- Mobile Android run [45500607722](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45500607722), run 413, source SHA `1e7f26c71e9b84888eff2dc33bfa6c1315a8ea51` — success: format, strict analysis, 256/256 Flutter tests, ARM64 debug APK build, Media3 instrumentation test, ARM64-only/unique-native-library verification and APK upload all passed.
+- APK artifact [14970744768](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45500607722/artifacts/14970744768): 60,128,793 bytes. The workflow verified exactly arm64-v8a, 10 unique native libraries, libggml-cpu.so, libggml.so and libggml-base.so, with no duplicate native-library basenames.
+- Coverage artifact [14971206974](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45500607722/artifacts/14971206974): 21,369 bytes.
+- Desktop CI [45500607475](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45500607475), run 465 — success across checks, Xvfb UI smoke, offline FFmpeg/caption/render pipeline and Apple Silicon packaging.
+- Branch Policy [45500607649](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45500607649), run 115 — success; main is the only branch.
+
+**Decision:** accept the automated clip-sequence transition slice. Phase 9 remains in progress; physical ARM64 handset review is still not evidenced. Next engineering slice: capture and compare the actual Clip Editor preview against the Media3-exported frame at matched timestamps, including crop boundaries, automatic/manual framing, keyframe interpolation, fit gaps, aspect-ratio changes and fade/caption overlays. Do not start Phase 10 until the remaining Phase 9 pixel-parity and handset gates are recorded.

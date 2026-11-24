@@ -34,3 +34,14 @@
 - Measure preview/export parity on hash-locked test media, including manual and automatic crop edges, keyframe interpolation, captions, fade timing, aspect-ratio changes, rotated sources and fit gaps. The current tests validate geometry math, not pixel-level render equivalence.
 - Perform actual ARM64 handset acceptance for hardware Tab behavior, visible focus, RTL/LTR, large text, landscape, system bars, gesture insets, cutouts and OEM rendering.
 - Do not infer physical-device acceptance from GitHub Actions, widget tests or simulated insets. Phase 9 remains in progress; Phase 10 must not start until these gates are recorded.
+
+
+## Sequence transition follow-up — 2026-11-25
+
+This follow-up supersedes the older open transition item above; the earlier clip-editor delivery record remains historically accurate for the accepted per-clip fade slice.
+
+- A sequence model and Media3 Composition export now support adjacent video clips with a bounded dip-to-black transition. The incoming and outgoing visual halves are represented against the composition timeline, so the join is black and the next clip fades in from black.
+- The composition overlay is stateless with respect to frame order and explicitly clears its reused CanvasOverlay backing bitmap before every draw. This fixes the stale opaque-black surface observed in the first composition-wide implementation.
+- Android instrumentation verifies red-before, dim-red-during, near-black-at-join, dim-blue-during and bright-blue-after pixels from an exported MP4. The full test passes in run [45500607722](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45500607722), run 413.
+- The transition affects video only; no audio crossfade is implemented.
+- Next: exact preview/export pixel parity remains open and is the next Phase 9 engineering slice. Physical handset accessibility and visual review remain an independent gate.
