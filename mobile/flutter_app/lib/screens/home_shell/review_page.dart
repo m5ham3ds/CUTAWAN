@@ -20,6 +20,7 @@ import '../../services/video_export_service.dart';
 import '../../services/qwen_model_manager.dart';
 import '../../services/whisper_transcription_service.dart';
 import '../features/clip_editor_page.dart';
+import '../features/clip_sequence_editor_page.dart';
 import 'shared_ui_primitives.dart';
 class ReviewPage extends StatefulWidget {
   const ReviewPage({
@@ -599,6 +600,25 @@ class _ReviewPageState extends State<ReviewPage> {
     );
   }
 
+  Future<void> _openSequenceEditor(
+    CutawanProject project,
+    CandidateSet candidateSet,
+  ) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => ClipSequenceEditorPage(
+          project: project,
+          candidateSet: candidateSet,
+          repository: widget.repository,
+          onSaved: () async {
+            await _loadArtifacts(project.id);
+            await widget.onProjectsChanged();
+          },
+        ),
+      ),
+    );
+  }
+
   Future<void> _runFullPipeline(CutawanProject project) async {
     if (_pipelineRunning || _busyProjectId != null) {
       return;
@@ -1104,6 +1124,21 @@ class _ReviewPageState extends State<ReviewPage> {
                       )),
               ],
             ),
+            if (candidateSet != null && candidateSet.candidates.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.tonalIcon(
+                  key: ValueKey<String>('review-open-sequence-${project.id}'),
+                  onPressed: canStart
+                      ? () => _openSequenceEditor(project, candidateSet)
+                      : null,
+                  icon: const Icon(Icons.view_timeline_rounded),
+                  label: const Text('تحرير تسلسل المقاطع والمسارات'),
+                ),
+              ),
+              const SizedBox(height: 4),
+            ],
             if (candidateSet == null)
               CutawanPanel(
                 child: Text('ستظهر المقاطع هنا بعد اكتمال التفريغ واكتشاف اللحظات المناسبة.',
