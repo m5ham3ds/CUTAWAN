@@ -913,17 +913,11 @@ class NativeRenderEngine(context: Context) : ContextWrapper(context.applicationC
         private val fadeInMs: Long,
         private val fadeOutMs: Long
     ) : CanvasOverlay(true) {
-        private var clipStartPresentationTimeUs: Long? = null
-
         override fun onDraw(canvas: Canvas, presentationTimeUs: Long) {
-            // Media3 may preserve a source timestamp offset or normalize a clipped
-            // item before applying its effects. Anchor each overlay to the first
-            // frame it receives so fades always use that item's own local clock.
-            val clipStartUs = clipStartPresentationTimeUs
-                ?: presentationTimeUs.also { clipStartPresentationTimeUs = it }
-            val timeMs = (
-                (presentationTimeUs - clipStartUs) / 1000L
-            ).coerceIn(0L, durationMs)
+            // EditedMediaItem effect timestamps are local to the clipped item.
+            // Do not cache a first timestamp: Media3 may request overlay frames
+            // out of order while exporting or validating the composition.
+            val timeMs = (presentationTimeUs / 1000L).coerceIn(0L, durationMs)
             var opacity = 0f
             if (fadeInMs > 0L) {
                 val incoming = (1f - timeMs.toFloat() / fadeInMs.toFloat())
