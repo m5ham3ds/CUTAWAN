@@ -331,7 +331,7 @@ class NativeRenderEngine(context: Context) : ContextWrapper(context.applicationC
         } else {
             listOf(
                 OverlayEffect(
-                    listOf(TimedBlackFadeOverlay(compositionTransitionFades))
+                    listOf(TimedCompositionBlackFadeOverlay(compositionTransitionFades))
                 )
             )
         }
@@ -921,6 +921,36 @@ class NativeRenderEngine(context: Context) : ContextWrapper(context.applicationC
     }
 
     private class TimedBlackFadeOverlay(
+        private val durationMs: Long,
+        private val fadeInMs: Long,
+        private val fadeOutMs: Long
+    ) : CanvasOverlay(true) {
+        override fun onDraw(canvas: Canvas, presentationTimeUs: Long) {
+            // Standalone clip fades use the clipped item's own presentation clock.
+            val timeMs = (presentationTimeUs / 1000L).coerceIn(0L, durationMs)
+            var opacity = 0f
+            if (fadeInMs > 0L) {
+                val incoming = (1f - timeMs.toFloat() / fadeInMs.toFloat())
+                    .coerceIn(0f, 1f)
+                opacity = maxOf(opacity, incoming)
+            }
+            if (fadeOutMs > 0L) {
+                val fadeOutStartMs = durationMs - fadeOutMs
+                val outgoing = ((timeMs - fadeOutStartMs).toFloat() / fadeOutMs.toFloat())
+                    .coerceIn(0f, 1f)
+                opacity = maxOf(opacity, outgoing)
+            }
+            val alpha = (opacity * 255f).toInt().coerceIn(0, 255)
+            if (alpha == 0) return
+            val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = Color.argb(alpha, 0, 0, 0)
+                style = Paint.Style.FILL
+            }
+            canvas.drawRect(0f, 0f, canvas.width.toFloat(), canvas.height.toFloat(), paint)
+        }
+    }
+
+    private class TimedCompositionBlackFadeOverlay(
         private val transitions: List<CompositionTransitionFade>
     ) : CanvasOverlay(true) {
         override fun onDraw(canvas: Canvas, presentationTimeUs: Long) {
