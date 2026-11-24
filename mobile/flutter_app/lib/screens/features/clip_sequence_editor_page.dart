@@ -256,6 +256,7 @@ class _ClipSequenceEditorPageState extends State<ClipSequenceEditorPage> {
                   sourceStartMs: clip.sourceStartMs,
                   sourceEndMs: clip.sourceEndMs,
                   timelineStartMs: nextStart,
+                  transitionAfter: clip.transitionAfter,
                 )
               : clip)
           .toList(growable: false),
@@ -270,17 +271,78 @@ class _ClipSequenceEditorPageState extends State<ClipSequenceEditorPage> {
     }
   }
 
+  List<ClipSequenceItem> _clearBrokenTransitions(
+    List<ClipSequenceItem> clips,
+  ) {
+    final orderedByTrack = <String, List<ClipSequenceItem>>{};
+    for (final clip in clips) {
+      orderedByTrack.putIfAbsent(clip.trackId, () => []).add(clip);
+    }
+    for (final group in orderedByTrack.values) {
+      group.sort((a, b) => a.timelineStartMs.compareTo(b.timelineStartMs));
+    }
+    return clips.map((clip) {
+      if (clip.transitionAfter == null) return clip;
+      final group = orderedByTrack[clip.trackId]!;
+      final index = group.indexWhere((value) => value.id == clip.id);
+      final hasAdjacentNext = index >= 0 &&
+          index + 1 < group.length &&
+          clip.timelineEndMs == group[index + 1].timelineStartMs;
+      if (hasAdjacentNext) return clip;
+      return ClipSequenceItem(
+        id: clip.id,
+        candidateId: clip.candidateId,
+        trackId: clip.trackId,
+        sourceStartMs: clip.sourceStartMs,
+        sourceEndMs: clip.sourceEndMs,
+        timelineStartMs: clip.timelineStartMs,
+      );
+    }).toList(growable: false);
+  }
+
   void _removeClip(String clipId) {
     final sequence = _sequence;
     if (sequence == null || _saving) return;
+    final remaining =
+        sequence.clips.where((clip) => clip.id != clipId).toList();
     _replaceSequence(
       ClipSequence(
         schemaVersion: sequence.schemaVersion,
         sourceDurationMs: sequence.sourceDurationMs,
         tracks: sequence.tracks,
-        clips: sequence.clips.where((clip) => clip.id != clipId).toList(),
+        clips: _clearBrokenTransitions(remaining),
       ),
     );
+  }
+
+  void _setTransition(String clipId, int durationMs) {
+    final sequence = _sequence;
+    if (sequence == null || _saving) return;
+    final transition = durationMs == 0
+        ? null
+        : ClipSequenceTransition(durationMs: durationMs);
+    final next = ClipSequence(
+      schemaVersion: sequence.schemaVersion,
+      sourceDurationMs: sequence.sourceDurationMs,
+      tracks: sequence.tracks,
+      clips: sequence.clips.map((clip) {
+        if (clip.id != clipId) return clip;
+        return ClipSequenceItem(
+          id: clip.id,
+          candidateId: clip.candidateId,
+          trackId: clip.trackId,
+          sourceStartMs: clip.sourceStartMs,
+          sourceEndMs: clip.sourceEndMs,
+          timelineStartMs: clip.timelineStartMs,
+          transitionAfter: transition,
+        );
+      }).toList(growable: false),
+    );
+    try {
+      _replaceSequence(next);
+    } on FormatException catch (error) {
+      _showMessage('تعذّر تطبيق الانتقال: ${error.message}', isError: true);
+    }
   }
 
   Future<void> _saveSequence() async {
@@ -367,6 +429,8 @@ class _ClipSequenceEditorPageState extends State<ClipSequenceEditorPage> {
                     'sourceStartMs': clip.sourceStartMs,
                     'sourceEndMs': clip.sourceEndMs,
                     'timelineStartMs': clip.timelineStartMs,
+                    if (clip.transitionAfter != null)
+                      'transitionAfter': clip.transitionAfter!.toJson(),
                   })
               .toList(growable: false),
         };
@@ -494,6 +558,21 @@ class _ClipSequenceEditorPageState extends State<ClipSequenceEditorPage> {
   Widget _buildSequenceItem(ClipSequenceItem item) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
+    final sequence = _sequence!;
+    final track = sequence.tracks.firstWhere(
+      (value) => value.id == item.trackId,
+    );
+    final trackItems = sequence.clips
+        .where((clip) => clip.trackId == item.trackId)
+        .toList()
+      ..sort((a, b) => a.timelineStartMs.compareTo(b.timelineStartMs));
+    final itemIndex = trackItems.indexWhere((clip) => clip.id == item.id);
+    final nextItem = itemIndex >= 0 && itemIndex + 1 < trackItems.length
+        ? trackItems[itemIndex + 1]
+        : null;
+    final canTransition = track.type == ClipSequenceTrackType.video &&
+        nextItem != null &&
+        item.timelineEndMs == nextItem.timelineStartMs;
     final candidate = widget.candidateSet.candidates.firstWhere(
       (value) => value.id == item.candidateId,
     );
@@ -523,10 +602,44 @@ class _ClipSequenceEditorPageState extends State<ClipSequenceEditorPage> {
             'المدة ${item.durationMs ~/ 1000} ثانية',
             style: theme.textTheme.labelSmall?.copyWith(color: scheme.onSurfaceVariant),
           ),
+          if (item.transitionAfter != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              'انتقال تعتيم إلى المقطع التالي · ${item.transitionAfter!.durationMs} ms',
+              style: theme.textTheme.labelSmall?.copyWith(color: scheme.primary),
+            ),
+          ],
           const SizedBox(height: 4),
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
+              if (canTransition)
+                PopupMenuButton<int>(
+                  key: ValueKey<String>('sequence-transition-${item.id}'),
+                  tooltip: 'انتقال بصري إلى المقطع التالي',
+                  initialValue: item.transitionAfter?.durationMs ?? 0,
+                  onSelected: (durationMs) =>
+                      _setTransition(item.id, durationMs),
+                  itemBuilder: (context) => const [
+                    PopupMenuItem<int>(
+                      value: 0,
+                      child: Text('بدون انتقال'),
+                    ),
+                    PopupMenuItem<int>(
+                      value: 500,
+                      child: Text('تعتيم 500 ms'),
+                    ),
+                    PopupMenuItem<int>(
+                      value: 800,
+                      child: Text('تعتيم 800 ms'),
+                    ),
+                    PopupMenuItem<int>(
+                      value: 1200,
+                      child: Text('تعتيم 1200 ms'),
+                    ),
+                  ],
+                  icon: const Icon(Icons.transition_rounded),
+                ),
               IconButton(
                 key: ValueKey<String>('sequence-move-left-${item.id}'),
                 tooltip: 'تقديم 0.5 ثانية',
@@ -618,7 +731,7 @@ class _ClipSequenceEditorPageState extends State<ClipSequenceEditorPage> {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      'رتّب المقاطع على المسارات ثم صدّرها كفيديو واحد عبر Media3. المعاينة المركبة وCrossfade بين المقاطع غير متاحين في هذه النسخة.',
+                      'رتّب المقاطع على المسارات ثم صدّرها كفيديو واحد عبر Media3. يمكن إضافة تعتيم بصري إلى الأسود بين مقطعين متجاورين.',
                       style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant, height: 1.4),
                     ),
                     const SizedBox(height: 14),
@@ -635,7 +748,7 @@ class _ClipSequenceEditorPageState extends State<ClipSequenceEditorPage> {
                           SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              'التصدير المركب متاح للمسارات الخطية والفجوات الزمنية. لا توجد معاينة متزامنة متعددة الفيديوهات، ولا تدعم Media3 حالياً Crossfade للصوت أو الصورة.',
+                              'انتقال التعتيم يعمل بصرياً بين المقاطع المتجاورة، ولا يغيّر مدة التسلسل. الصوت يبقى بقطع مباشر؛ لا تدعم Media3 حالياً Crossfade للصوت أو الصورة، ولا تتوفر معاينة متزامنة متعددة المسارات.',
                             ),
                           ),
                         ],

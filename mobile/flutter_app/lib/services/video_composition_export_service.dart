@@ -9,7 +9,8 @@ import 'video_export_service.dart';
 
 /// Sends validated project tracks to Android Media3 Composition.
 /// Each track is linear; independent tracks may overlap, but clips within a
-/// single track cannot overlap. Cross-fades are not supported by Media3.
+/// single track cannot overlap. Dip-to-black is visual-only; cross-fades are
+/// not supported by Media3 Composition.
 class VideoCompositionExportService {
   VideoCompositionExportService({MethodChannel? channel})
       : _channel = channel ?? const MethodChannel('com.cutawan.mobile/media');
@@ -128,14 +129,82 @@ class VideoCompositionExportService {
             'A composition may contain at most 500 clips.',
           );
         }
-        normalizedClips.add({
+        final rawTransition = rawClip['transitionAfter'];
+        Map<String, Object?>? normalizedTransition;
+        if (rawTransition != null) {
+          if (type != 'video' || rawTransition is! Map) {
+            throw const FormatException(
+              'Transitions are supported only on video-track clips.',
+            );
+          }
+          final transitionType = rawTransition['type'];
+          final transitionDurationMs =
+              (rawTransition['durationMs'] as num?)?.toInt();
+          if (transitionType != 'dipToBlack' ||
+              transitionDurationMs == null ||
+              transitionDurationMs < 200 ||
+              transitionDurationMs > 2000) {
+            throw const FormatException(
+              'Composition transition type or duration is invalid.',
+            );
+          }
+          normalizedTransition = {
+            'type': 'dipToBlack',
+            'durationMs': transitionDurationMs,
+          };
+        }
+
+        final normalizedClip = <String, Object?>{
           'itemId': itemId,
           'candidateId': candidateId,
           'sourceUri': sourceUri,
           'sourceStartMs': sourceStartMs,
           'sourceEndMs': sourceEndMs,
           'timelineStartMs': timelineStartMs,
-        });
+        };
+        if (normalizedTransition != null) {
+          normalizedClip['transitionAfter'] = normalizedTransition;
+        }
+        normalizedClips.add(normalizedClip);
+      }
+
+      for (var index = 0; index < normalizedClips.length; index++) {
+        final clip = normalizedClips[index];
+        final transition = clip['transitionAfter'];
+        final previousTransition =
+            index == 0 ? null : normalizedClips[index - 1]['transitionAfter'];
+        final incomingDuration = previousTransition is Map
+            ? (previousTransition['durationMs'] as num).toInt()
+            : 0;
+        final incomingFadeMs = incomingDuration == 0
+            ? 0
+            : incomingDuration - incomingDuration ~/ 2;
+        final outgoingDuration = transition is Map
+            ? (transition['durationMs'] as num).toInt()
+            : 0;
+        final outgoingFadeMs = outgoingDuration ~/ 2;
+        final clipDurationMs =
+            (clip['sourceEndMs'] as int) - (clip['sourceStartMs'] as int);
+        if (incomingFadeMs + outgoingFadeMs > clipDurationMs) {
+          throw const FormatException(
+            'Incoming and outgoing transitions exceed a composition clip duration.',
+          );
+        }
+        if (transition is Map) {
+          if (index == normalizedClips.length - 1) {
+            throw const FormatException(
+              'A transition requires a following clip on the same video track.',
+            );
+          }
+          final timelineEndMs = (clip['timelineStartMs'] as int) + clipDurationMs;
+          final nextTimelineStartMs =
+              normalizedClips[index + 1]['timelineStartMs'] as int;
+          if (timelineEndMs != nextTimelineStartMs) {
+            throw const FormatException(
+              'A transition requires adjacent clips with no timeline gap.',
+            );
+          }
+        }
       }
 
       normalizedTracks.add({

@@ -189,6 +189,7 @@ class NativeRenderEngine(context: Context) : ContextWrapper(context.applicationC
             }
             val sequenceBuilder = EditedMediaItemSequence.Builder(trackTypes)
             var previousTimelineEndMs = 0L
+            var previousTransitionFadeInMs = 0L
             val clips = rawClips.map { value ->
                 if (value !is Map<*, *>) {
                     throw IllegalArgumentException("Composition clip must be an object.")
@@ -196,7 +197,7 @@ class NativeRenderEngine(context: Context) : ContextWrapper(context.applicationC
                 value
             }.sortedBy { (it["timelineStartMs"] as? Number)?.toLong() ?: -1L }
 
-            for (rawClip in clips) {
+            for ((clipIndex, rawClip) in clips.withIndex()) {
                 val itemId = rawClip["itemId"] as? String
                     ?: throw IllegalArgumentException("Composition item identity is missing.")
                 val sourceUriRaw = rawClip["sourceUri"] as? String
@@ -207,6 +208,38 @@ class NativeRenderEngine(context: Context) : ContextWrapper(context.applicationC
                     ?: throw IllegalArgumentException("Composition source end is missing.")
                 val timelineStartMs = (rawClip["timelineStartMs"] as? Number)?.toLong()
                     ?: throw IllegalArgumentException("Composition timeline start is missing.")
+                val transitionRaw = rawClip["transitionAfter"]
+                val transitionDurationMs = if (transitionRaw == null) {
+                    0L
+                } else {
+                    val transition = transitionRaw as? Map<*, *>
+                        ?: throw IllegalArgumentException("Composition transition must be an object.")
+                    val transitionType = transition["type"] as? String
+                        ?: throw IllegalArgumentException("Composition transition type is missing.")
+                    val duration = (transition["durationMs"] as? Number)?.toLong()
+                        ?: throw IllegalArgumentException("Composition transition duration is missing.")
+                    if (trackType != "video" || transitionType != "dipToBlack" ||
+                        duration !in 200L..2000L
+                    ) {
+                        throw IllegalArgumentException("Composition transition type or duration is invalid.")
+                    }
+                    duration
+                }
+                val clipDurationMs = endMs - startMs
+                val fadeOutMs = transitionDurationMs / 2L
+                val fadeInMs = previousTransitionFadeInMs
+                if (fadeInMs + fadeOutMs > clipDurationMs) {
+                    throw IllegalArgumentException("Incoming and outgoing transitions exceed the clip duration.")
+                }
+                if (transitionDurationMs > 0L) {
+                    val nextClip = clips.getOrNull(clipIndex + 1)
+                        ?: throw IllegalArgumentException("A transition requires a following video clip.")
+                    val nextTimelineStartMs = (nextClip["timelineStartMs"] as? Number)?.toLong()
+                        ?: throw IllegalArgumentException("The next transition clip has no timeline start.")
+                    if (timelineStartMs + clipDurationMs != nextTimelineStartMs) {
+                        throw IllegalArgumentException("A transition requires adjacent clips with no timeline gap.")
+                    }
+                }
                 if (!itemId.matches(Regex("^[A-Za-z0-9_-]{3,120}$")) ||
                     !itemIds.add(itemId) ||
                     sourceUriRaw.isBlank() ||
@@ -237,12 +270,26 @@ class NativeRenderEngine(context: Context) : ContextWrapper(context.applicationC
                 val videoEffects = if (trackType == "audio") {
                     emptyList()
                 } else {
-                    listOf(
+                    val effects = mutableListOf<androidx.media3.common.Effect>(
                         Presentation.createForAspectRatio(
                             aspectRatio,
                             Presentation.LAYOUT_STRETCH_TO_FIT
                         )
                     )
+                    if (fadeInMs > 0L || fadeOutMs > 0L) {
+                        effects.add(
+                            OverlayEffect(
+                                listOf(
+                                    TimedBlackFadeOverlay(
+                                        clipDurationMs,
+                                        fadeInMs,
+                                        fadeOutMs
+                                    )
+                                )
+                            )
+                        )
+                    }
+                    effects
                 }
                 sequenceBuilder.addItem(
                     EditedMediaItem.Builder(mediaItem)
@@ -250,12 +297,17 @@ class NativeRenderEngine(context: Context) : ContextWrapper(context.applicationC
                         .build()
                 )
 
-                previousTimelineEndMs = timelineStartMs + (endMs - startMs)
+                previousTimelineEndMs = timelineStartMs + clipDurationMs
+                previousTransitionFadeInMs =
+                    if (transitionDurationMs > 0L) transitionDurationMs - fadeOutMs else 0L
                 maximumTimelineEndMs = max(maximumTimelineEndMs, previousTimelineEndMs)
                 totalClipCount++
                 if (totalClipCount > 500) {
                     throw IllegalArgumentException("Composition has more than 500 clips.")
                 }
+            }
+            if (previousTransitionFadeInMs > 0L) {
+                throw IllegalArgumentException("The final clip on a video track cannot have a transition.")
             }
             if (trackType == "video") {
                 hasMainVideo = true

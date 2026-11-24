@@ -139,6 +139,58 @@ void main() {
     expect(restored.clips.single.candidateId, 'clip_001');
   });
 
+
+  testWidgets('adjacent video clips can receive and persist a dip-to-black transition',
+      (tester) async {
+    tester.view.physicalSize = const Size(390, 1000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(buildPage());
+    await tester.pump();
+    final add = find.byKey(
+      const ValueKey('sequence-add-clip-track_video_main'),
+    );
+    await tapSequenceControl(tester, add);
+    await pumpSequenceTransition(tester);
+    await tapSequenceControl(
+      tester,
+      find.byKey(const ValueKey('sequence-candidate-choice-clip_001')),
+    );
+    await pumpSequenceTransition(tester);
+    await tapSequenceControl(tester, add);
+    await pumpSequenceTransition(tester);
+    await tapSequenceControl(
+      tester,
+      find.byKey(const ValueKey('sequence-candidate-choice-clip_002')),
+    );
+    await pumpSequenceTransition(tester);
+
+    final transition = find.byKey(
+      const ValueKey('sequence-transition-item_1'),
+    );
+    expect(transition, findsOneWidget);
+    await tapSequenceControl(tester, transition);
+    await pumpSequenceTransition(tester);
+    await tapSequenceControl(tester, find.text('تعتيم 800 ms'));
+    await pumpSequenceTransition(tester);
+
+    await tapSequenceControl(
+      tester,
+      find.byKey(const ValueKey('sequence-save-button')),
+    );
+    await pumpSequenceTransition(tester);
+
+    final restored = await repository.loadClipSequence(project.id);
+    expect(restored, isNotNull);
+    expect(restored!.clips, hasLength(2));
+    expect(restored.clips.first.transitionAfter?.type,
+        ClipSequenceTransitionType.dipToBlack);
+    expect(restored.clips.first.transitionAfter?.durationMs, 800);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('sequence UI adds typed tracks and allows cross-track timing overlap', (tester) async {
     tester.view.physicalSize = const Size(390, 900);
     tester.view.devicePixelRatio = 1;

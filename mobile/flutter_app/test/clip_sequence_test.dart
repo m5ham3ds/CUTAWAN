@@ -407,6 +407,163 @@ void main() {
     );
   });
 
+
+  test('dip-to-black transition round-trips and requires adjacent video clips', () {
+    final original = makeSequence();
+    final clips = original.clips.map((clip) {
+      if (clip.id != 'item_video_001') return clip;
+      return ClipSequenceItem(
+        id: clip.id,
+        candidateId: clip.candidateId,
+        trackId: clip.trackId,
+        sourceStartMs: clip.sourceStartMs,
+        sourceEndMs: clip.sourceEndMs,
+        timelineStartMs: clip.timelineStartMs,
+        transitionAfter: const ClipSequenceTransition(durationMs: 800),
+      );
+    }).toList(growable: false);
+    final sequence = ClipSequence(
+      schemaVersion: original.schemaVersion,
+      sourceDurationMs: original.sourceDurationMs,
+      tracks: original.tracks,
+      clips: clips,
+    );
+    sequence.validate(
+      candidateSet: makeCandidates(),
+      expectedSourceDurationMs: 90000,
+    );
+
+    final restored = ClipSequence.fromJson(
+      Map<String, dynamic>.from(sequence.toJson()),
+    );
+    restored.validate(
+      candidateSet: makeCandidates(),
+      expectedSourceDurationMs: 90000,
+    );
+    expect(restored.clips.first.transitionAfter?.type,
+        ClipSequenceTransitionType.dipToBlack);
+    expect(restored.clips.first.transitionAfter?.durationMs, 800);
+  });
+
+  test('transitions reject gaps, final clips, non-video tracks and overlong fades', () {
+    final base = makeSequence();
+    final first = base.clips.first;
+    final second = base.clips[1];
+
+    ClipSequence sequenceWith(
+      List<ClipSequenceItem> clips,
+      List<ClipSequenceTrack> tracks,
+    ) => ClipSequence(
+          schemaVersion: base.schemaVersion,
+          sourceDurationMs: base.sourceDurationMs,
+          tracks: tracks,
+          clips: clips,
+        );
+
+    final gap = sequenceWith([
+      ClipSequenceItem(
+        id: first.id,
+        candidateId: first.candidateId,
+        trackId: first.trackId,
+        sourceStartMs: first.sourceStartMs,
+        sourceEndMs: first.sourceEndMs,
+        timelineStartMs: first.timelineStartMs,
+        transitionAfter: const ClipSequenceTransition(durationMs: 800),
+      ),
+      ClipSequenceItem(
+        id: second.id,
+        candidateId: second.candidateId,
+        trackId: second.trackId,
+        sourceStartMs: second.sourceStartMs,
+        sourceEndMs: second.sourceEndMs,
+        timelineStartMs: second.timelineStartMs + 100,
+      ),
+    ]);
+    expect(
+      () => gap.validate(
+        candidateSet: makeCandidates(),
+        expectedSourceDurationMs: 90000,
+      ),
+      throwsFormatException,
+    );
+
+    final finalClip = sequenceWith([
+      ClipSequenceItem(
+        id: first.id,
+        candidateId: first.candidateId,
+        trackId: first.trackId,
+        sourceStartMs: first.sourceStartMs,
+        sourceEndMs: first.sourceEndMs,
+        timelineStartMs: first.timelineStartMs,
+        transitionAfter: const ClipSequenceTransition(durationMs: 800),
+      ),
+    ], [base.tracks.first]);
+    expect(
+      () => finalClip.validate(
+        candidateSet: makeCandidates(),
+        expectedSourceDurationMs: 90000,
+      ),
+      throwsFormatException,
+    );
+
+    final audioTrack = base.tracks[1];
+    final audioClip = base.clips[2];
+    final audioTransition = sequenceWith([
+      ClipSequenceItem(
+        id: audioClip.id,
+        candidateId: audioClip.candidateId,
+        trackId: audioClip.trackId,
+        sourceStartMs: audioClip.sourceStartMs,
+        sourceEndMs: audioClip.sourceEndMs,
+        timelineStartMs: audioClip.timelineStartMs,
+        transitionAfter: const ClipSequenceTransition(durationMs: 800),
+      ),
+    ], [base.tracks.first, audioTrack]);
+    expect(
+      () => audioTransition.validate(
+        candidateSet: makeCandidates(),
+        expectedSourceDurationMs: 90000,
+      ),
+      throwsFormatException,
+    );
+
+    final tooLong = sequenceWith([
+      const ClipSequenceItem(
+        id: 'item_short_001',
+        candidateId: 'clip_001',
+        trackId: 'track_video_main',
+        sourceStartMs: 1000,
+        sourceEndMs: 1400,
+        timelineStartMs: 0,
+        transitionAfter: ClipSequenceTransition(durationMs: 800),
+      ),
+      const ClipSequenceItem(
+        id: 'item_short_002',
+        candidateId: 'clip_001',
+        trackId: 'track_video_main',
+        sourceStartMs: 1500,
+        sourceEndMs: 1900,
+        timelineStartMs: 400,
+        transitionAfter: ClipSequenceTransition(durationMs: 800),
+      ),
+      const ClipSequenceItem(
+        id: 'item_short_003',
+        candidateId: 'clip_001',
+        trackId: 'track_video_main',
+        sourceStartMs: 2000,
+        sourceEndMs: 2400,
+        timelineStartMs: 800,
+      ),
+    ], [base.tracks.first]);
+    expect(
+      () => tooLong.validate(
+        candidateSet: makeCandidates(),
+        expectedSourceDurationMs: 90000,
+      ),
+      throwsFormatException,
+    );
+  });
+
   test('sequence source duration must match the owning project and candidates', () {
     expect(
       () => makeSequence().validate(

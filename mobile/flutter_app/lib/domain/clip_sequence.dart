@@ -2,6 +2,46 @@ import 'clip_candidate.dart';
 
 enum ClipSequenceTrackType { video, audio, overlay }
 
+enum ClipSequenceTransitionType { dipToBlack }
+
+class ClipSequenceTransition {
+  const ClipSequenceTransition({
+    this.type = ClipSequenceTransitionType.dipToBlack,
+    required this.durationMs,
+  });
+
+  final ClipSequenceTransitionType type;
+  final int durationMs;
+
+  void validate() {
+    if (durationMs < 200 || durationMs > 2000) {
+      throw const FormatException(
+        'Dip-to-black transition duration must be between 200 and 2000 ms.',
+      );
+    }
+  }
+
+  Map<String, Object?> toJson() => {
+        'type': type.name,
+        'durationMs': durationMs,
+      };
+
+  factory ClipSequenceTransition.fromJson(Map<String, dynamic> json) {
+    final typeName = json['type'] as String? ?? '';
+    final matchingTypes = ClipSequenceTransitionType.values
+        .where((value) => value.name == typeName);
+    if (matchingTypes.isEmpty) {
+      throw const FormatException('Sequence transition type is unsupported.');
+    }
+    final transition = ClipSequenceTransition(
+      type: matchingTypes.first,
+      durationMs: (json['durationMs'] as num?)?.toInt() ?? 0,
+    );
+    transition.validate();
+    return transition;
+  }
+}
+
 class ClipSequenceTrack {
   const ClipSequenceTrack({
     required this.id,
@@ -58,6 +98,7 @@ class ClipSequenceItem {
     required this.sourceStartMs,
     required this.sourceEndMs,
     required this.timelineStartMs,
+    this.transitionAfter,
   });
 
   final String id;
@@ -66,6 +107,7 @@ class ClipSequenceItem {
   final int sourceStartMs;
   final int sourceEndMs;
   final int timelineStartMs;
+  final ClipSequenceTransition? transitionAfter;
 
   int get durationMs => sourceEndMs - sourceStartMs;
   int get timelineEndMs => timelineStartMs + durationMs;
@@ -80,6 +122,7 @@ class ClipSequenceItem {
         timelineEndMs <= timelineStartMs) {
       throw const FormatException('Sequence clip identity or time range is invalid.');
     }
+    transitionAfter?.validate();
   }
 
   Map<String, Object?> toJson() => {
@@ -89,9 +132,15 @@ class ClipSequenceItem {
         'sourceStartMs': sourceStartMs,
         'sourceEndMs': sourceEndMs,
         'timelineStartMs': timelineStartMs,
+        if (transitionAfter != null)
+          'transitionAfter': transitionAfter!.toJson(),
       };
 
   factory ClipSequenceItem.fromJson(Map<String, dynamic> json) {
+    final rawTransition = json['transitionAfter'];
+    if (rawTransition != null && rawTransition is! Map) {
+      throw const FormatException('Sequence transition must be an object.');
+    }
     final item = ClipSequenceItem(
       id: json['id'] as String? ?? '',
       candidateId: json['candidateId'] as String? ?? '',
@@ -99,6 +148,11 @@ class ClipSequenceItem {
       sourceStartMs: (json['sourceStartMs'] as num?)?.toInt() ?? -1,
       sourceEndMs: (json['sourceEndMs'] as num?)?.toInt() ?? -1,
       timelineStartMs: (json['timelineStartMs'] as num?)?.toInt() ?? -1,
+      transitionAfter: rawTransition == null
+          ? null
+          : ClipSequenceTransition.fromJson(
+              Map<String, dynamic>.from(rawTransition),
+            ),
     );
     item.validate();
     return item;
@@ -208,6 +262,39 @@ class ClipSequence {
           );
         }
         previousEndMs = clip.timelineEndMs;
+      }
+
+      for (var index = 0; index < ordered.length; index++) {
+        final clip = ordered[index];
+        final transition = clip.transitionAfter;
+        if (transition != null) {
+          if (track.type != ClipSequenceTrackType.video ||
+              index == ordered.length - 1) {
+            throw const FormatException(
+              'Dip-to-black transitions require a following clip on a video track.',
+            );
+          }
+          final next = ordered[index + 1];
+          if (clip.timelineEndMs != next.timelineStartMs) {
+            throw const FormatException(
+              'Dip-to-black transitions require adjacent clips with no timeline gap.',
+            );
+          }
+        }
+
+        final previousTransition =
+            index == 0 ? null : ordered[index - 1].transitionAfter;
+        final incomingFadeMs = previousTransition == null
+            ? 0
+            : previousTransition.durationMs -
+                previousTransition.durationMs ~/ 2;
+        final outgoingFadeMs =
+            transition == null ? 0 : transition.durationMs ~/ 2;
+        if (incomingFadeMs + outgoingFadeMs > clip.durationMs) {
+          throw const FormatException(
+            'Incoming and outgoing transitions exceed the clip duration.',
+          );
+        }
       }
     }
   }
