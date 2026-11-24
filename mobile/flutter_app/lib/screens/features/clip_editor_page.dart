@@ -1032,7 +1032,7 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
     final theme = Theme.of(context);
     final clipDurationMs = _endMs - _startMs;
     String durationLabel(int value) =>
-        value == 0 ? 'إيقاف' : (value / 1000).toStringAsFixed(1) + ' ثانية';
+        value == 0 ? 'إيقاف' : '${(value / 1000).toStringAsFixed(1)} ثانية';
     return _sectionPanel(
       context: context,
       title: 'تلاشي الصورة',
@@ -1041,7 +1041,7 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('تلاشي الدخول · ' + durationLabel(_fadeInMs),
+          Text('تلاشي الدخول · ${durationLabel(_fadeInMs)}',
               style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w800)),
           Slider(
             value: _fadeInMs.toDouble(),
@@ -1059,7 +1059,7 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
             },
           ),
           const SizedBox(height: 4),
-          Text('تلاشي الخروج · ' + durationLabel(_fadeOutMs),
+          Text('تلاشي الخروج · ${durationLabel(_fadeOutMs)}',
               style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w800)),
           Slider(
             value: _fadeOutMs.toDouble(),
