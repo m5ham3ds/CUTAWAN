@@ -8,6 +8,11 @@ import 'package:cutawan_mobile/domain/project_contract.dart';
 import 'package:cutawan_mobile/screens/features/clip_sequence_editor_page.dart';
 import 'package:cutawan_mobile/services/local_project_repository.dart';
 
+Future<void> pumpSequenceTransition(WidgetTester tester) async {
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 400));
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -102,13 +107,13 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Main video'), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('sequence-add-clip-track_video_main')));
-    await tester.pumpAndSettle();
+    await pumpSequenceTransition(tester);
     await tester.tap(find.byKey(const ValueKey('sequence-candidate-choice-clip_001')));
-    await tester.pumpAndSettle();
+    await pumpSequenceTransition(tester);
 
     expect(find.byKey(const ValueKey('sequence-item-item_1')), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('sequence-save-button')));
-    await tester.pumpAndSettle();
+    await pumpSequenceTransition(tester);
 
     final restored = await repository.loadClipSequence(project.id);
     expect(restored, isNotNull);
@@ -129,9 +134,9 @@ void main() {
 
     expect(find.text('مسار صوتي 1'), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('sequence-add-clip-track_audio_1')));
-    await tester.pumpAndSettle();
+    await pumpSequenceTransition(tester);
     await tester.tap(find.byKey(const ValueKey('sequence-candidate-choice-clip_001')));
-    await tester.pumpAndSettle();
+    await pumpSequenceTransition(tester);
 
     expect(find.byKey(const ValueKey('sequence-item-item_1')), findsOneWidget);
     expect(tester.takeException(), isNull);
@@ -149,7 +154,7 @@ void main() {
     await tester.tap(add);
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('sequence-candidate-choice-clip_001')));
-    await tester.pumpAndSettle();
+    await pumpSequenceTransition(tester);
     await tester.tap(add);
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('sequence-candidate-choice-clip_002')));
@@ -157,9 +162,9 @@ void main() {
 
     final moveLeft = find.byKey(const ValueKey('sequence-move-left-item_2'));
     await tester.ensureVisible(moveLeft);
-    await tester.pumpAndSettle();
+    await pumpSequenceTransition(tester);
     await tester.tap(moveLeft);
-    await tester.pumpAndSettle();
+    await pumpSequenceTransition(tester);
 
     expect(find.textContaining('لا يمكن تحريك المقطع فوق مقطع آخر'), findsOneWidget);
     final savedSequence = await repository.loadClipSequence(project.id);
