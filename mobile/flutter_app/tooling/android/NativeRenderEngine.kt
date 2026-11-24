@@ -85,6 +85,11 @@ class NativeRenderEngine(context: Context) : ContextWrapper(context.applicationC
         val x: Float = 0f, val y: Float = 0f,
         val width: Float = 1f, val height: Float = 1f
     )
+    private data class CompositionTransitionFade(
+        val boundaryMs: Long,
+        val fadeOutMs: Long,
+        val fadeInMs: Long
+    )
     private data class CaptionWordCue(val text: String, val startMs: Long, val endMs: Long, val startOffset: Int, val endOffset: Int)
     private data class TimedCaptionCue(val startMs: Long, val endMs: Long, val text: String, val words: List<CaptionWordCue>)
     private data class CaptionRenderStyle(val fontFamily: String, val fontScale: Float, val uppercase: Boolean, val textColor: Int, val highlightColor: Int, val highlightBoxColor: Int?, val outlineColor: Int, val outlineWidth: Float, val shadow: Float, val bold: Boolean, val positionY: Float)
@@ -161,6 +166,7 @@ class NativeRenderEngine(context: Context) : ContextWrapper(context.applicationC
         var totalClipCount = 0
         var maximumTimelineEndMs = 0L
         var hasMainVideo = false
+        val compositionTransitionFades = mutableListOf<CompositionTransitionFade>()
 
         for (rawTrack in rawTracks) {
             if (rawTrack !is Map<*, *>) {
@@ -240,6 +246,15 @@ class NativeRenderEngine(context: Context) : ContextWrapper(context.applicationC
                         throw IllegalArgumentException("A transition requires adjacent clips with no timeline gap.")
                     }
                 }
+                if (transitionDurationMs > 0L) {
+                    compositionTransitionFades.add(
+                        CompositionTransitionFade(
+                            boundaryMs = timelineStartMs + clipDurationMs,
+                            fadeOutMs = fadeOutMs,
+                            fadeInMs = transitionDurationMs - fadeOutMs
+                        )
+                    )
+                }
                 if (!itemId.matches(Regex("^[A-Za-z0-9_-]{3,120}$")) ||
                     !itemIds.add(itemId) ||
                     sourceUriRaw.isBlank() ||
@@ -270,26 +285,12 @@ class NativeRenderEngine(context: Context) : ContextWrapper(context.applicationC
                 val videoEffects = if (trackType == "audio") {
                     emptyList()
                 } else {
-                    val effects = mutableListOf<androidx.media3.common.Effect>(
+                    listOf(
                         Presentation.createForAspectRatio(
                             aspectRatio,
                             Presentation.LAYOUT_STRETCH_TO_FIT
                         )
                     )
-                    if (fadeInMs > 0L || fadeOutMs > 0L) {
-                        effects.add(
-                            OverlayEffect(
-                                listOf(
-                                    TimedBlackFadeOverlay(
-                                        clipDurationMs,
-                                        fadeInMs,
-                                        fadeOutMs
-                                    )
-                                )
-                            )
-                        )
-                    }
-                    effects
                 }
                 sequenceBuilder.addItem(
                     EditedMediaItem.Builder(mediaItem)
@@ -325,7 +326,18 @@ class NativeRenderEngine(context: Context) : ContextWrapper(context.applicationC
             throw IllegalArgumentException("Composition duration does not match the saved timeline.")
         }
 
-        val composition = Composition.Builder(sequences).build()
+        val compositionVideoEffects = if (compositionTransitionFades.isEmpty()) {
+            emptyList()
+        } else {
+            listOf(
+                OverlayEffect(
+                    listOf(TimedBlackFadeOverlay(compositionTransitionFades))
+                )
+            )
+        }
+        val composition = Composition.Builder(sequences)
+            .setEffects(Effects(emptyList(), compositionVideoEffects))
+            .build()
         val completion = CountDownLatch(1)
         val resultRef = AtomicReference<Map<String, Any>?>(null)
         val errorRef = AtomicReference<Throwable?>(null)
@@ -909,26 +921,36 @@ class NativeRenderEngine(context: Context) : ContextWrapper(context.applicationC
     }
 
     private class TimedBlackFadeOverlay(
-        private val durationMs: Long,
-        private val fadeInMs: Long,
-        private val fadeOutMs: Long
+        private val transitions: List<CompositionTransitionFade>
     ) : CanvasOverlay(true) {
         override fun onDraw(canvas: Canvas, presentationTimeUs: Long) {
-            // EditedMediaItem effect timestamps are local to the clipped item.
-            // Do not cache a first timestamp: Media3 may request overlay frames
-            // out of order while exporting or validating the composition.
-            val timeMs = (presentationTimeUs / 1000L).coerceIn(0L, durationMs)
+            // This overlay is attached to Composition, so its timestamps follow
+            // the final sequence timeline rather than any individual clipped item.
+            // Keep the calculation stateless because Media3 can request frames
+            // out of presentation order during export.
+            val timeMs = (presentationTimeUs / 1000L).coerceAtLeast(0L)
             var opacity = 0f
-            if (fadeInMs > 0L) {
-                val incoming = (1f - timeMs.toFloat() / fadeInMs.toFloat())
-                    .coerceIn(0f, 1f)
-                opacity = maxOf(opacity, incoming)
-            }
-            if (fadeOutMs > 0L) {
-                val fadeOutStartMs = durationMs - fadeOutMs
-                val outgoing = ((timeMs - fadeOutStartMs).toFloat() / fadeOutMs.toFloat())
-                    .coerceIn(0f, 1f)
-                opacity = maxOf(opacity, outgoing)
+            for (transition in transitions) {
+                if (transition.fadeOutMs > 0L) {
+                    val fadeOutStartMs = transition.boundaryMs - transition.fadeOutMs
+                    if (timeMs in fadeOutStartMs..transition.boundaryMs) {
+                        val outgoing = (
+                            (timeMs - fadeOutStartMs).toFloat() /
+                                transition.fadeOutMs.toFloat()
+                            ).coerceIn(0f, 1f)
+                        opacity = maxOf(opacity, outgoing)
+                    }
+                }
+                if (transition.fadeInMs > 0L) {
+                    val fadeInEndMs = transition.boundaryMs + transition.fadeInMs
+                    if (timeMs in transition.boundaryMs..fadeInEndMs) {
+                        val incoming = (
+                            1f - (timeMs - transition.boundaryMs).toFloat() /
+                                transition.fadeInMs.toFloat()
+                            ).coerceIn(0f, 1f)
+                        opacity = maxOf(opacity, incoming)
+                    }
+                }
             }
             val alpha = (opacity * 255f).toInt().coerceIn(0, 255)
             if (alpha == 0) return
