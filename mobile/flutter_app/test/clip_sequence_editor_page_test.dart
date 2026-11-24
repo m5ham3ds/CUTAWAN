@@ -129,7 +129,10 @@ void main() {
     await pumpSequenceTransition(tester);
 
     expect(find.byKey(const ValueKey('sequence-item-item_1')), findsOneWidget);
-    expect(find.byKey(const ValueKey('sequence-export-button')), findsOneWidget);
+    final exportButton = find.byKey(const ValueKey('sequence-export-button'));
+    await tester.scrollUntilVisible(exportButton, 280);
+    await pumpSequenceTransition(tester);
+    expect(exportButton, findsOneWidget);
     await tapSequenceControl(tester, find.byKey(const ValueKey('sequence-save-button')));
     await pumpSequenceTransition(tester);
 
