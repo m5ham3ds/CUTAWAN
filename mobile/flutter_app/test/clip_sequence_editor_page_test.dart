@@ -13,7 +13,10 @@ Future<void> pumpSequenceUntilVisible(
   Finder finder,
 ) async {
   final errorFinder = find.textContaining('تعذّر تحميل التسلسل المحفوظ:');
-  for (var attempt = 0; attempt < 40; attempt++) {
+  for (var attempt = 0; attempt < 20; attempt++) {
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 50)),
+    );
     await tester.pump();
     if (finder.evaluate().isNotEmpty) return;
     final errors = errorFinder.evaluate().toList();
@@ -21,7 +24,6 @@ Future<void> pumpSequenceUntilVisible(
       final message = (errors.single.widget as Text).data;
       throw TestFailure('Sequence editor failed to load: $message');
     }
-    await tester.pump(const Duration(milliseconds: 250));
   }
   final errors = errorFinder.evaluate().toList();
   if (errors.isNotEmpty) {
