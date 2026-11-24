@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../domain/clip_candidate.dart';
@@ -406,6 +408,10 @@ class _ClipSequenceEditorPageState extends State<ClipSequenceEditorPage> {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final sequence = _sequence;
+    final orderedTracks = sequence == null
+        ? const <ClipSequenceTrack>[]
+        : (sequence.tracks.toList()
+          ..sort((a, b) => a.order.compareTo(b.order)));
     return Scaffold(
       appBar: AppBar(
         title: const Text('تسلسل المقاطع والمسارات'),
@@ -523,9 +529,7 @@ class _ClipSequenceEditorPageState extends State<ClipSequenceEditorPage> {
                         ),
                       ],
                     ),
-                    for (final track in sequence.tracks
-                      ..sort((a, b) => a.order.compareTo(b.order)))
-                      _buildTrackCard(track),
+                    for (final track in orderedTracks) _buildTrackCard(track),
                     const SizedBox(height: 16),
                     FilledButton.icon(
                       key: const ValueKey('sequence-save-bottom-button'),
