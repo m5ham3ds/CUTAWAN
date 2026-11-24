@@ -522,6 +522,42 @@ void main() {
     expect(calls, isEmpty);
   });
 
+  test('rejects duplicate item IDs across composition tracks before Android calls', () async {
+    final service = VideoExportService(channel: channel);
+    final duplicated = {
+      'itemId': 'item_video_001',
+      'candidateId': 'clip_001',
+      'sourceUri': 'content://media/external/video/media/42',
+      'sourceStartMs': 1000,
+      'sourceEndMs': 16000,
+      'timelineStartMs': 0,
+    };
+    await expectLater(
+      service.renderComposition(
+        projectId: 'cut_project_001',
+        compositionId: 'sequence',
+        tracks: [
+          {
+            'id': 'track_video_main',
+            'type': 'video',
+            'clips': [duplicated],
+          },
+          {
+            'id': 'track_overlay_main',
+            'type': 'overlay',
+            'clips': [duplicated],
+          },
+        ],
+        sourceDurationMs: 90000,
+        expectedDurationMs: 15000,
+        aspectRatio: 9 / 16,
+        outputPath: '/data/user/0/cutawan/files/exports/sequence.mp4',
+      ),
+      throwsFormatException,
+    );
+    expect(calls, isEmpty);
+  });
+
   test('rejects a composition whose requested duration differs from its track timeline', () async {
     final service = VideoExportService(channel: channel);
     await expectLater(

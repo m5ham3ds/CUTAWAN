@@ -257,7 +257,12 @@ class NativeRenderEngine(context: Context) : ContextWrapper(context.applicationC
                     throw IllegalArgumentException("Composition has more than 500 clips.")
                 }
             }
-            if (trackType == "video") hasMainVideo = true
+            if (trackType == "video") {
+                hasMainVideo = true
+                if (previousTimelineEndMs < expectedDurationMs) {
+                    sequenceBuilder.addGap((expectedDurationMs - previousTimelineEndMs) * 1000L)
+                }
+            }
             sequences.add(sequenceBuilder.build())
         }
 

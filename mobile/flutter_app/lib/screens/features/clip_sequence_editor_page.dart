@@ -425,10 +425,7 @@ class _ClipSequenceEditorPageState extends State<ClipSequenceEditorPage> {
       _showMessage('تم إلغاء تصدير التسلسل.');
     } catch (error) {
       if (!mounted) return;
-      setState(() {
-        _exporting = false;
-        _error = error.toString();
-      });
+      setState(() => _exporting = false);
       _showMessage('تعذّر تصدير التسلسل: $error', isError: true);
     }
   }
@@ -566,6 +563,11 @@ class _ClipSequenceEditorPageState extends State<ClipSequenceEditorPage> {
         ? const <ClipSequenceTrack>[]
         : (sequence.tracks.toList()
           ..sort((a, b) => a.order.compareTo(b.order)));
+    final canExportSequence = sequence != null &&
+        sequence.tracks.any(
+          (track) => track.type == ClipSequenceTrackType.video &&
+              sequence.clips.any((clip) => clip.trackId == track.id),
+        );
     return Scaffold(
       appBar: AppBar(
         title: const Text('تسلسل المقاطع والمسارات'),
@@ -694,7 +696,7 @@ class _ClipSequenceEditorPageState extends State<ClipSequenceEditorPage> {
                     const SizedBox(height: 10),
                     FilledButton.icon(
                       key: const ValueKey('sequence-export-button'),
-                      onPressed: _saving || _exporting || sequence.clips.isEmpty
+                      onPressed: _saving || _exporting || !canExportSequence
                           ? null
                           : _exportSequence,
                       icon: _exporting
