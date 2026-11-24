@@ -267,7 +267,7 @@ if kts.is_file():
         '    implementation("androidx.media3:media3-common:1.11.1")',
         '    implementation("androidx.work:work-runtime:2.12.0")',
         '    androidTestImplementation("androidx.test:core:1.7.0")',
-        '    androidTestImplementation("androidx.test:runner:1.7.0")',
+        '    androidTestImplementation("androidx.test:runner:1.3.0")',
         '    androidTestImplementation("androidx.test.ext:junit:1.3.0")',
     ]
 elif groovy.is_file():
@@ -278,7 +278,7 @@ elif groovy.is_file():
         '    implementation "androidx.media3:media3-common:1.11.1"',
         '    implementation "androidx.work:work-runtime:2.12.0"',
         '    androidTestImplementation "androidx.test:core:1.7.0"',
-        '    androidTestImplementation "androidx.test:runner:1.7.0"',
+        '    androidTestImplementation "androidx.test:runner:1.3.0"',
         '    androidTestImplementation "androidx.test.ext:junit:1.3.0"',
     ]
 else:
@@ -299,7 +299,7 @@ else:
         elif 'androidx.test:core:' in dependency:
             expected = 'androidx.test:core:1.7.0'
         elif 'androidx.test:runner:' in dependency:
-            expected = 'androidx.test:runner:1.7.0'
+            expected = 'androidx.test:runner:1.3.0'
         else:
             expected = 'androidx.test.ext:junit:1.3.0'
         if expected not in source:
@@ -311,7 +311,7 @@ required_dependencies = (
     'androidx.media3:media3-common:1.11.1',
     'androidx.work:work-runtime:2.12.0',
     'androidx.test:core:1.7.0',
-    'androidx.test:runner:1.7.0',
+    'androidx.test:runner:1.3.0',
     'androidx.test.ext:junit:1.3.0',
 )
 for expected in required_dependencies:
