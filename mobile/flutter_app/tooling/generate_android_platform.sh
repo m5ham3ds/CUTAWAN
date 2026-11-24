@@ -323,9 +323,20 @@ runner_statement = (
     else 'testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"'
 )
 if 'androidx.test.runner.AndroidJUnitRunner' not in source:
-    default_config = re.search(r'(?m)^([ \t]*)defaultConfig[ \t]*\{[ \t]*
-PY
-# whisper.cpp defaults BUILD_SHARED_LIBS=ON on Android. llama.cpp exports
+    default_config = re.search(r'(?m)^([ ]*)defaultConfig[ ]*[{][ ]*$', source)
+    if not default_config:
+        raise SystemExit(f'Could not locate defaultConfig block in {path}')
+    line_end = source.find(chr(10), default_config.end())
+    if line_end < 0:
+        raise SystemExit(f'defaultConfig block has no following line in {path}')
+    indent = default_config.group(1) + '    '
+    source = (
+        source[:line_end + 1] + indent + runner_statement + chr(10) +
+        source[line_end + 1:]
+    )
+path.write_text(source)
+print('Verified AndroidX instrumentation runner and dependencies.')
+PY# whisper.cpp defaults BUILD_SHARED_LIBS=ON on Android. llama.cpp exports
 # the same libggml-*.so names, so compile Whisper's private GGML as static
 # archives. Apply only to the pinned package and fail closed if source drifts.
 python3 - <<'PY'
