@@ -14,6 +14,7 @@ import androidx.media3.effect.CanvasOverlay
 import androidx.media3.effect.MatrixTransformation
 import androidx.media3.effect.OverlayEffect
 import androidx.media3.effect.Presentation
+import androidx.media3.effect.TextureOverlay
 import androidx.media3.transformer.Effects
 import androidx.media3.transformer.EditedMediaItem
 import androidx.media3.transformer.ExportException
@@ -189,7 +190,7 @@ class NativeRenderEngine(context: Context) : ContextWrapper(context.applicationC
             createReframeTransformation(reframeSegments, sourceAspectRatio, aspectRatio),
             Presentation.createForAspectRatio(aspectRatio, Presentation.LAYOUT_STRETCH_TO_FIT)
         )
-        val overlays = mutableListOf<CanvasOverlay>()
+        val overlays = mutableListOf<TextureOverlay>()
         if (captionStyle != null && captionCues.isNotEmpty()) {
             overlays.add(TimedCaptionOverlay(captionCues, captionStyle, captionAnimationId))
         }
