@@ -103,15 +103,19 @@ void main() {
         ClipFocusKeyframe(timestampMs: 12000, focusX: 0.9, focusY: 0.5),
       ],
     );
-    final shot = value.toExportShots(
+    final shots = value.toExportShots(
       durationMs: 4000,
       clipStartMs: 10000,
       sourceAspectRatio: 16 / 9,
       targetAspectRatio: 9 / 16,
-    ).single;
-    final start = Map<String, double>.from(shot['region']! as Map);
-    final end = Map<String, double>.from(shot['regionEnd']! as Map);
+    );
+    expect(shots, hasLength(2));
+    final start = Map<String, double>.from(shots.first['region']! as Map);
+    final end = Map<String, double>.from(shots.first['regionEnd']! as Map);
+    final nextStart = Map<String, double>.from(shots.last['region']! as Map);
     expect(start['x'], lessThan(end['x']!));
+    expect(end['x'], closeTo(nextStart['x']!, 0.000001));
+    expect(shots.first['endMs'], shots.last['startMs']);
   });
 
   test('schema 1 static overrides migrate without losing their focus point', () {
