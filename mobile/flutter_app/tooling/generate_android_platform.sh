@@ -19,6 +19,13 @@ install -m 0644 "$SCRIPT_DIR/android/MainActivity.kt" "$MAIN_ACTIVITY_DIR/MainAc
 install -m 0644 "$SCRIPT_DIR/android/NativeRenderEngine.kt" "$MAIN_ACTIVITY_DIR/NativeRenderEngine.kt"
 install -m 0644 "$SCRIPT_DIR/android/NativeRenderWorker.kt" "$MAIN_ACTIVITY_DIR/NativeRenderWorker.kt"
 
+# Preserve the Media3 instrumentation test and fixture in generated Android projects.
+ANDROID_TEST_DIR="android/app/src/androidTest/kotlin/com/m5ham3ds/cutawan_mobile"
+ANDROID_TEST_ASSETS_DIR="android/app/src/androidTest/assets"
+mkdir -p "$ANDROID_TEST_DIR" "$ANDROID_TEST_ASSETS_DIR"
+install -m 0644 "$SCRIPT_DIR/android/androidTest/Media3CompositionParityTest.kt" "$ANDROID_TEST_DIR/Media3CompositionParityTest.kt"
+install -m 0644 "$SCRIPT_DIR/android/test-fixtures/red-blue-transition.mp4" "$ANDROID_TEST_ASSETS_DIR/red-blue-transition.mp4"
+
 # Direct HTTP/HTTPS media import needs INTERNET in the release manifest, too.
 MAIN_MANIFEST="android/app/src/main/AndroidManifest.xml"
 if ! grep -q 'android.permission.INTERNET' "$MAIN_MANIFEST"; then
@@ -258,6 +265,9 @@ if kts.is_file():
         '    implementation("androidx.media3:media3-effect:1.11.1")',
         '    implementation("androidx.media3:media3-common:1.11.1")',
         '    implementation("androidx.work:work-runtime:2.12.0")',
+        '    androidTestImplementation("androidx.test:core:1.7.0")',
+        '    androidTestImplementation("androidx.test:runner:1.7.0")',
+        '    androidTestImplementation("androidx.test.ext:junit:1.3.0")',
     ]
 elif groovy.is_file():
     path = groovy
@@ -266,6 +276,9 @@ elif groovy.is_file():
         '    implementation "androidx.media3:media3-effect:1.11.1"',
         '    implementation "androidx.media3:media3-common:1.11.1"',
         '    implementation "androidx.work:work-runtime:2.12.0"',
+        '    androidTestImplementation "androidx.test:core:1.7.0"',
+        '    androidTestImplementation "androidx.test:runner:1.7.0"',
+        '    androidTestImplementation "androidx.test.ext:junit:1.3.0"',
     ]
 else:
     raise SystemExit('Flutter did not generate an Android Gradle file.')
@@ -280,19 +293,102 @@ else:
         if 'androidx.media3:' in dependency:
             coordinate = dependency.split('androidx.media3:')[1].split(':')[0]
             expected = 'androidx.media3:' + coordinate + ':1.11.1'
-        else:
+        elif 'androidx.work:' in dependency:
             expected = 'androidx.work:work-runtime:2.12.0'
+        elif 'androidx.test:core:' in dependency:
+            expected = 'androidx.test:core:1.7.0'
+        elif 'androidx.test:runner:' in dependency:
+            expected = 'androidx.test:runner:1.7.0'
+        else:
+            expected = 'androidx.test.ext:junit:1.3.0'
         if expected not in source:
             lines.insert(block_index + 1, dependency)
 source = '\n'.join(lines) + '\n'
-for artifact in ('transformer', 'effect', 'common'):
-    expected = 'androidx.media3:media3-' + artifact + ':1.11.1'
+required_dependencies = (
+    'androidx.media3:media3-transformer:1.11.1',
+    'androidx.media3:media3-effect:1.11.1',
+    'androidx.media3:media3-common:1.11.1',
+    'androidx.work:work-runtime:2.12.0',
+    'androidx.test:core:1.7.0',
+    'androidx.test:runner:1.7.0',
+    'androidx.test.ext:junit:1.3.0',
+)
+for expected in required_dependencies:
     if expected not in source:
-        raise SystemExit('Missing Media3 dependency: ' + expected)
-if 'androidx.work:work-runtime:2.12.0' not in source:
-    raise SystemExit('Missing WorkManager 2.12.0 dependency.')
+        raise SystemExit('Missing Android dependency: ' + expected)
+
+runner_statement = (
+    'testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"'
+    if path.suffix == '.kts'
+    else 'testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"'
+)
+if 'androidx.test.runner.AndroidJUnitRunner' not in source:
+    default_config = re.search(r'(?m)^([ \t]*)defaultConfig[ \t]*\{[ \t]*
+PY
+# whisper.cpp defaults BUILD_SHARED_LIBS=ON on Android. llama.cpp exports
+# the same libggml-*.so names, so compile Whisper's private GGML as static
+# archives. Apply only to the pinned package and fail closed if source drifts.
+python3 - <<'PY'
+from pathlib import Path
+
+candidates = sorted(
+    Path.home().glob(
+        '.pub-cache/hosted/pub.dev/whisper_cpp_flutter_plus-0.5.1/'
+        'ios/whisper_cpp_flutter_plus/Sources/WhisperCppCore/CMakeLists.txt'
+    )
+)
+if len(candidates) != 1:
+    raise SystemExit(
+        'Expected exactly one pinned whisper_cpp_flutter_plus 0.5.1 '
+        f'WhisperCppCore CMakeLists.txt, found {len(candidates)}'
+    )
+path = candidates[0]
+source = path.read_text()
+anchor = 'option(BUILD_SHARED_LIBS "build shared libraries" ${BUILD_SHARED_LIBS_DEFAULT})'
+patch = '''if (ANDROID)
+    set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build Whisper GGML statically to avoid llama.cpp .so collisions" FORCE)
+else()
+    option(BUILD_SHARED_LIBS "build shared libraries" ${BUILD_SHARED_LIBS_DEFAULT})
+endif()'''
+if patch not in source:
+    if source.count(anchor) != 1:
+        raise SystemExit('Whisper CMake source changed; refusing an unverified GGML patch.')
+    source = source.replace(anchor, patch)
+    path.write_text(source)
+if patch not in path.read_text():
+    raise SystemExit('Whisper Android static-GGML patch did not persist.')
+print('Verified Android static GGML patch in', path)
+PY
+
+# Ensure both JNI plugins were resolved before Gradle starts.
+python3 - <<'PY'
+import json
+from pathlib import Path
+
+metadata = Path('.flutter-plugins-dependencies')
+if not metadata.is_file():
+    raise SystemExit('Flutter did not create .flutter-plugins-dependencies')
+data = json.loads(metadata.read_text())
+plugins = {item.get('name') for item in data.get('plugins', {}).get('android', [])}
+required = {'whisper_cpp_flutter_plus', 'llama_flutter_android'}
+missing = sorted(required - plugins)
+if missing:
+    raise SystemExit(f'Missing required Android plugins: {missing}')
+print('Verified native plugins:', ', '.join(sorted(required)))
+PY
+, source)
+    if not default_config:
+        raise SystemExit(f'Could not locate defaultConfig block in {path}')
+    line_end = source.find('\n', default_config.end())
+    if line_end < 0:
+        raise SystemExit(f'defaultConfig block has no following line in {path}')
+    indent = default_config.group(1) + '    '
+    source = (
+        source[:line_end + 1] + indent + runner_statement + '\n' +
+        source[line_end + 1:]
+    )
 path.write_text(source)
-print('Verified Media3 and WorkManager 2.12.0 dependencies.')
+print('Verified AndroidX instrumentation runner and dependencies.')
 PY
 # whisper.cpp defaults BUILD_SHARED_LIBS=ON on Android. llama.cpp exports
 # the same libggml-*.so names, so compile Whisper's private GGML as static

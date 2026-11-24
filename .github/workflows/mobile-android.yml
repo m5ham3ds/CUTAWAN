@@ -77,6 +77,22 @@ jobs:
         env:
           CMAKE_BUILD_PARALLEL_LEVEL: "2"
         run: flutter build apk --debug --target-platform android-arm64 --dart-define=BUILD_SHA=${{ github.sha }}
+      - name: Enable KVM for Android emulator
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Verify Media3 dip-to-black output frames on Android
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_5
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -camera-front none
+          disable-animations: true
+          working-directory: mobile/flutter_app/android
+          script: ./gradlew --no-daemon --stacktrace app:connectedDebugAndroidTest
       - name: Verify APK contains ARM64 libraries only and no duplicated native libraries
         run: |
           python3 - <<'PY'
