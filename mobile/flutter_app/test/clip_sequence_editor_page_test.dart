@@ -10,7 +10,8 @@ import 'package:cutawan_mobile/services/local_project_repository.dart';
 
 Future<void> pumpSequenceTransition(WidgetTester tester) async {
   await tester.pump();
-  await tester.pump(const Duration(milliseconds: 400));
+  await tester.pump(const Duration(milliseconds: 500));
+  await tester.pump();
 }
 
 Future<void> tapSequenceControl(
@@ -111,7 +112,7 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
 
     await tester.pumpWidget(buildPage());
-    await tester.pumpAndSettle();
+    await pumpSequenceTransition(tester);
     expect(find.text('Main video'), findsOneWidget);
     await tapSequenceControl(tester, find.byKey(const ValueKey('sequence-add-clip-track_video_main')));
     await pumpSequenceTransition(tester);
@@ -135,9 +136,9 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
 
     await tester.pumpWidget(buildPage());
-    await tester.pumpAndSettle();
+    await pumpSequenceTransition(tester);
     await tapSequenceControl(tester, find.byKey(const ValueKey('sequence-add-track-audio')));
-    await tester.pumpAndSettle();
+    await pumpSequenceTransition(tester);
 
     expect(find.text('مسار صوتي 1'), findsOneWidget);
     await tapSequenceControl(tester, find.byKey(const ValueKey('sequence-add-clip-track_audio_1')));
@@ -156,16 +157,16 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
 
     await tester.pumpWidget(buildPage());
-    await tester.pumpAndSettle();
+    await pumpSequenceTransition(tester);
     final add = find.byKey(const ValueKey('sequence-add-clip-track_video_main'));
     await tapSequenceControl(tester, add);
-    await tester.pumpAndSettle();
+    await pumpSequenceTransition(tester);
     await tapSequenceControl(tester, find.byKey(const ValueKey('sequence-candidate-choice-clip_001')));
     await pumpSequenceTransition(tester);
     await tapSequenceControl(tester, add);
-    await tester.pumpAndSettle();
+    await pumpSequenceTransition(tester);
     await tapSequenceControl(tester, find.byKey(const ValueKey('sequence-candidate-choice-clip_002')));
-    await tester.pumpAndSettle();
+    await pumpSequenceTransition(tester);
 
     final moveLeft = find.byKey(const ValueKey('sequence-move-left-item_2'));
     await tester.ensureVisible(moveLeft);
