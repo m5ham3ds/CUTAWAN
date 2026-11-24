@@ -194,12 +194,10 @@ class _ClipSequenceEditorPageState extends State<ClipSequenceEditorPage> {
     final candidate = await _chooseCandidate();
     if (candidate == null || !mounted) return;
     final trackItems = sequence.clips.where((clip) => clip.trackId == trackId);
-    final startMs = track.first.type == ClipSequenceTrackType.overlay
-        ? 0
-        : trackItems.fold<int>(
-            0,
-            (end, clip) => clip.timelineEndMs > end ? clip.timelineEndMs : end,
-          );
+    final startMs = trackItems.fold<int>(
+      0,
+      (end, clip) => clip.timelineEndMs > end ? clip.timelineEndMs : end,
+    );
     var suffix = 1;
     String itemId() => 'item_$suffix';
     while (sequence.clips.any((clip) => clip.id == itemId())) {

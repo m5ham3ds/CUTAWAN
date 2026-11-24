@@ -195,7 +195,6 @@ class ClipSequence {
 
     for (final entry in clipsByTrack.entries) {
       final track = tracksById[entry.key]!;
-      if (track.type == ClipSequenceTrackType.overlay) continue;
       final ordered = entry.value.toList()
         ..sort((a, b) {
           final byStart = a.timelineStartMs.compareTo(b.timelineStartMs);
@@ -205,7 +204,7 @@ class ClipSequence {
       for (final clip in ordered) {
         if (clip.timelineStartMs < previousEndMs) {
           throw FormatException(
-            'Clips on ${track.type.name} track ${track.id} cannot overlap without transition support.',
+            'Clips on ${track.type.name} track ${track.id} cannot overlap within one Media3 sequence.',
           );
         }
         previousEndMs = clip.timelineEndMs;

@@ -7,6 +7,7 @@ import android.os.Debug
 import android.os.PowerManager
 import android.os.Environment
 import android.provider.MediaStore
+import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
 import androidx.media3.common.util.UnstableApi
@@ -16,7 +17,9 @@ import androidx.media3.effect.OverlayEffect
 import androidx.media3.effect.Presentation
 import androidx.media3.effect.TextureOverlay
 import androidx.media3.transformer.Effects
+import androidx.media3.transformer.Composition
 import androidx.media3.transformer.EditedMediaItem
+import androidx.media3.transformer.EditedMediaItemSequence
 import androidx.media3.transformer.ExportException
 import androidx.media3.transformer.ExportResult
 import androidx.media3.transformer.ProgressHolder
@@ -105,12 +108,276 @@ class NativeRenderEngine(context: Context) : ContextWrapper(context.applicationC
     }
 
 
+    private fun renderComposition(
+        request: Map<String, Any?>,
+        onProgress: (Int) -> Unit,
+        shouldStop: () -> Boolean
+    ): Map<String, Any> {
+        val projectId = request["projectId"] as? String
+            ?: throw IllegalArgumentException("A project identity is required.")
+        val compositionId = request["clipId"] as? String ?: "sequence"
+        val outputPath = request["outputPath"] as? String
+            ?: throw IllegalArgumentException("A composition output path is required.")
+        val expectedDurationMs = (request["expectedDurationMs"] as? Number)?.toLong()
+            ?: throw IllegalArgumentException("A composition duration is required.")
+        val sourceDurationMs = (request["sourceDurationMs"] as? Number)?.toLong()
+            ?: throw IllegalArgumentException("A source duration is required.")
+        val aspectRatio = (request["aspectRatio"] as? Number)?.toFloat()
+            ?: throw IllegalArgumentException("A composition aspect ratio is required.")
+        val rawTracks = request["tracks"] as? List<*>
+            ?: throw IllegalArgumentException("Composition tracks are required.")
+        if (!projectId.matches(Regex("^[A-Za-z0-9_-]{1,160}$")) ||
+            !compositionId.matches(Regex("^[A-Za-z0-9_-]{1,160}$")) ||
+            sourceDurationMs <= 0L ||
+            expectedDurationMs <= 0L ||
+            expectedDurationMs > 21_600_000L ||
+            !aspectRatio.isFinite() || aspectRatio <= 0f || aspectRatio > 4f ||
+            rawTracks.isEmpty() || rawTracks.size > 16
+        ) {
+            throw IllegalArgumentException("Composition identity, duration, aspect ratio or track count is invalid.")
+        }
+        if (shouldStop()) throw InterruptedException("Composition render was stopped before it started.")
+
+        val outputFile = File(outputPath)
+        val canonicalOutput = outputFile.canonicalPath
+        val filesBase = filesDir.canonicalPath + File.separator
+        if (!canonicalOutput.startsWith(filesBase) ||
+            !canonicalOutput.endsWith(".mp4", ignoreCase = true)
+        ) {
+            throw SecurityException("Composition output must remain inside Cutawan's private storage.")
+        }
+        val parent = outputFile.parentFile
+            ?: throw IllegalArgumentException("Composition output directory is missing.")
+        if (!parent.exists() && !parent.mkdirs()) {
+            throw IllegalStateException("Could not create the composition output directory.")
+        }
+        if (outputFile.exists() && !outputFile.delete()) {
+            throw IllegalStateException("Could not replace the previous partial composition.")
+        }
+
+        val sequences = mutableListOf<EditedMediaItemSequence>()
+        val trackIds = mutableSetOf<String>()
+        val itemIds = mutableSetOf<String>()
+        var totalClipCount = 0
+        var maximumTimelineEndMs = 0L
+        var hasMainVideo = false
+
+        for (rawTrack in rawTracks) {
+            if (rawTrack !is Map<*, *>) {
+                throw IllegalArgumentException("Composition track must be an object.")
+            }
+            val trackId = rawTrack["id"] as? String
+                ?: throw IllegalArgumentException("Composition track identity is missing.")
+            val trackType = rawTrack["type"] as? String
+                ?: throw IllegalArgumentException("Composition track type is missing.")
+            val rawClips = rawTrack["clips"] as? List<*>
+                ?: throw IllegalArgumentException("Composition track clips must be an array.")
+            if (!trackId.matches(Regex("^[A-Za-z0-9_-]{3,120}$")) ||
+                !trackIds.add(trackId) ||
+                trackType !in setOf("video", "audio", "overlay") ||
+                rawClips.size > 500
+            ) {
+                throw IllegalArgumentException("Composition track identity, type or clip count is invalid.")
+            }
+            if (rawClips.isEmpty()) continue
+
+            val trackTypes = when (trackType) {
+                "video" -> setOf(C.TRACK_TYPE_VIDEO, C.TRACK_TYPE_AUDIO)
+                "audio" -> setOf(C.TRACK_TYPE_AUDIO)
+                "overlay" -> setOf(C.TRACK_TYPE_VIDEO)
+                else -> throw IllegalArgumentException("Unsupported composition track type.")
+            }
+            val sequenceBuilder = EditedMediaItemSequence.Builder(trackTypes)
+            var previousTimelineEndMs = 0L
+            val clips = rawClips.map { value ->
+                if (value !is Map<*, *>) {
+                    throw IllegalArgumentException("Composition clip must be an object.")
+                }
+                value
+            }.sortedBy { (it["timelineStartMs"] as? Number)?.toLong() ?: -1L }
+
+            for (rawClip in clips) {
+                val itemId = rawClip["itemId"] as? String
+                    ?: throw IllegalArgumentException("Composition item identity is missing.")
+                val sourceUriRaw = rawClip["sourceUri"] as? String
+                    ?: throw IllegalArgumentException("Composition source URI is missing.")
+                val startMs = (rawClip["sourceStartMs"] as? Number)?.toLong()
+                    ?: throw IllegalArgumentException("Composition source start is missing.")
+                val endMs = (rawClip["sourceEndMs"] as? Number)?.toLong()
+                    ?: throw IllegalArgumentException("Composition source end is missing.")
+                val timelineStartMs = (rawClip["timelineStartMs"] as? Number)?.toLong()
+                    ?: throw IllegalArgumentException("Composition timeline start is missing.")
+                if (!itemId.matches(Regex("^[A-Za-z0-9_-]{3,120}$")) ||
+                    !itemIds.add(itemId) ||
+                    sourceUriRaw.isBlank() ||
+                    startMs < 0L || endMs <= startMs || endMs > sourceDurationMs ||
+                    timelineStartMs < previousTimelineEndMs ||
+                    timelineStartMs > expectedDurationMs ||
+                    timelineStartMs + (endMs - startMs) > expectedDurationMs
+                ) {
+                    throw IllegalArgumentException("Composition item identity or timing is invalid.")
+                }
+                val sourceUri = Uri.parse(sourceUriRaw)
+                validateReadableSource(sourceUri)
+                val gapMs = timelineStartMs - previousTimelineEndMs
+                if (gapMs > 0L) {
+                    // EditedMediaItemSequence.Builder.addGap accepts microseconds.
+                    sequenceBuilder.addGap(gapMs * 1000L)
+                }
+
+                val mediaItem = MediaItem.Builder()
+                    .setUri(sourceUri)
+                    .setClippingConfiguration(
+                        MediaItem.ClippingConfiguration.Builder()
+                            .setStartPositionMs(startMs)
+                            .setEndPositionMs(endMs)
+                            .build()
+                    )
+                    .build()
+                val videoEffects = if (trackType == "audio") {
+                    emptyList()
+                } else {
+                    listOf(
+                        Presentation.createForAspectRatio(
+                            aspectRatio,
+                            Presentation.LAYOUT_STRETCH_TO_FIT
+                        )
+                    )
+                }
+                sequenceBuilder.addItem(
+                    EditedMediaItem.Builder(mediaItem)
+                        .setEffects(Effects(emptyList(), videoEffects))
+                        .build()
+                )
+
+                previousTimelineEndMs = timelineStartMs + (endMs - startMs)
+                maximumTimelineEndMs = max(maximumTimelineEndMs, previousTimelineEndMs)
+                totalClipCount++
+                if (totalClipCount > 500) {
+                    throw IllegalArgumentException("Composition has more than 500 clips.")
+                }
+            }
+            if (trackType == "video") hasMainVideo = true
+            sequences.add(sequenceBuilder.build())
+        }
+
+        if (!hasMainVideo || totalClipCount == 0 || sequences.isEmpty()) {
+            throw IllegalArgumentException("A composition requires at least one non-empty main video track.")
+        }
+        if (maximumTimelineEndMs != expectedDurationMs) {
+            throw IllegalArgumentException("Composition duration does not match the saved timeline.")
+        }
+
+        val composition = Composition.Builder(sequences).build()
+        val completion = CountDownLatch(1)
+        val resultRef = AtomicReference<Map<String, Any>?>(null)
+        val errorRef = AtomicReference<Throwable?>(null)
+        val validationExecutor = Executors.newSingleThreadExecutor()
+        val progressHolder = ProgressHolder()
+        val transformer = try {
+            runOnMainThread {
+                Transformer.Builder(this)
+                    .setLooper(Looper.getMainLooper())
+                    .setVideoMimeType(MimeTypes.VIDEO_H264)
+                    .setAudioMimeType(MimeTypes.AUDIO_AAC)
+                    .addListener(object : Transformer.Listener {
+                        override fun onCompleted(
+                            composition: Composition,
+                            exportResult: ExportResult
+                        ) {
+                            validationExecutor.execute {
+                                try {
+                                    if (shouldStop()) throw InterruptedException("Composition render was cancelled.")
+                                    val validated = validateRenderedVideo(outputFile, expectedDurationMs, shouldStop)
+                                    if (shouldStop()) throw InterruptedException("Composition render was cancelled.")
+                                    val published = publishRenderedVideo(outputFile, compositionId)
+                                    if (outputFile.exists()) outputFile.delete()
+                                    resultRef.set(
+                                        mapOf(
+                                            "outputUri" to published.first.toString(),
+                                            "displayName" to published.second,
+                                            "sha256" to validated.sha256,
+                                            "sizeBytes" to validated.sizeBytes,
+                                            "durationMs" to validated.durationMs,
+                                            "width" to validated.width,
+                                            "height" to validated.height,
+                                            "hasAudio" to validated.hasAudio,
+                                            "fullyDecodeValidated" to true,
+                                            "decodedVideoBuffers" to validated.decodedVideoBuffers,
+                                            "decodedAudioBuffers" to validated.decodedAudioBuffers,
+                                            "validated" to true
+                                        )
+                                    )
+                                } catch (error: Throwable) {
+                                    errorRef.set(error)
+                                    if (outputFile.exists()) outputFile.delete()
+                                } finally {
+                                    completion.countDown()
+                                }
+                            }
+                        }
+
+                        override fun onError(
+                            composition: Composition,
+                            exportResult: ExportResult,
+                            exportException: ExportException
+                        ) {
+                            errorRef.set(exportException)
+                            if (outputFile.exists()) outputFile.delete()
+                            completion.countDown()
+                        }
+                    })
+                    .build()
+            }
+        } catch (error: Throwable) {
+            validationExecutor.shutdownNow()
+            throw error
+        }
+
+        try {
+            runOnMainThread { transformer.start(composition, outputFile.absolutePath) }
+            onProgress(0)
+            while (true) {
+                if (completion.await(500, TimeUnit.MILLISECONDS)) break
+                if (shouldStop()) {
+                    runOnMainThread { try { transformer.cancel() } catch (_: Exception) { } }
+                    if (outputFile.exists()) outputFile.delete()
+                    throw InterruptedException("Composition render was cancelled.")
+                }
+                val progress = try {
+                    runOnMainThread {
+                        if (transformer.getProgress(progressHolder) == Transformer.PROGRESS_STATE_AVAILABLE) {
+                            progressHolder.progress.coerceIn(0, 99)
+                        } else {
+                            -1
+                        }
+                    }
+                } catch (_: IllegalStateException) {
+                    -1
+                }
+                if (progress >= 0) onProgress(progress)
+            }
+            errorRef.get()?.let { throw it }
+            return resultRef.get()
+                ?: throw IllegalStateException("Media3 completed without a validated composition result.")
+        } catch (error: Throwable) {
+            try { runOnMainThread { transformer.cancel() } } catch (_: Exception) { }
+            if (outputFile.exists()) outputFile.delete()
+            throw error
+        } finally {
+            validationExecutor.shutdown()
+        }
+    }
+
     @OptIn(UnstableApi::class)
     fun render(
         request: Map<String, Any?>,
         onProgress: (Int) -> Unit,
         shouldStop: () -> Boolean
     ): Map<String, Any> {
+        if (request["renderType"] == "composition") {
+            return renderComposition(request, onProgress, shouldStop)
+        }
         val rawUri = request["uri"] as? String
             ?: throw IllegalArgumentException("A source URI is required.")
         val clipId = request["clipId"] as? String
