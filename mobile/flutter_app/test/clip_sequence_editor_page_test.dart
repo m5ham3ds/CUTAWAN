@@ -12,10 +12,21 @@ Future<void> pumpSequenceUntilVisible(
   WidgetTester tester,
   Finder finder,
 ) async {
+  final errorFinder = find.textContaining('تعذّر تحميل التسلسل المحفوظ:');
   for (var attempt = 0; attempt < 40; attempt++) {
     await tester.pump();
     if (finder.evaluate().isNotEmpty) return;
+    final errors = errorFinder.evaluate().toList();
+    if (errors.isNotEmpty) {
+      final message = (errors.single.widget as Text).data;
+      throw TestFailure('Sequence editor failed to load: $message');
+    }
     await tester.pump(const Duration(milliseconds: 250));
+  }
+  final errors = errorFinder.evaluate().toList();
+  if (errors.isNotEmpty) {
+    final message = (errors.single.widget as Text).data;
+    throw TestFailure('Sequence editor failed to load: $message');
   }
   expect(finder, findsOneWidget);
 }
@@ -99,6 +110,12 @@ void main() {
     );
     await repository.save(project);
     await repository.saveCandidates(project.id, candidateSet);
+    expect(await repository.load(project.id), isNotNull);
+    expect(
+      (await repository.loadCandidates(project.id))?.toJson(),
+      candidateSet.toJson(),
+    );
+    expect(await repository.loadClipSequence(project.id), isNull);
   });
 
   tearDown(() async {
