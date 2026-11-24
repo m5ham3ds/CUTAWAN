@@ -36,6 +36,7 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Matrix
 import android.graphics.Paint
+import android.graphics.PorterDuff
 import android.graphics.RectF
 import android.graphics.Typeface
 import android.text.Layout
@@ -926,6 +927,9 @@ class NativeRenderEngine(context: Context) : ContextWrapper(context.applicationC
         private val fadeOutMs: Long
     ) : CanvasOverlay(true) {
         override fun onDraw(canvas: Canvas, presentationTimeUs: Long) {
+            // CanvasOverlay can reuse its backing bitmap between timestamps.
+            // Clear previous alpha before drawing this frame's overlay state.
+            canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR)
             // Standalone clip fades use the clipped item's own presentation clock.
             val timeMs = (presentationTimeUs / 1000L).coerceIn(0L, durationMs)
             var opacity = 0f
@@ -954,6 +958,10 @@ class NativeRenderEngine(context: Context) : ContextWrapper(context.applicationC
         private val transitions: List<CompositionTransitionFade>
     ) : CanvasOverlay(true) {
         override fun onDraw(canvas: Canvas, presentationTimeUs: Long) {
+            // Clear the reused overlay bitmap before rendering this timestamp.
+            // Otherwise a fully opaque join frame can remain black over later
+            // frames even when the computed fade opacity has started decreasing.
+            canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR)
             // This overlay is attached to Composition, so its timestamps follow
             // the final sequence timeline rather than any individual clipped item.
             // Keep the calculation stateless because Media3 can request frames
