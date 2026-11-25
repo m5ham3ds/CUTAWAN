@@ -104,6 +104,7 @@ class VideoExportService {
     String projectId = 'standalone',
     required String outputPath,
     void Function(double progress)? onProgress,
+    void Function(String status, double progress)? onStatus,
     void Function(String renderId)? onStarted,
     Future<bool> Function()? shouldCancel,
     Duration timeout = const Duration(hours: 2),
@@ -184,7 +185,9 @@ class VideoExportService {
         }
         final state = snapshot['status'] as String? ?? 'unknown';
         final percentage = (snapshot['progress'] as num?)?.toDouble() ?? 0;
-        onProgress?.call((percentage / 100).clamp(0.0, 1.0));
+        final normalizedProgress = (percentage / 100).clamp(0.0, 1.0);
+        onProgress?.call(normalizedProgress);
+        onStatus?.call(state, normalizedProgress);
         if (state == 'completed') {
           final raw = snapshot['result'];
           if (raw is! Map) {
