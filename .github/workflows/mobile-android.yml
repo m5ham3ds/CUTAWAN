@@ -100,8 +100,7 @@ jobs:
           working-directory: mobile/flutter_app/android
           script: |
             ./gradlew --no-daemon --stacktrace app:connectedDebugAndroidTest
-            cd ../..
-            flutter test integration_test/clip_preview_export_parity_test.dart -d emulator-5554 --reporter expanded
+            cd .. && flutter test integration_test/clip_preview_export_parity_test.dart -d emulator-5554 --reporter expanded
       - name: Verify APK contains ARM64 libraries only and no duplicated native libraries
         run: |
           python3 - <<'PY'
