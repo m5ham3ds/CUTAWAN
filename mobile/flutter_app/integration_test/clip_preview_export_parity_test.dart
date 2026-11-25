@@ -93,10 +93,12 @@ void main() {
         debugPrint('CLIP_PREVIEW_PARITY_RENDER_COMPLETED uri=${export.outputUri}');
         expect(export.validated, isTrue);
         expect(export.fullyDecodeValidated, isTrue);
-        expect(export.width / export.height, closeTo(targetAspectRatio, 0.02));
+        expect(export.width, greaterThan(0));
+        expect(export.height, greaterThan(0));
 
-        // Sample the published Media3 output through the native filmstrip helper.
-        // Native code verifies CUTAWAN ownership when a MediaStore URI has no SAF grant.
+        // Transformer may store portrait output in landscape-coded dimensions
+        // for encoder compatibility and signal display orientation separately.
+        // Measure the decoded frame returned by Android, not the raw track size.
         debugPrint('CLIP_PREVIEW_PARITY_EXTRACTING_EXPORTED_FRAMES');
         final filmstrip = await const AndroidFilmstripService().generate(
           sourceUri: export.outputUri,
@@ -106,6 +108,16 @@ void main() {
         );
         expect(filmstrip, hasLength(3));
         final referenceFrame = filmstrip[1];
+        debugPrint(
+          'CLIP_PREVIEW_PARITY_DIMENSIONS '
+          'coded=${export.width}x${export.height} '
+          'display=${referenceFrame.width}x${referenceFrame.height}',
+        );
+        expect(
+          referenceFrame.width / referenceFrame.height,
+          closeTo(targetAspectRatio, 0.02),
+          reason: 'The decoded exported frame must use the requested display aspect ratio.',
+        );
         final outputCodec = await ui.instantiateImageCodec(
           referenceFrame.imageBytes,
           targetWidth: referenceFrame.width,
