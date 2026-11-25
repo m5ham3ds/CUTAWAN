@@ -281,7 +281,7 @@ void main() {
         await tester.binding.setSurfaceSize(null);
         previewImage?.dispose();
         exportedImage?.dispose();
-        previewAssetImage?.dispose();
+        previewAssetImage.dispose();
         if (export != null) {
           try {
             await exportService.deleteExport(export.outputUri);
