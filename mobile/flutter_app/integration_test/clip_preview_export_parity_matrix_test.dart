@@ -274,7 +274,7 @@ void main() {
                 fadeOpacity: fadeOpacity,
               );
               try {
-                final metrics = _compareInteriorPixels(
+                final metrics = await _compareInteriorPixels(
                   preview: previewImage,
                   exported: exportedImage,
                 );
@@ -483,15 +483,15 @@ Future<ui.Image> _capturePreview({
   return boundary.toImage(pixelRatio: 1);
 }
 
-_PixelMetrics _compareInteriorPixels({
+Future<_PixelMetrics> _compareInteriorPixels({
   required ui.Image preview,
   required ui.Image exported,
-}) {
+}) async {
   if (preview.width != exported.width || preview.height != exported.height) {
     throw StateError('Preview/export frame sizes differ.');
   }
-  final previewData = preview.toByteData(format: ui.ImageByteFormat.rawRgba);
-  final outputData = exported.toByteData(format: ui.ImageByteFormat.rawRgba);
+  final previewData = await preview.toByteData(format: ui.ImageByteFormat.rawRgba);
+  final outputData = await exported.toByteData(format: ui.ImageByteFormat.rawRgba);
   if (previewData == null || outputData == null) {
     throw StateError('Could not read preview/export RGBA pixels.');
   }
