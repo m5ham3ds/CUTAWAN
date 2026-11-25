@@ -29,6 +29,8 @@ flutter:
   assets:
     - assets/testdata/clip-preview-grid.png
     - assets/testdata/clip-preview-grid.mp4
+    - assets/testdata/clip-preview-grid-portrait.png
+    - assets/testdata/clip-preview-grid-portrait.mp4
   fonts:
     - family: Anton
       fonts:
