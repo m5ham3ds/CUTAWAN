@@ -18,9 +18,9 @@ void main() {
   testWidgets(
     'Clip Editor preview crop matches Media3-exported frame pixels',
     (tester) async {
-      print('CLIP_PREVIEW_PARITY_TEST_STARTED');
+      debugPrint('CLIP_PREVIEW_PARITY_TEST_STARTED');
       final supportDirectory = await getApplicationSupportDirectory();
-      print('CLIP_PREVIEW_PARITY_SUPPORT_DIRECTORY_READY');
+      debugPrint('CLIP_PREVIEW_PARITY_SUPPORT_DIRECTORY_READY');
       final sourceFile = File(
         '${supportDirectory.path}${Platform.pathSeparator}clip-preview-parity-source.mp4',
       );
@@ -67,7 +67,7 @@ void main() {
           height: (region['height']! as num).toDouble(),
         );
 
-        print('CLIP_PREVIEW_PARITY_RENDER_REQUESTED');
+        debugPrint('CLIP_PREVIEW_PARITY_RENDER_REQUESTED');
         String? lastRenderStatus;
         double? lastRenderProgress;
         export = await exportService.renderClip(
@@ -81,23 +81,23 @@ void main() {
           reframeShots: shots,
           outputPath: temporaryOutput.path,
           timeout: const Duration(minutes: 6),
-          onStarted: (renderId) => print('CLIP_PREVIEW_PARITY_RENDER_STARTED id=$renderId'),
+          onStarted: (renderId) => debugPrint('CLIP_PREVIEW_PARITY_RENDER_STARTED id=$renderId'),
           onStatus: (status, progress) {
             if (status != lastRenderStatus || progress != lastRenderProgress) {
-              print('CLIP_PREVIEW_PARITY_RENDER_STATUS status=$status progress=${(progress * 100).toStringAsFixed(0)}%');
+              debugPrint('CLIP_PREVIEW_PARITY_RENDER_STATUS status=$status progress=${(progress * 100).toStringAsFixed(0)}%');
               lastRenderStatus = status;
               lastRenderProgress = progress;
             }
           },
         );
-        print('CLIP_PREVIEW_PARITY_RENDER_COMPLETED uri=${export.outputUri}');
+        debugPrint('CLIP_PREVIEW_PARITY_RENDER_COMPLETED uri=${export.outputUri}');
         expect(export.validated, isTrue);
         expect(export.fullyDecodeValidated, isTrue);
         expect(export.width / export.height, closeTo(targetAspectRatio, 0.02));
 
         // Sample the published Media3 output through the native filmstrip helper.
         // Native code verifies CUTAWAN ownership when a MediaStore URI has no SAF grant.
-        print('CLIP_PREVIEW_PARITY_EXTRACTING_EXPORTED_FRAMES');
+        debugPrint('CLIP_PREVIEW_PARITY_EXTRACTING_EXPORTED_FRAMES');
         final filmstrip = await const AndroidFilmstripService().generate(
           sourceUri: export.outputUri,
           startMs: 400,
