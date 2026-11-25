@@ -192,8 +192,8 @@ void main() {
                   ? BoxFit.contain
                   : BoxFit.cover);
           final outputFile = File(
-            '\${support.path}\${Platform.pathSeparator}'
-            'clip-preview-parity-\${scenario.id}-output.mp4',
+            '${support.path}${Platform.pathSeparator}'
+            'clip-preview-parity-${scenario.id}-output.mp4',
           );
           if (outputFile.existsSync()) await outputFile.delete();
 
@@ -201,9 +201,9 @@ void main() {
           VideoExportResult? export;
           final exportedImages = <ui.Image>[];
           try {
-            debugPrint('CLIP_PARITY_MATRIX_CASE_STARTED id=\${scenario.id}');
+            debugPrint('CLIP_PARITY_MATRIX_CASE_STARTED id=${scenario.id}');
             export = await exportService.renderClip(
-              clipId: 'parity_\${scenario.id}',
+              clipId: 'parity_${scenario.id}',
               projectId: 'parity_matrix',
               sourceUri: Uri.file(scenario.sourceVideo.path).toString(),
               startMs: 0,
@@ -216,11 +216,11 @@ void main() {
               outputPath: outputFile.path,
               timeout: const Duration(minutes: 6),
               onStarted: (id) => debugPrint(
-                'CLIP_PARITY_MATRIX_RENDER_STARTED id=\${scenario.id} render=$id',
+                'CLIP_PARITY_MATRIX_RENDER_STARTED id=${scenario.id} render=$id',
               ),
               onStatus: (status, progress) => debugPrint(
-                'CLIP_PARITY_MATRIX_STATUS id=\${scenario.id} '
-                'status=$status progress=\${(progress * 100).toStringAsFixed(0)}%',
+                'CLIP_PARITY_MATRIX_STATUS id=${scenario.id} '
+                'status=$status progress=${(progress * 100).toStringAsFixed(0)}%',
               ),
             );
             expect(export.validated, isTrue, reason: scenario.id);
@@ -238,7 +238,7 @@ void main() {
               expect(
                 frame.width / frame.height,
                 closeTo(scenario.targetAspectRatio, 0.025),
-                reason: '\${scenario.id}: decoded display aspect ratio',
+                reason: '${scenario.id}: decoded display aspect ratio',
               );
               final outputCodec = await ui.instantiateImageCodec(
                 frame.imageBytes,
@@ -279,27 +279,27 @@ void main() {
                 );
                 debugPrint(
                   'CLIP_PREVIEW_EXPORT_PIXEL_PARITY_MATRIX '
-                  'case=\${scenario.id} timestampMs=\${frame.timestampMs} '
-                  'mae=\${metrics.meanAbsoluteError.toStringAsFixed(2)} '
-                  'worstPatch=\${metrics.worstPatchMean.toStringAsFixed(2)} '
-                  'size=\${frame.width}x\${frame.height} '
-                  'fade=\${fadeOpacity.toStringAsFixed(2)}',
+                  'case=${scenario.id} timestampMs=${frame.timestampMs} '
+                  'mae=${metrics.meanAbsoluteError.toStringAsFixed(2)} '
+                  'worstPatch=${metrics.worstPatchMean.toStringAsFixed(2)} '
+                  'size=${frame.width}x${frame.height} '
+                  'fade=${fadeOpacity.toStringAsFixed(2)}',
                 );
                 expect(
                   metrics.meanAbsoluteError,
                   lessThan(24),
-                  reason: '\${scenario.id} at \${frame.timestampMs}ms: preview/export MAE',
+                  reason: '${scenario.id} at ${frame.timestampMs}ms: preview/export MAE',
                 );
                 expect(
                   metrics.worstPatchMean,
                   lessThan(48),
-                  reason: '\${scenario.id} at \${frame.timestampMs}ms: worst crop patch',
+                  reason: '${scenario.id} at ${frame.timestampMs}ms: worst crop patch',
                 );
               } finally {
                 previewImage.dispose();
               }
             }
-            debugPrint('CLIP_PARITY_MATRIX_CASE_PASSED id=\${scenario.id}');
+            debugPrint('CLIP_PARITY_MATRIX_CASE_PASSED id=${scenario.id}');
           } finally {
             await tester.binding.setSurfaceSize(null);
             for (final image in exportedImages) {
@@ -366,7 +366,7 @@ Future<File> _copyAsset(
 ) async {
   final data = await rootBundle.load(assetPath);
   final file = File(
-    '\${directory.path}\${Platform.pathSeparator}$fileName',
+    '${directory.path}${Platform.pathSeparator}$fileName',
   );
   await file.writeAsBytes(
     data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes),
