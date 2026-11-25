@@ -66,3 +66,13 @@ else
   adb -s emulator-5554 shell dumpsys activity activities | tail -n 100 || true
   exit "$test_status"
 fi
+
+if timeout 20m flutter test integration_test/clip_preview_export_parity_matrix_test.dart -d emulator-5554 --reporter expanded; then
+  echo "Flutter preview/export parity matrix integration test command completed."
+else
+  test_status=$?
+  echo "Flutter preview/export parity matrix failed; collecting emulator diagnostics."
+  adb -s emulator-5554 logcat -d -v threadtime | grep -E -i "AndroidRuntime|FATAL EXCEPTION|UnsatisfiedLinkError|dlopen failed|libflutter|ActivityTaskManager|fatal signal|process.*died" | tail -n 220 || true
+  adb -s emulator-5554 shell dumpsys activity activities | tail -n 100 || true
+  exit "$test_status"
+fi
