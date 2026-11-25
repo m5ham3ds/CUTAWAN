@@ -160,15 +160,8 @@ print(f"Validated preview parity fixture: {duration:.3f}s, {stream}")
 PY
 # Rotate the same color grid into a true portrait source so vertical crop
 # bounds and focus-keyframe movement are tested independently of metadata rotation.
-ffmpeg -hide_banner -loglevel error -y \\
-  -i "$GRID_PNG" -vf "transpose=clock" -frames:v 1 "$PORTRAIT_PNG"
-ffmpeg -hide_banner -loglevel error -y \\
-  -loop 1 -framerate 15 -i "$PORTRAIT_PNG" -t 2 \\
-  -vf "fps=15,format=yuv420p" -an \\
-  -c:v libx264 -profile:v baseline -level 3.0 \\
-  -preset ultrafast -tune zerolatency -crf 12 \\
-  -g 15 -keyint_min 15 -sc_threshold 0 \\
-  -movflags +faststart "$PORTRAIT_VIDEO"
+ffmpeg -hide_banner -loglevel error -y -i "$GRID_PNG" -vf "transpose=clock" -frames:v 1 "$PORTRAIT_PNG"
+ffmpeg -hide_banner -loglevel error -y -loop 1 -framerate 15 -i "$PORTRAIT_PNG" -t 2 -vf "fps=15,format=yuv420p" -an -c:v libx264 -profile:v baseline -level 3.0 -preset ultrafast -tune zerolatency -crf 12 -g 15 -keyint_min 15 -sc_threshold 0 -movflags +faststart "$PORTRAIT_VIDEO"
 
 python3 - "$PORTRAIT_VIDEO" <<'PY'
 import json
