@@ -5,6 +5,8 @@ FIXTURE="tooling/android/test-fixtures/red-blue-transition.mp4"
 ASSET_DIR="assets/testdata"
 GRID_PNG="$ASSET_DIR/clip-preview-grid.png"
 GRID_VIDEO="$ASSET_DIR/clip-preview-grid.mp4"
+PORTRAIT_PNG="$ASSET_DIR/clip-preview-grid-portrait.png"
+PORTRAIT_VIDEO="$ASSET_DIR/clip-preview-grid-portrait.mp4"
 mkdir -p "$(dirname "$FIXTURE")" "$ASSET_DIR"
 
 # A fixed 4x3 color grid makes crop position measurable at interior pixels.
@@ -156,4 +158,57 @@ if not 1.95 <= duration <= 2.05:
     raise SystemExit(f"Expected a 2-second crop-grid fixture, got {duration:.3f}s")
 print(f"Validated preview parity fixture: {duration:.3f}s, {stream}")
 PY
-sha256sum "$GRID_PNG" "$GRID_VIDEO"
+# Rotate the same color grid into a true portrait source so vertical crop
+# bounds and focus-keyframe movement are tested independently of metadata rotation.
+ffmpeg -hide_banner -loglevel error -y \\
+  -i "$GRID_PNG" -vf "transpose=clock" -frames:v 1 "$PORTRAIT_PNG"
+ffmpeg -hide_banner -loglevel error -y \\
+  -loop 1 -framerate 15 -i "$PORTRAIT_PNG" -t 2 \\
+  -vf "fps=15,format=yuv420p" -an \\
+  -c:v libx264 -profile:v baseline -level 3.0 \\
+  -preset ultrafast -tune zerolatency -crf 12 \\
+  -g 15 -keyint_min 15 -sc_threshold 0 \\
+  -movflags +faststart "$PORTRAIT_VIDEO"
+
+python3 - "$PORTRAIT_VIDEO" <<'PY'
+import json
+import subprocess
+import sys
+
+fixture = sys.argv[1]
+probe = subprocess.run(
+    [
+        "ffprobe", "-v", "error",
+        "-show_entries",
+        "format=duration:stream=codec_name,width,height,r_frame_rate,pix_fmt",
+        "-select_streams", "v:0",
+        "-of", "json",
+        fixture,
+    ],
+    check=True,
+    capture_output=True,
+    text=True,
+)
+metadata = json.loads(probe.stdout)
+streams = metadata.get("streams", [])
+if len(streams) != 1:
+    raise SystemExit(f"Expected one portrait grid stream, found {len(streams)}")
+stream = streams[0]
+duration = float(metadata.get("format", {}).get("duration", 0))
+expected = {
+    "codec_name": "h264",
+    "width": 180,
+    "height": 320,
+    "r_frame_rate": "15/1",
+    "pix_fmt": "yuv420p",
+}
+for field, value in expected.items():
+    if stream.get(field) != value:
+        raise SystemExit(
+            f"Invalid portrait crop-grid {field}: expected {value}, got {stream.get(field)}"
+        )
+if not 1.95 <= duration <= 2.05:
+    raise SystemExit(f"Expected a 2-second portrait grid, got {duration:.3f}s")
+print(f"Validated portrait preview parity fixture: {duration:.3f}s, {stream}")
+PY
+sha256sum "$GRID_PNG" "$GRID_VIDEO" "$PORTRAIT_PNG" "$PORTRAIT_VIDEO"
