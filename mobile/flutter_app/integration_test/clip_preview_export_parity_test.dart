@@ -35,12 +35,27 @@ void main() {
         ),
         flush: true,
       );
+      final previewPngAsset = await rootBundle.load(
+        'assets/testdata/clip-preview-grid.png',
+      );
+      final previewAssetCodec = await ui.instantiateImageCodec(
+        previewPngAsset.buffer.asUint8List(
+          previewPngAsset.offsetInBytes,
+          previewPngAsset.lengthInBytes,
+        ),
+      );
+      try {
+        previewAssetImage = (await previewAssetCodec.getNextFrame()).image;
+      } finally {
+        previewAssetCodec.dispose();
+      }
       if (temporaryOutput.existsSync()) await temporaryOutput.delete();
 
       final exportService = VideoExportService();
       VideoExportResult? export;
       ui.Image? previewImage;
       ui.Image? exportedImage;
+      ui.Image? previewAssetImage;
       try {
         const sourceAspectRatio = 16 / 9;
         const targetAspectRatio = 9 / 16;
@@ -147,11 +162,11 @@ void main() {
                     child: ClipPreviewViewport(
                       fit: BoxFit.cover,
                       alignment: Alignment(alignment['x']!, alignment['y']!),
-                      child: const SizedBox(
+                      child: SizedBox(
                         width: 320,
                         height: 180,
-                        child: Image(
-                          image: AssetImage('assets/testdata/clip-preview-grid.png'),
+                        child: RawImage(
+                          image: previewAssetImage,
                           fit: BoxFit.fill,
                         ),
                       ),
@@ -266,6 +281,7 @@ void main() {
         await tester.binding.setSurfaceSize(null);
         previewImage?.dispose();
         exportedImage?.dispose();
+        previewAssetImage?.dispose();
         if (export != null) {
           try {
             await exportService.deleteExport(export.outputUri);
