@@ -10,6 +10,7 @@ import android.provider.MediaStore
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
+import androidx.media3.common.util.Size
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.effect.CanvasOverlay
 import androidx.media3.effect.MatrixTransformation
@@ -68,6 +69,7 @@ import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import kotlin.math.abs
 import kotlin.math.max
+import kotlin.math.roundToInt
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -766,6 +768,30 @@ class NativeRenderEngine(context: Context) : ContextWrapper(context.applicationC
         targetAspectRatio: Float
     ): MatrixTransformation {
         return object : MatrixTransformation {
+            override fun configure(inputWidth: Int, inputHeight: Int): Size {
+                require(inputWidth > 0 && inputHeight > 0) {
+                    "Reframe input dimensions must be positive."
+                }
+                val crop = segments.firstOrNull { it.mode == "crop" }
+                val outputWidth: Int
+                val outputHeight: Int
+                if (crop != null) {
+                    // A crop matrix changes the visible region, so advertise the
+                    // cropped pixel dimensions as well. Otherwise the following
+                    // Presentation effect stretches the cropped image from the
+                    // original source aspect ratio into the target aspect ratio.
+                    outputWidth = (inputWidth * crop.width).roundToInt()
+                    outputHeight = (inputHeight * crop.height).roundToInt()
+                } else if (inputWidth.toFloat() / inputHeight > targetAspectRatio) {
+                    outputWidth = (inputHeight * targetAspectRatio).roundToInt()
+                    outputHeight = inputHeight
+                } else {
+                    outputWidth = inputWidth
+                    outputHeight = (inputWidth / targetAspectRatio).roundToInt()
+                }
+                return Size(outputWidth.coerceAtLeast(1), outputHeight.coerceAtLeast(1))
+            }
+
             override fun getMatrix(presentationTimeUs: Long): Matrix {
                 val timeMs = (presentationTimeUs / 1000L).coerceAtLeast(0L)
                 val segment = segments.firstOrNull {
@@ -775,11 +801,13 @@ class NativeRenderEngine(context: Context) : ContextWrapper(context.applicationC
                     val scaleX: Float
                     val scaleY: Float
                     if (sourceAspectRatio > targetAspectRatio) {
-                        scaleX = 1f
-                        scaleY = targetAspectRatio / sourceAspectRatio
-                    } else {
-                        scaleX = sourceAspectRatio / targetAspectRatio
+                        // Fit a wider source into the target frame by reducing X.
+                        scaleX = targetAspectRatio / sourceAspectRatio
                         scaleY = 1f
+                    } else {
+                        // Fit a narrower source into the target frame by reducing Y.
+                        scaleX = 1f
+                        scaleY = sourceAspectRatio / targetAspectRatio
                     }
                     floatArrayOf(
                         scaleX, 0f, 0f,
