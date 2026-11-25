@@ -268,6 +268,7 @@ void main() {
                 sourceImage: previewSource,
                 width: frame.width,
                 height: frame.height,
+                sourceAspectRatio: scenario.sourceAspectRatio,
                 fit: fit,
                 alignment: alignment,
                 fadeOpacity: fadeOpacity,
@@ -429,6 +430,7 @@ Future<ui.Image> _capturePreview({
   required ui.Image sourceImage,
   required int width,
   required int height,
+  required double sourceAspectRatio,
   required BoxFit fit,
   required Alignment alignment,
   required double fadeOpacity,
@@ -455,7 +457,7 @@ Future<ui.Image> _capturePreview({
                     alignment: alignment,
                     child: SizedBox(
                       width: 320,
-                      height: 180,
+                      height: 320 / sourceAspectRatio,
                       child: RawImage(
                         image: sourceImage,
                         fit: BoxFit.fill,
