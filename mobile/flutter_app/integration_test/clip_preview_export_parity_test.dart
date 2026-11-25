@@ -27,6 +27,7 @@ void main() {
       final temporaryOutput = File(
         '${supportDirectory.path}${Platform.pathSeparator}clip-preview-parity-output.mp4',
       );
+      ui.Image? previewAssetImage;
       final sourceAsset = await rootBundle.load('assets/testdata/clip-preview-grid.mp4');
       await sourceFile.writeAsBytes(
         sourceAsset.buffer.asUint8List(
@@ -55,7 +56,6 @@ void main() {
       VideoExportResult? export;
       ui.Image? previewImage;
       ui.Image? exportedImage;
-      ui.Image? previewAssetImage;
       try {
         const sourceAspectRatio = 16 / 9;
         const targetAspectRatio = 9 / 16;
