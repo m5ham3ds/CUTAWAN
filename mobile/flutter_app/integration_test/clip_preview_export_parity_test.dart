@@ -190,6 +190,22 @@ void main() {
           ),
         );
 
+        String rgbAt(Uint8List bytes, int x, int y) {
+          final index = (y * referenceFrame.width + x) * 4;
+          return '${bytes[index]},${bytes[index + 1]},${bytes[index + 2]}';
+        }
+
+        debugPrint(
+          'CLIP_PREVIEW_PARITY_SAMPLE_PIXELS '
+          'alignment=${alignment['x']!.toStringAsFixed(3)},${alignment['y']!.toStringAsFixed(3)} '
+          'region=${region['x']},${region['y']},${region['width']},${region['height']} '
+          'topLeft=${rgbAt(previewBytes, 8, 8)}/${rgbAt(outputBytes, 8, 8)} '
+          'center=${rgbAt(previewBytes, referenceFrame.width ~/ 2, referenceFrame.height ~/ 2)}/'
+          '${rgbAt(outputBytes, referenceFrame.width ~/ 2, referenceFrame.height ~/ 2)} '
+          'bottomRight=${rgbAt(previewBytes, referenceFrame.width - 9, referenceFrame.height - 9)}/'
+          '${rgbAt(outputBytes, referenceFrame.width - 9, referenceFrame.height - 9)}',
+        );
+
         // Compare interior color patches; H.264/YUV and JPEG add bounded noise,
         // while a crop-position mismatch produces large patch-wide deltas.
         const sampleX = [0.13, 0.37, 0.63, 0.87];
