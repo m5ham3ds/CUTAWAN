@@ -808,11 +808,13 @@ class NativeRenderEngine(context: Context) : ContextWrapper(context.applicationC
                     outputWidth = (inputWidth * crop.width).roundToInt()
                     outputHeight = (inputHeight * crop.height).roundToInt()
                 } else if (inputWidth.toFloat() / inputHeight > targetAspectRatio) {
-                    outputWidth = (inputHeight * targetAspectRatio).roundToInt()
-                    outputHeight = inputHeight
-                } else {
+                    // Preserve the wider source and add vertical letterbox space.
                     outputWidth = inputWidth
                     outputHeight = (inputWidth / targetAspectRatio).roundToInt()
+                } else {
+                    // Preserve the narrower source and add horizontal letterbox space.
+                    outputWidth = (inputHeight * targetAspectRatio).roundToInt()
+                    outputHeight = inputHeight
                 }
                 return Size(outputWidth.coerceAtLeast(1), outputHeight.coerceAtLeast(1))
             }
@@ -826,13 +828,13 @@ class NativeRenderEngine(context: Context) : ContextWrapper(context.applicationC
                     val scaleX: Float
                     val scaleY: Float
                     if (sourceAspectRatio > targetAspectRatio) {
-                        // Fit a wider source into the target frame by reducing X.
-                        scaleX = targetAspectRatio / sourceAspectRatio
-                        scaleY = 1f
-                    } else {
-                        // Fit a narrower source into the target frame by reducing Y.
+                        // Preserve source width and reduce height inside a taller target frame.
                         scaleX = 1f
-                        scaleY = sourceAspectRatio / targetAspectRatio
+                        scaleY = targetAspectRatio / sourceAspectRatio
+                    } else {
+                        // Preserve source height and reduce width inside a wider target frame.
+                        scaleX = sourceAspectRatio / targetAspectRatio
+                        scaleY = 1f
                     }
                     floatArrayOf(
                         scaleX, 0f, 0f,
