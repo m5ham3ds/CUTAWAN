@@ -198,6 +198,32 @@ void main() {
     expect(shots.first['endMs'], shots.last['startMs']);
   });
 
+  test('vertical keyframes provide interpolable crop end regions for Media3', () {
+    const value = ClipEditOverrides(
+      clipId: 'clip_001',
+      framingMode: ClipFramingMode.manualFocus,
+      focusKeyframes: [
+        ClipFocusKeyframe(timestampMs: 0, focusX: 0.5, focusY: 0.08),
+        ClipFocusKeyframe(timestampMs: 2000, focusX: 0.5, focusY: 0.92),
+      ],
+    );
+    final shot = value.toExportShots(
+      durationMs: 2000,
+      sourceAspectRatio: 9 / 16,
+      targetAspectRatio: 16 / 9,
+    ).single;
+    final start = Map<String, double>.from(shot['region']! as Map);
+    final end = Map<String, double>.from(shot['regionEnd']! as Map);
+    final expectedHeight = (9 / 16) / (16 / 9);
+    final midpointY = start['y']! + (end['y']! - start['y']!) * 0.5;
+
+    expect(start['y'], 0);
+    expect(end['y'], closeTo(1 - expectedHeight, 0.000001));
+    expect(start['height'], closeTo(expectedHeight, 0.000001));
+    expect(end['height'], start['height']);
+    expect(midpointY, closeTo((1 - expectedHeight) / 2, 0.000001));
+  });
+
   test('schema 1 static overrides migrate without losing their focus point', () {
     final migrated = ClipEditOverrides.fromJson({
       'schemaVersion': 1,
