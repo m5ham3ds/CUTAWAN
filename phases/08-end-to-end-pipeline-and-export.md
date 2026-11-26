@@ -145,3 +145,6 @@ Phase 8 is still not globally accepted: physical ARM64 background/relaunch/force
 - A direct integration test was added in test-only commit `83053e7284e9225a94797d82020235b1914563d1`. It seeds two clips and proves that the target clip alone is rendered, the untouched peer is reverified and retained, and only the target's previous output is deleted. Android #447 passed strict analysis and the Flutter Test step with this test; its subsequent APK build and emulator/package steps were still running when this record was written.
 - This is automated evidence only. Physical ARM64 re-render/peer-preservation/old-output cleanup, WorkManager process-death/force-stop, notification/cancellation and real-media format acceptance remain field gates.
 
+
+
+The complete device-level checklist is maintained in [`PHASE-08-PHYSICAL-MEDIA-AND-WORKMANAGER-ACCEPTANCE-2026-11-26.md`](PHASE-08-PHYSICAL-MEDIA-AND-WORKMANAGER-ACCEPTANCE-2026-11-26.md). All field items remain `NOT RUN` until a physical ARM64 handset report is attached.
