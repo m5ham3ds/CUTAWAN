@@ -252,3 +252,15 @@ The page workflow sequence is tracked separately from the broader phase matrix. 
 - Branch Policy [45500607649](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45500607649), run 115 — success; main is the only branch.
 
 **Decision:** accept the automated clip-sequence transition slice. Phase 9 remains in progress; physical ARM64 handset review is still not evidenced. Next engineering slice: capture and compare the actual Clip Editor preview against the Media3-exported frame at matched timestamps, including crop boundaries, automatic/manual framing, keyframe interpolation, fit gaps, aspect-ratio changes and fade/caption overlays. Do not start Phase 10 until the remaining Phase 9 pixel-parity and handset gates are recorded.
+
+
+## Phase 9 preview/export parity accepted; physical handset gate is next — 2026-11-26
+
+- The current `main` source SHA is `846c53c6078691c8af5fe8fe9a07f60823d80ecc`.
+- Android run [45732357835](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45732357835), run 442 — **success**: Format, strict Flutter analysis, **257/257 Flutter tests**, ARM64 APK build, Media3 instrumentation, 24/24 preview/export pixel comparisons, ARM64-only/native-library verification and APK upload.
+- The pixel matrix tests eight cases at 200ms, 1049ms and 1899ms. The maximum MAE is 14.07 and maximum worst-patch mean is 43.57, within the unchanged limits of 24 and 48. The detailed metrics and scope limits are in [PHASE-09-PREVIEW-EXPORT-PIXEL-PARITY-ACCEPTANCE-2026-11-26.md](PHASE-09-PREVIEW-EXPORT-PIXEL-PARITY-ACCEPTANCE-2026-11-26.md).
+- APK [cutawan-mobile-arm64-debug, artifact 15078655021](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45732357835/artifacts/15078655021): 60,639,483 bytes; SHA-256 `e46e015943ff4476b4f2ccde2c449894f8a1cc90a1c80bf8879c3716449e27ab`. It contains exactly `arm64-v8a`, 10 unique native libraries and the required GGML files.
+- Coverage artifact [15076684301](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45732357835/artifacts/15076684301): 21,334 bytes.
+- Root CI [45732357805](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45732357805), run 495 — **success**; Branch Policy [45732357819](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45732357819), run 145 — **success**. Both use the same SHA.
+- **Decision:** accept the automated preview/export pixel-parity slice. The next Phase 9 gate is physical ARM64 handset visual/accessibility acceptance, tracked in [PHASE-09-PHYSICAL-HANDSET-ACCEPTANCE-2026-11-26.md](PHASE-09-PHYSICAL-HANDSET-ACCEPTANCE-2026-11-26.md). This gate is explicitly not run yet. Do not start Phase 10 until it is recorded. Phase 8 physical media/background acceptance remains a separate prerequisite.
+

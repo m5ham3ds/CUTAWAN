@@ -45,3 +45,14 @@ This follow-up supersedes the older open transition item above; the earlier clip
 - Android instrumentation verifies red-before, dim-red-during, near-black-at-join, dim-blue-during and bright-blue-after pixels from an exported MP4. The full test passes in run [45500607722](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45500607722), run 413.
 - The transition affects video only; no audio crossfade is implemented.
 - Next: exact preview/export pixel parity remains open and is the next Phase 9 engineering slice. Physical handset accessibility and visual review remain an independent gate.
+
+
+## Preview/export pixel-parity follow-up — 2026-11-26
+
+This follow-up supersedes the prior statement that pixel parity remained open for the entire Clip Editor preview/export path. The accepted scope is the eight-scenario automated matrix below; it is not a claim of exhaustive caption-animation or all-real-media parity.
+
+- The Android export engine now consumes `regionEnd` and interpolates the crop rectangle at Media3 presentation timestamps. This corrected the ignored end-region behavior exposed by the first keyframe-pan run.
+- Android run [45732357835](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45732357835), run 442, source SHA `846c53c6078691c8af5fe8fe9a07f60823d80ecc`: **24/24 comparisons passed** across 8 scenarios and timestamps 200ms, 1049ms and 1899ms. Limits remained MAE <24 and worst-patch <48.
+- The cases cover manual left/right portrait crops, automatic left portrait framing, manual top/bottom landscape crops, vertical keyframe pan, full-frame fit and manual crop with fade-in/out. See the detailed [pixel-parity result table](PHASE-09-PREVIEW-EXPORT-PIXEL-PARITY-ACCEPTANCE-2026-11-26.md).
+- The sequence-level dip-to-black remains a separate accepted video-only transition. No audio crossfade or complete multitrack audio mix is claimed.
+- **Still open:** actual ARM64 handset visual/accessibility acceptance (hardware Tab, visible focus, RTL/LTR, enlarged text, landscape, real system bars/gesture insets/cutouts and OEM behavior). The physical handset gate is not inferred from CI or the Android emulator.

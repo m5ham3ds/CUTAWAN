@@ -1,0 +1,63 @@
+# Phase 9 — Clip Editor preview/export pixel-parity acceptance
+
+**Date:** 2026-11-26  
+**Repository:** `m5ham3ds/CUTAWAN`  
+**Accepted source SHA:** `846c53c6078691c8af5fe8fe9a07f60823d80ecc`
+
+## Decision
+
+**Accept the eight-scenario automated preview/export pixel-parity matrix.** Android run 442 completed successfully. All 24 matched-timestamp comparisons passed without relaxing either threshold:
+
+- Mean absolute pixel error (MAE): **less than 24**.
+- Worst sampled patch mean: **less than 48**.
+
+This is emulator-level evidence for the scenarios listed below. It is not physical-device acceptance and does not assert exhaustive parity for the full caption-animation catalogue, rotated camera sources or every real-world media format.
+
+## Test matrix results
+
+Each scenario was sampled at source/output timestamps **200ms, 1049ms and 1899ms**.
+
+| Scenario | MAE at 200ms | MAE at 1049ms | MAE at 1899ms | Maximum worst-patch mean |
+|---|---:|---:|---:|---:|
+| Manual left portrait | 2.08 | 2.08 | 1.87 | 4.27 |
+| Manual right portrait | 1.02 | 0.96 | 0.96 | 1.53 |
+| Automatic left portrait | 2.08 | 2.08 | 1.87 | 4.27 |
+| Manual top landscape | 11.76 | 11.57 | 11.46 | 38.35 |
+| Manual bottom landscape | 2.50 | 2.59 | 2.59 | 7.20 |
+| Vertical keyframe pan | 1.71 | 14.07 | 2.22 | 43.57 |
+| Full-frame fit | 2.31 | 2.30 | 2.30 | 5.65 |
+| Manual crop with fade-in/out | 1.81 | 1.40 | 6.02 | 8.67 |
+
+**Result:** 8 scenarios × 3 timestamps = **24/24 comparisons passed**. The largest MAE and patch error occurred at the vertical-pan midpoint (14.07 and 43.57 respectively), both below the fixed limits.
+
+## Root cause corrected before acceptance
+
+An earlier Android run exposed a real export defect: Flutter sent both the start crop region and `regionEnd`, but `NativeRenderEngine` parsed only the start region and applied it for the entire segment. The native engine now parses and validates both rectangles, requires stable crop dimensions, and interpolates the crop origin at each Media3 presentation timestamp.
+
+The correction and regression coverage were committed in:
+- `1aa7f735d50e234068268242ed7494785da65892` — native Media3 interpolation.
+- `511230b5caa1b5fe8985e59cd5e51d487f8d3699` — Flutter crop-interpolation contract test.
+- Run 442 then validated the resulting behavior on the Android emulator.
+
+## Final automated build evidence
+
+- Android run [45732357835](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45732357835), run 442 — **success**.
+- Root CI [45732357805](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45732357805), run 495 — **success**.
+- Branch Policy [45732357819](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45732357819), run 145 — **success**; `main` is the only branch.
+- Current source SHA: `846c53c6078691c8af5fe8fe9a07f60823d80ecc`.
+- Flutter tests: **257/257 passed**; strict analysis and formatting passed.
+- Media3 transition/instrumentation, ARM64-only verification and duplicate-native-library checks passed.
+- APK artifact [cutawan-mobile-arm64-debug — 15078655021](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45732357835/artifacts/15078655021): 60,639,483 bytes; SHA-256 `e46e015943ff4476b4f2ccde2c449894f8a1cc90a1c80bf8879c3716449e27ab`.
+- Coverage artifact [cutawan-mobile-flutter-coverage — 15076684301](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45732357835/artifacts/15076684301): 21,334 bytes.
+
+## Scope limits and next gate
+
+The test matrix measures crop framing, manual/automatic selection, keyframe interpolation, full-frame fit and per-clip fade overlays. It does not establish:
+- raster/pixel parity for all Caption Studio animation modes or every caption font/RTL layout;
+- every rotated, variable-frame-rate, long, truncated or no-audio real-media source;
+- real-device focus visibility, Tab behavior, safe-area handling or OEM UI behavior;
+- Phase 8 background/relaunch/force-stop, notification, retry and physical full-decode acceptance.
+
+The next Phase 9 gate is actual ARM64 handset visual/accessibility review. Phase 10 must not start until this physical Phase 9 evidence is attached; Phase 8's separate physical media/background gates must also remain visible and unaccepted until tested.
+
+See [the physical handset checklist](PHASE-09-PHYSICAL-HANDSET-ACCEPTANCE-2026-11-26.md).

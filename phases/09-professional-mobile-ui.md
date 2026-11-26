@@ -62,21 +62,22 @@ Preserve schema compatibility and existing project data. Never fabricate AI resu
 
 The phase has delivered the workflow and responsive UI slices recorded below; the original target remains broader than any single widget-test pass. The phase is **still in progress**, but the early statement that the UI is only an initial shell is no longer an accurate summary of the repository's present state.
 
-**Latest automated baseline:** Mobile Android run [45313033547](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45313033547), run 379, source SHA `7b6122f33d5aecb4e9d5be1ef3d0080a6b452376`, passed Dart format, strict analysis, **228/228 Flutter tests**, ARM64 debug APK build, ARM64-only ABI verification, duplicate-native-library check and artifact upload. The test suite now also covers clip preview crop alignment for left/center/right and top/center/bottom regions, plus rejection of malformed crop geometry.
+**Latest automated baseline:** Mobile Android run [45732357835](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45732357835), run 442, source SHA `846c53c6078691c8af5fe8fe9a07f60823d80ecc`, passed script validation, Flutter Format, strict analysis, **257/257 Flutter tests**, ARM64 debug APK build, Media3 instrumentation, the expanded preview/export pixel-parity matrix (**24/24 comparisons**), ARM64-only/native-library verification and APK upload.
 
-- APK artifact [14883968118](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45313033547/artifacts/14883968118): **60,050,476 bytes** (artifact archive); SHA-256 `ddb8220ac7be93152208840913ba48e32457707d7d622338a756ff46d10a9eca`. The APK contains exactly `arm64-v8a`, **10 unique native libraries**, and the GGML runtime files `libggml-cpu.so`, `libggml.so`, `libggml-base.so`, with no duplicate native-library basenames.
-- Coverage artifact [14883749112](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45313033547/artifacts/14883749112): **19,611 bytes**; SHA-256 `2279ccb0a42bc59f96b9284d15db80c62b02a9b0e629f7e8a36f221131e4e5ff`.
-- Root/desktop CI [45313033480](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45313033480), run 431 — **success** across checks, Xvfb UI smoke, offline FFmpeg/caption/render pipeline and Apple Silicon packaging.
-- Branch Policy [45313033620](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45313033620), run 81 — **success**; `main` is the only branch.
+- APK artifact [15078655021](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45732357835/artifacts/15078655021): **60,639,483 bytes**; archive digest `e46e015943ff4476b4f2ccde2c449894f8a1cc90a1c80bf8879c3716449e27ab`. The APK contains exactly `arm64-v8a`, **10 unique native libraries**, all required GGML runtime libraries and no duplicate native-library basenames.
+- Coverage artifact [15076684301](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45732357835/artifacts/15076684301): **21,334 bytes**; digest `0e1c362a6ca2441790e86b51e701e2d3dee02e05bcc37cde672e03e70a90bba8`.
+- Root CI [45732357805](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45732357805), run 495 — **success** across checks, offline pipeline, Xvfb UI smoke and Apple Silicon packaging.
+- Branch Policy [45732357819](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45732357819), run 145 — **success**; `main` is the only branch.
+- Root CI artifacts: `smoke-screenshots` [15077027847](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45732357805/artifacts/15077027847) and `mac-package-check` [15076967349](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45732357805/artifacts/15076967349).
 
 The full record of Filmstrip thumbnails, source-time focus keyframes, per-clip black fades and preview crop-geometry correction is in [PHASE-09-CLIP-EDITOR-THUMBNAILS-KEYFRAMES-TRANSITIONS-PREVIEW-GEOMETRY-2026-11-24.md](PHASE-09-CLIP-EDITOR-THUMBNAILS-KEYFRAMES-TRANSITIONS-PREVIEW-GEOMETRY-2026-11-24.md).
 
-**Remaining Phase 9 gates are in two groups:**
+**Remaining Phase 9 gates — after Android run 442:**
 
-1. **Editor product scope:** the Clip Editor now has native-generated Filmstrip thumbnails, absolute source-time manual-focus keyframes, per-clip visual fade-in/fade-out, and crop-geometry alignment shared by automatic and manual preview framing. Fade settings are persisted and exported as a visual black overlay; they do not fade audio and do not create transitions between separate clips. The crop-alignment tests verify normalized rectangle placement, but pixel-measured preview/export parity is still open. True cross-clip transitions and multitrack/sequence composition are also still open. Caption Studio's animated preview remains a timed example workspace rather than live-video synchronization, and only Static/Karaoke Fill are export-supported motion modes.
-2. **Physical handset acceptance:** verify actual hardware Tab behavior and visible focus across controls (especially ListTile, SwitchListTile and chips), RTL/large-text/landscape presentation, Android system bars, gesture insets, cutouts and OEM behavior. Existing focus goldens cover representative controls in light/RTL and dark/LTR; the theme contract test does not measure rasterized focus pixels for every control type.
+1. **Physical handset acceptance remains open.** Confirm real Android hardware Tab behavior and visible focus for buttons, text fields, ListTile, SwitchListTile and chips; inspect Arabic RTL/English LTR, enlarged text, portrait/landscape, status/navigation bars, gesture insets, cutouts and OEM behavior. Simulated widget insets, emulator tests and CI do not satisfy this gate.
+2. **Editor scope now accepted for the measured automated slice.** Filmstrip thumbnails, source-time focus keyframes, per-clip visual fades, normalized crop alignment, sequence-level video dip-to-black and the documented eight-case/24-frame pixel matrix have automated evidence. The sequence transition is video-only: no audio crossfade or complete multitrack audio mix is claimed. The pixel matrix does not claim coverage of every caption animation, rotated-source class or real-media combination; those remain broader Phase 8/10 media acceptance work.
 
-CI success does not close either group. Do not start Phase 10 until multitrack/clip-to-clip transitions, measured preview/export parity and the physical handset gate are implemented and recorded.
+Android run 442 establishes emulator-level preview/export pixel parity only for the eight cases listed in the dated acceptance record. It does not establish physical-handset acceptance. Do not start Phase 10 until the Phase 9 handset gate is recorded, and do not treat Phase 8 physical-media/background requirements as accepted by CI.
 
 ## Clip Editor timeline, keyframes, fades and preview crop geometry — 2026-11-24
 
@@ -365,3 +366,11 @@ This record supersedes the older Dashboard/Settings items in the original next-s
 - Branch Policy [45500607649](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45500607649), run 115 — success; main is the only branch.
 
 **Decision:** accept the automated clip-sequence transition slice. Phase 9 remains in progress; physical ARM64 handset review is still not evidenced. Next engineering slice: capture and compare the actual Clip Editor preview against the Media3-exported frame at matched timestamps, including crop boundaries, automatic/manual framing, keyframe interpolation, fit gaps, aspect-ratio changes and fade/caption overlays. Do not start Phase 10 until the remaining Phase 9 pixel-parity and handset gates are recorded.
+
+
+## Preview/export pixel-parity matrix accepted — 2026-11-26
+
+- The previous "pixel-measured preview/export parity is still open" statement above is superseded for the eight measured scenarios by [the 2026-11-26 acceptance record](PHASE-09-PREVIEW-EXPORT-PIXEL-PARITY-ACCEPTANCE-2026-11-26.md).
+- Android run [45732357835](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45732357835), run 442, source SHA `846c53c6078691c8af5fe8fe9a07f60823d80ecc`: **24/24 matched-timestamp pixel comparisons passed**. All 257 Flutter tests and the Media3 emulator/instrumentation steps passed; the ARM64-only APK and native-library checks passed; the APK and coverage artifacts were uploaded.
+- The measured matrix uses MAE <24 and worst-patch mean <48. The largest recorded pair was MAE 14.07 / worst patch 43.57 at the midpoint of the vertical keyframe pan.
+- Current handoff: physical ARM64 handset visual/accessibility acceptance, using the exact APK linked in the acceptance record. Do not mark Phase 9 complete or start Phase 10 until the real-device evidence is recorded.
