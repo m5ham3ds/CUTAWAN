@@ -87,3 +87,13 @@ See [the physical handset checklist](PHASE-09-PHYSICAL-HANDSET-ACCEPTANCE-2026-1
 - The same run passed 257/257 Flutter tests, Media3 emulator/instrumentation, ARM64-only ABI and unique-native-library checks, and APK upload.
 - This confirms the parity matrix on the same application-source baseline used for the targeted re-render feature. It remains emulator-level evidence and does not close the physical handset checklist.
 
+
+## Independent rerun including targeted re-render regression — Android #447
+
+- Android run [45859864265](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45859864265), build commit `83053e7284e9225a94797d82020235b1914563d1` — **success**. The commit adds only a direct pipeline integration test; application code remains at `8bd9d5fb1534dc0da52d6b8af484059873f5c397`.
+- The run passed **258/258 Flutter tests**, including the targeted per-clip re-render / untouched-peer preservation test, and both Android preview/export integration tests.
+- All eight preview/export scenarios again passed **24/24** matched-timestamp comparisons at 200 ms, 1049 ms and 1899 ms. Maximum observed MAE was **14.07** and maximum worst sampled patch mean was **43.57**, within the unchanged **<24 / <48** thresholds.
+- Media3 emulator instrumentation, ARM64-only APK verification, ten unique native libraries/no duplicate basenames and APK upload all passed.
+- APK artifact [cutawan-mobile-arm64-debug — 15138487911](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45859864265/artifacts/15138487911): 60,653,801 bytes; artifact ZIP SHA-256 `26e96cec9449b249bc1cf0a7d60e6caf62c535be7a1456d270a33b541898333f`.
+- Root CI [45860851357](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45860851357), run 505, and Branch Policy [45860851360](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45860851360), run 155, passed on the prior documentation baseline; `main` remained the only branch.
+- This independent emulator rerun strengthens automated evidence only. The Phase 9 physical handset checklist and Phase 8 physical media/background checklist remain `NOT RUN` until real-device results are recorded.

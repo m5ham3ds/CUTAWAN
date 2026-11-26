@@ -3,25 +3,27 @@
 **Status:** `BLOCKED — NOT RUN ON PHYSICAL HARDWARE`  
 **Prepared:** 2026-11-26  
 **Candidate app-code SHA:** `8bd9d5fb1534dc0da52d6b8af484059873f5c397`  
-**Android run:** [#446](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45854102190) — success  
-**APK:** [cutawan-mobile-arm64-debug, artifact 15136242266](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45854102190/artifacts/15136242266)  
-**APK size:** 60,652,364 bytes  
-**APK SHA-256:** `66b5a3a6ce25496f2350b5949d4b4a8b0cb87bae7fef8e0aa18c44721baa5fe6`
+**APK build commit / expected in-app BUILD_SHA:** `83053e7284e9225a94797d82020235b1914563d1` (test-only commit; app source unchanged)  
+**Android run:** [#447](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45859864265) — success  
+**APK:** [cutawan-mobile-arm64-debug, artifact 15138487911](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45859864265/artifacts/15138487911)  
+**Artifact size:** 60,653,801 bytes  
+**Artifact ZIP SHA-256:** `26e96cec9449b249bc1cf0a7d60e6caf62c535be7a1456d270a33b541898333f`
 
-This checklist is the remaining physical gate after Android #446 passed the automated build and emulator pixel matrix. The later commit `83053e7` adds only a test file and does not change application code. Do not convert any unrun item into a pass. Record each item as `PASS`, `FAIL` or `NOT RUN` and attach the observation/evidence.
+This checklist is the remaining physical gate after Android #447 passed the automated build and emulator pixel matrix. Commit `83053e7` adds only a direct pipeline regression test and does not change application code. The APK reports build SHA `83053e7`; the unchanged product source SHA is `8bd9d5f`. Do not convert any unrun item into a pass. Record each item as `PASS`, `FAIL` or `NOT RUN` and attach the observation/evidence.
 
 ## 1. Build and device identity
 
 | Field | Recorded value |
 |---|---|
-| Installed build SHA from **تشخيص الجهاز** | `NOT RECORDED` |
+| Expected build SHA from **تشخيص الجهاز** | `83053e7284e9225a94797d82020235b1914563d1` | 
+| Installed build SHA measured on handset | `NOT RECORDED` |
 | Manufacturer/model confirmed by tester | `NOT RECORDED` |
 | Android release/API | `NOT RECORDED` |
 | Physical ARM64 device confirmed by human | `NOT RECORDED` |
 | Test timestamp | `NOT RECORDED` |
-| APK artifact installed from run 446 | `NOT CONFIRMED` |
+| APK artifact installed from run 447 | `NOT CONFIRMED` |
 
-Do not use the Android fingerprint heuristic alone as proof that the handset is physical. Confirm the device manually and verify that the in-app build SHA equals the candidate app-code SHA above.
+Do not use the Android fingerprint heuristic alone as proof that the handset is physical. Confirm the device manually and verify that the in-app build SHA equals the APK build commit SHA (`83053e7…`). The product application source remains `8bd9d5f…`; the only changes between these SHAs are test-only.
 
 ## 2. Visual and responsive behavior
 

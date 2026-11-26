@@ -3,12 +3,13 @@
 **Status:** `BLOCKED — NOT RUN ON PHYSICAL HARDWARE`  
 **Prepared:** 2026-11-26  
 **Candidate app-code SHA:** `8bd9d5fb1534dc0da52d6b8af484059873f5c397`  
-**Android build:** [#446](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45854102190) — automated success  
-**APK:** [cutawan-mobile-arm64-debug, artifact 15136242266](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45854102190/artifacts/15136242266)  
-**APK size:** 60,652,364 bytes  
-**APK SHA-256:** `66b5a3a6ce25496f2350b5949d4b4a8b0cb87bae7fef8e0aa18c44721baa5fe6`
+**Android build commit / in-app BUILD_SHA:** `83053e7284e9225a94797d82020235b1914563d1` (test-only changes after the app-code SHA)  
+**Android build:** [#447](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45859864265) — automated success  
+**APK:** [cutawan-mobile-arm64-debug, artifact 15138487911](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45859864265/artifacts/15138487911)  
+**Artifact size:** 60,653,801 bytes  
+**Artifact ZIP SHA-256:** `26e96cec9449b249bc1cf0a7d60e6caf62c535be7a1456d270a33b541898333f`
 
-This is a physical-device field checklist. CI, emulator tests, mocked channels and generated short fixtures do not count as physical acceptance. Record each item as `PASS`, `FAIL` or `NOT RUN`, with brief evidence.
+This is a physical-device field checklist. Android #447's automated run and emulator tests passed, but CI, emulator tests, mocked channels and generated short fixtures do not count as physical acceptance. The product source is unchanged from `8bd9d5f`; the APK's in-app build SHA is the test-only build commit `83053e7`. Record each item as `PASS`, `FAIL` or `NOT RUN`, with brief evidence.
 
 ## 1. Device and build identity
 
