@@ -30,14 +30,31 @@ Each scenario was sampled at source/output timestamps **200ms, 1049ms and 1899ms
 
 **Result:** 8 scenarios × 3 timestamps = **24/24 comparisons passed**. The largest MAE and patch error occurred at the vertical-pan midpoint (14.07 and 43.57 respectively), both below the fixed limits.
 
-## Root cause corrected before acceptance
+## Earlier regressions corrected before acceptance
 
-An earlier Android run exposed a real export defect: Flutter sent both the start crop region and `regionEnd`, but `NativeRenderEngine` parsed only the start region and applied it for the entire segment. The native engine now parses and validates both rectangles, requires stable crop dimensions, and interpolates the crop origin at each Media3 presentation timestamp.
+Two earlier Android parity runs exposed distinct export defects. Both failures were corrected in later source commits, and the unchanged MAE/worst-patch thresholds were then passed by Android run 442.
 
-The correction and regression coverage were committed in:
+### Keyframed vertical crop interpolation — Android run 439
+
+Run [439](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45721862410) failed at the vertical-pan midpoint (1049ms): MAE **105.17** and worst patch **141.80**, above the required limits. Flutter sent both the start crop region and `regionEnd`, but `NativeRenderEngine` parsed only the start region and applied it for the entire segment.
+
+The native engine now parses and validates both rectangles, requires stable crop dimensions, and interpolates the crop origin at each Media3 presentation timestamp. The correction and regression coverage were committed in:
 - `1aa7f735d50e234068268242ed7494785da65892` — native Media3 interpolation.
 - `511230b5caa1b5fe8985e59cd5e51d487f8d3699` — Flutter crop-interpolation contract test.
-- Run 442 then validated the resulting behavior on the Android emulator.
+
+### Full-frame fit geometry — Android run 441
+
+Run [441](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45727137984) then exposed a separate full-frame-fit geometry defect: at 200ms, MAE was **62.01**, above the required limit of 24. The native output-size and fit-scale calculations did not consistently preserve the source aspect ratio for the target frame.
+
+Commit [`846c53c6078691c8af5fe8fe9a07f60823d80ecc`](https://github.com/m5ham3ds/CUTAWAN/commit/846c53c6078691c8af5fe8fe9a07f60823d80ecc) corrected the output dimensions and scale factors so the source image is preserved and letterbox/pillarbox space is added on the appropriate axis.
+
+### Verification after both corrections
+
+Android [run 442](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45732357835) passed both previously failing scenarios:
+- Vertical keyframe pan: MAE **1.71 / 14.07 / 2.22** at 200 / 1049 / 1899ms; maximum worst-patch mean **43.57**.
+- Full-frame fit: MAE **2.31 / 2.30 / 2.30**; maximum worst-patch mean **5.65**.
+
+All 24 comparisons in the eight-scenario matrix passed. The two historical failures are therefore resolved in the accepted source SHA; they are not outstanding failures on the current branch.
 
 ## Final automated build evidence
 
