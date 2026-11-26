@@ -513,9 +513,6 @@ class ProcessingPipelineService {
           );
         }
         final validatedRender = rendered;
-        if (validatedRender == null) {
-          throw StateError('No rendered MP4 was returned for ${candidate.id}.');
-        }
         if (!validatedRender.validated ||
             validatedRender.outputUri.isEmpty ||
             validatedRender.sizeBytes < 2048 ||
