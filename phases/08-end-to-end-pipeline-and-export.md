@@ -52,7 +52,7 @@ No UI may state an export succeeded until a real output file exists and passes v
 - Caption Studio's Flutter preview and Android CanvasOverlay use separate layout/font implementations; a golden/pixel-identical visual comparison is not in place.
 - Output validation probes the file/metadata and video track; it does **not** yet fully decode every output frame and audio packet to end-of-stream.
 - Historical snapshot dated 2026-11-21: render sessions were then held in an Activity-owned in-memory map. This blocker was superseded by the WorkManager foreground-render/durable-completion implementation recorded below on 2026-11-22; it is not the current architecture.
-- Per-clip retry/manual re-render, output management UI and cleanup/retention acceptance remain open.
+- At this 2026-11-21 snapshot, per-clip retry/manual re-render and output management were still open. The targeted re-render/cleanup implementation is recorded in the 2026-11-26 addendum below.
 - Fixture coverage still needs short/long, portrait/landscape, VFR, audio-only/no-speech, silence, corrupt/truncated source, scene cuts, missing-face intervals and Arabic/English/RTL cases.
 - Physical ARM64 testing for memory/thermal/load, audio presence, frame decode, output duration/dimensions and Android OEM/background restrictions has not been completed.
 
@@ -79,7 +79,7 @@ Do not mark Phase 8 accepted until the remaining full-decode, output-fixture, ba
 
 - MediaCodec full-decode must be exercised on real ARM64 fixtures and devices, including VFR, long files, no-audio, silent audio, rotated footage and deliberately truncated/corrupt output.
 - Historical snapshot dated 2026-11-21: foreground/background WorkManager execution and process-death handoff had not yet been implemented at that point. This was superseded by the 2026-11-22 WorkManager implementation below. Real-device process-death/force-stop and OEM acceptance remain open.
-- Per-clip retry/export management UI, render cancellation from Android system notifications, and physical subtitle/crop continuity checks remain open.
+- In this 2026-11-21 snapshot, per-clip retry/export management UI was still open. Targeted re-render/cleanup was implemented on 2026-11-26; physical export delivery, notification/cancellation, subtitle/crop continuity and device acceptance remain open.
 - Caption overlay styling still does not match every Flutter preview animation/pixel layout.
 
 
@@ -117,7 +117,7 @@ Do not mark Phase 8 accepted until the remaining full-decode, output-fixture, ba
 - Test background completion and relaunch recovery on a physical ARM64 handset; separately test ordinary process death versus explicit Android force-stop (force-stop may defer scheduled work until the app is launched again).
 - Confirm notification visibility/action, app notification permission behavior, foreground execution, OEM battery restrictions, cancellation latency and cleanup during long-running renders.
 - Exercise representative real media fixtures (long/VFR/rotated/no-audio/silent/corrupt/truncated), fully decoded audio/video outputs, crop continuity and Arabic/English subtitle timing/placement.
-- Per-clip retry and full export delivery/cleanup management remain product work. Caption Studio preview and native export do not yet have pixel-identical parity across the complete animation catalogue.
+- Targeted per-clip re-render and retired-output cleanup were added on 2026-11-26 (see the addendum below). Full physical export delivery/cleanup and complete caption-animation preview/native parity remain open.
 
 **Decision:** accept the WorkManager/background-render code slice as passing automated gates. Do not mark Phase 8 globally complete until the physical-device and remaining product/media acceptance items above are satisfied.
 
@@ -128,4 +128,20 @@ The three historical bullets above that describe an Activity-owned render map or
 
 Current source uses `NativeRenderEngine` and `NativeRenderWorker` through WorkManager long-running foreground work, project-tagged cancellation, progress/cancel notification, and durable completion handoff. Flutter validates and persists the export/checkpoint before acknowledging the durable completion.
 
-Phase 8 is still not globally accepted: physical ARM64 background/relaunch/force-stop/OEM tests, notification and cancellation behavior, real media fixture/decode/crop/caption evidence, per-clip retry/management and preview/export parity remain open.
+Phase 8 is still not globally accepted: physical ARM64 background/relaunch/force-stop/OEM tests, notification and cancellation behavior, real media fixture/decode/crop/caption evidence, and complete on-device export/cleanup acceptance remain open. Targeted per-clip re-render code and its direct integration test are recorded below.
+
+
+## Targeted per-clip re-render and retired-output cleanup — 2026-11-26
+
+**Decision: accept the automated product-code slice; physical export/lifecycle acceptance remains open.**
+
+- The Review page now exposes a per-candidate export/re-export action. It calls the existing processing pipeline with an explicit `onlyClipId`, not a separate renderer or a parallel export implementation.
+- The pipeline rejects a requested clip ID that is not in the project's candidate set.
+- For every non-target clip, the pipeline fails closed unless a checkpoint matches the current source/configuration/edit fingerprint, the saved export record has full-decode evidence, and Android's `verifyExport` confirms the existing file's SHA, dimensions, duration and full-decode evidence. A stale/edited/missing peer export requires a full-project resume rather than silently preserving it.
+- The requested clip bypasses its prior render checkpoint and is freshly rendered. The new full-decode-validated export record is persisted before the previous public MediaStore URI is removed.
+- If Android cannot delete a replaced export, its URI is retained in `supersededOutputUris`; Review exposes a cleanup action so the user can retry. Deleting the current export also attempts to clean any retained superseded URIs before deleting its record.
+- Commit `43defa873129b59530211a37f565b099147de5b7` introduced the code; commits `5de39d437a7b47f9f35a21b2153d9d35b6f12f49`, `730f3c41ea79b1f11f0c266fa5217f321f635b30` and `8bd9d5fb1534dc0da52d6b8af484059873f5c397` fixed strict Dart analysis findings before acceptance.
+- Android #446 on product source SHA `8bd9d5fb1534dc0da52d6b8af484059873f5c397` passed format, strict analysis, 257/257 Flutter tests, ARM64 APK build, Media3 emulator/parity checks, ARM64-only and native-library checks, and APK upload. Root CI #502 and Branch Policy #152 also passed.
+- A direct integration test was added in test-only commit `83053e7284e9225a94797d82020235b1914563d1`. It seeds two clips and proves that the target clip alone is rendered, the untouched peer is reverified and retained, and only the target's previous output is deleted. Android #447 passed strict analysis and the Flutter Test step with this test; its subsequent APK build and emulator/package steps were still running when this record was written.
+- This is automated evidence only. Physical ARM64 re-render/peer-preservation/old-output cleanup, WorkManager process-death/force-stop, notification/cancellation and real-media format acceptance remain field gates.
+

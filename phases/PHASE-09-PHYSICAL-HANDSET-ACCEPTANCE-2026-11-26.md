@@ -2,12 +2,13 @@
 
 **Status:** `BLOCKED — NOT RUN ON PHYSICAL HARDWARE`  
 **Prepared:** 2026-11-26  
-**Candidate build SHA:** `846c53c6078691c8af5fe8fe9a07f60823d80ecc`  
-**APK:** [cutawan-mobile-arm64-debug, artifact 15078655021](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45732357835/artifacts/15078655021)  
-**APK size:** 60,639,483 bytes  
-**APK SHA-256:** `e46e015943ff4476b4f2ccde2c449894f8a1cc90a1c80bf8879c3716449e27ab`
+**Candidate app-code SHA:** `8bd9d5fb1534dc0da52d6b8af484059873f5c397`  
+**Android run:** [#446](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45854102190) — success  
+**APK:** [cutawan-mobile-arm64-debug, artifact 15136242266](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45854102190/artifacts/15136242266)  
+**APK size:** 60,652,364 bytes  
+**APK SHA-256:** `66b5a3a6ce25496f2350b5949d4b4a8b0cb87bae7fef8e0aa18c44721baa5fe6`
 
-This checklist is the remaining physical gate after Android #442 passed the automated build and emulator pixel matrix. Do not convert any unrun item into a pass. Record each item as `PASS`, `FAIL` or `NOT RUN` and attach the observation/evidence.
+This checklist is the remaining physical gate after Android #446 passed the automated build and emulator pixel matrix. The later commit `83053e7` adds only a test file and does not change application code. Do not convert any unrun item into a pass. Record each item as `PASS`, `FAIL` or `NOT RUN` and attach the observation/evidence.
 
 ## 1. Build and device identity
 
@@ -18,9 +19,9 @@ This checklist is the remaining physical gate after Android #442 passed the auto
 | Android release/API | `NOT RECORDED` |
 | Physical ARM64 device confirmed by human | `NOT RECORDED` |
 | Test timestamp | `NOT RECORDED` |
-| APK artifact installed from run 442 | `NOT CONFIRMED` |
+| APK artifact installed from run 446 | `NOT CONFIRMED` |
 
-Do not use the Android fingerprint heuristic alone as proof that the handset is physical. Confirm the device manually and verify that the in-app build SHA equals the candidate SHA above.
+Do not use the Android fingerprint heuristic alone as proof that the handset is physical. Confirm the device manually and verify that the in-app build SHA equals the candidate app-code SHA above.
 
 ## 2. Visual and responsive behavior
 

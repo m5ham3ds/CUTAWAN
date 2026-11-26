@@ -78,3 +78,12 @@ The test matrix measures crop framing, manual/automatic selection, keyframe inte
 The next Phase 9 gate is actual ARM64 handset visual/accessibility review. Phase 10 must not start until this physical Phase 9 evidence is attached; Phase 8's separate physical media/background gates must also remain visible and unaccepted until tested.
 
 See [the physical handset checklist](PHASE-09-PHYSICAL-HANDSET-ACCEPTANCE-2026-11-26.md).
+
+
+## Independent rerun on the targeted re-render product baseline — Android #446
+
+- Android run [45854102190](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45854102190), source SHA `8bd9d5fb1534dc0da52d6b8af484059873f5c397` — **success**.
+- The eight scenarios again passed all **24/24** timestamp comparisons at 200 ms, 1049 ms and 1899 ms. The highest MAE was 14.07 and the highest sampled-patch mean was 43.57, within the existing <24/<48 limits.
+- The same run passed 257/257 Flutter tests, Media3 emulator/instrumentation, ARM64-only ABI and unique-native-library checks, and APK upload.
+- This confirms the parity matrix on the same application-source baseline used for the targeted re-render feature. It remains emulator-level evidence and does not close the physical handset checklist.
+
