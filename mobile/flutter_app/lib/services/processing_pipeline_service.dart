@@ -48,6 +48,7 @@ class ProcessingPipelineService {
     required Future<void> Function(CutawanProject project) transcribe,
     required Future<void> Function(CutawanProject project) discover,
     required Future<void> Function(CutawanProject project) analyzeFraming,
+    String? onlyClipId,
     void Function(String stage, double progress)? onProgress,
     void Function(String renderId)? onRenderStarted,
   }) async {
@@ -161,6 +162,18 @@ class ProcessingPipelineService {
       transcript.validate();
       candidates.validate();
       reframe.validate();
+      if (onlyClipId != null &&
+          !candidates.candidates.any((candidate) => candidate.id == onlyClipId)) {
+        throw StateError('The requested clip does not belong to this project.');
+      }
+      final previousExportRecords = await _repository.loadExportRecords(projectId);
+      final previousExportsByClipId = <String, Map<String, dynamic>>{};
+      for (final record in previousExportRecords) {
+        final clipId = record['clipId'];
+        if (clipId is String) {
+          previousExportsByClipId.putIfAbsent(clipId, () => record);
+        }
+      }
 
       currentStage = 'captioning';
       final srtPaths = <String, String>{};
@@ -293,7 +306,9 @@ class ProcessingPipelineService {
       for (var index = 0; index < total; index++) {
         final candidate = candidates.candidates[index];
         final stageName = 'render_${candidate.id}';
+        final previousExport = previousExportsByClipId[candidate.id];
         final sourceAspectRatio = _sourceAspectRatio(project);
+
         final targetAspectRatio = _aspectRatio(project);
         final clipEdit = await _repository.loadClipEditOverrides(
               projectId,
@@ -345,21 +360,46 @@ class ProcessingPipelineService {
             'captionRenderer': 'media3-canvas-overlay-rtl-v1',
           },
         );
-        final validCheckpoint = await _jobs.hasCheckpoint(
-          projectId,
-          stage: stageName,
-          fingerprint: fingerprint,
-        );
-        if (validCheckpoint) {
-          final previous = await _repository.loadExportRecords(projectId);
-          Map<String, dynamic>? existing;
-          for (final record in previous) {
-            if (record['clipId'] == candidate.id) {
-              existing = record;
-              break;
-            }
+        final validCheckpoint = onlyClipId != candidate.id &&
+            await _jobs.hasCheckpoint(
+              projectId,
+              stage: stageName,
+              fingerprint: fingerprint,
+            );
+        if (onlyClipId != null && candidate.id != onlyClipId) {
+          if (!validCheckpoint ||
+              previousExport == null ||
+              !_hasCompleteExportRecord(previousExport)) {
+            throw StateError(
+              'Cannot re-render one clip because another clip is not validated '
+              'for the current edit settings. Resume the full project pipeline first.',
+            );
           }
-          if (existing != null && existing['validated'] == true) {
+          final otherIsValid = await _exporter.verifyExport(
+            outputUri: previousExport!['outputUri'] as String,
+            sha256: previousExport['sha256'] as String,
+            sizeBytes: (previousExport['sizeBytes'] as num).toInt(),
+            durationMs: (previousExport['durationMs'] as num).toInt(),
+            width: (previousExport['width'] as num).toInt(),
+            height: (previousExport['height'] as num).toInt(),
+          );
+          if (!otherIsValid) {
+            throw StateError(
+              'Another clip export is missing or failed full-decode verification. '
+              'Resume the full project pipeline before retrying one clip.',
+            );
+          }
+          records.add(previousExport);
+          skipped++;
+          onProgress?.call(
+            'rendering',
+            0.62 + 0.28 * (index + 1) / total,
+          );
+          continue;
+        }
+        if (validCheckpoint) {
+          final existing = previousExport;
+          if (existing != null && _hasCompleteExportRecord(existing)) {
             final outputUri = existing['outputUri'];
             final hash = existing['sha256'];
             final size = existing['sizeBytes'];
@@ -485,6 +525,15 @@ class ProcessingPipelineService {
           throw StateError('Rendered MP4 failed the output validation gate.');
         }
 
+        final supersededUris = <String>{
+          if (previousExport?['outputUri'] is String &&
+              previousExport?['outputUri'] != rendered.outputUri)
+            previousExport!['outputUri'] as String,
+          if (previousExport?['supersededOutputUris'] is List)
+            ...(previousExport!['supersededOutputUris'] as List)
+                .whereType<String>()
+                .where((uri) => uri.trim().isNotEmpty && uri != rendered.outputUri),
+        };
         final record = <String, Object?>{
           'clipId': candidate.id,
           'projectId': projectId,
@@ -507,8 +556,36 @@ class ProcessingPipelineService {
           'subtitleAssPath': assPaths[candidate.id],
           'renderer': 'androidx-media3-transformer-1.11.1-reframe-v2-black-fade-v1',
           'createdAtUtc': DateTime.now().toUtc().toIso8601String(),
+          if (supersededUris.isNotEmpty)
+            'supersededOutputUris': supersededUris.toList(growable: false),
         };
         await _repository.saveExportRecord(projectId, record);
+
+        // The new validated export is durable before retiring its predecessor.
+        // Any URI that Android refuses to remove remains attached to the record
+        // so the user can retry cleanup without losing the working export.
+        if (supersededUris.isNotEmpty) {
+          final cleanupPending = <String>[];
+          for (final uri in supersededUris) {
+            try {
+              if (!await _exporter.deleteExport(uri)) {
+                cleanupPending.add(uri);
+              }
+            } catch (_) {
+              cleanupPending.add(uri);
+            }
+          }
+          if (cleanupPending.length != supersededUris.length) {
+            if (cleanupPending.isEmpty) {
+              record.remove('supersededOutputUris');
+            } else {
+              record['supersededOutputUris'] = cleanupPending;
+            }
+            await _repository.saveExportRecord(projectId, record);
+          }
+        }
+        previousExportsByClipId[candidate.id] =
+            Map<String, dynamic>.from(record);
         await _jobs.saveCheckpoint(
           projectId,
           stage: stageName,
@@ -594,6 +671,27 @@ class ProcessingPipelineService {
       fingerprint: fingerprint,
       artifactPaths: artifacts,
     );
+  }
+
+  bool _hasCompleteExportRecord(Map<String, dynamic>? record) {
+    if (record == null ||
+        record['validated'] != true ||
+        record['fullyDecodeValidated'] != true ||
+        record['outputUri'] is! String ||
+        (record['outputUri'] as String).trim().isEmpty ||
+        record['sha256'] is! String ||
+        !ProcessingJobService.isSha256(record['sha256'] as String) ||
+        record['sizeBytes'] is! num ||
+        (record['sizeBytes'] as num) < 2048 ||
+        record['durationMs'] is! num ||
+        (record['durationMs'] as num) <= 0 ||
+        record['width'] is! num ||
+        (record['width'] as num) <= 0 ||
+        record['height'] is! num ||
+        (record['height'] as num) <= 0) {
+      return false;
+    }
+    return true;
   }
 
   void _persistProgress(String projectId, String stage, double progress) {

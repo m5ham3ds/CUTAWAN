@@ -55,6 +55,22 @@ class _ReviewMemoryRepository extends LocalProjectRepository {
   Future<void> deleteExportRecord(String projectId, String clipId) async {
     _exports[projectId]?.removeWhere((record) => record['clipId'] == clipId);
   }
+
+  @override
+  Future<void> saveExportRecord(
+    String projectId,
+    Map<String, Object?> record,
+  ) async {
+    final records = _exports.putIfAbsent(projectId, () => []);
+    final clipId = record['clipId'];
+    final index = records.indexWhere((item) => item['clipId'] == clipId);
+    final replacement = Map<String, dynamic>.from(record);
+    if (index < 0) {
+      records.add(replacement);
+    } else {
+      records[index] = replacement;
+    }
+  }
 }
 
 void main() {
@@ -108,6 +124,9 @@ void main() {
         'height': 1920,
         'validated': true,
         'fullyDecodeValidated': true,
+        'supersededOutputUris': [
+          'content://media/external/video/media/9000',
+        ],
         'createdAtUtc': DateTime.utc(2026, 11, 22).toIso8601String(),
       });
 
@@ -141,6 +160,24 @@ void main() {
       await tester.tap(shareButton);
       await tester.pumpAndSettle();
       expect(nativeCalls.map((call) => call.method), contains('shareExport'));
+
+      final cleanupButton =
+          find.byKey(const ValueKey('cleanup-export-clip_gallery_1'));
+      await tester.ensureVisible(cleanupButton);
+      await tester.pumpAndSettle();
+      await tester.tap(cleanupButton);
+      await tester.pumpAndSettle();
+      expect(
+        nativeCalls.any((call) =>
+            call.method == 'deleteExport' &&
+            (call.arguments as Map)['outputUri'] ==
+                'content://media/external/video/media/9000'),
+        isTrue,
+      );
+      expect(
+        repository._exports[project.id]!.single['supersededOutputUris'],
+        isNull,
+      );
 
       final deleteButton = find.byKey(const ValueKey('delete-export-clip_gallery_1'));
       await tester.ensureVisible(deleteButton);

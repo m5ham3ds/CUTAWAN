@@ -151,6 +151,59 @@ class _ReviewPageState extends State<ReviewPage> {
     }
   }
 
+  Future<void> _cleanupSupersededExports(
+    BuildContext context,
+    CutawanProject project,
+    Map<String, dynamic> export,
+  ) async {
+    final clipId = export['clipId'] as String? ?? '';
+    final rawPending = export['supersededOutputUris'];
+    final pending = rawPending is List
+        ? rawPending.whereType<String>().where((uri) => uri.trim().isNotEmpty).toList()
+        : <String>[];
+    if (clipId.isEmpty || pending.isEmpty) return;
+    final key = '${project.id}:$clipId';
+    if (_busyExportIds.contains(key)) return;
+    setState(() => _busyExportIds.add(key));
+    try {
+      final remaining = <String>[];
+      for (final uri in pending) {
+        try {
+          if (!await _exportService.deleteExport(uri)) remaining.add(uri);
+        } catch (_) {
+          remaining.add(uri);
+        }
+      }
+      final updated = Map<String, Object?>.from(export);
+      if (remaining.isEmpty) {
+        updated.remove('supersededOutputUris');
+      } else {
+        updated['supersededOutputUris'] = remaining;
+      }
+      await widget.repository.saveExportRecord(project.id, updated);
+      await _loadArtifacts(project.id);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              remaining.isEmpty
+                  ? 'تم تنظيف النسخ السابقة.'
+                  : 'تعذّر تنظيف ${remaining.length} نسخة قديمة؛ بقيت محفوظة لإعادة المحاولة.',
+            ),
+          ),
+        );
+      }
+    } catch (error) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('تعذّر تنظيف النسخ السابقة: $error')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _busyExportIds.remove(key));
+    }
+  }
+
   Future<void> _deleteExport(
     BuildContext context,
     CutawanProject project,
@@ -183,6 +236,14 @@ class _ReviewPageState extends State<ReviewPage> {
     if (_busyExportIds.contains(key)) return;
     setState(() => _busyExportIds.add(key));
     try {
+      final rawSuperseded = export['supersededOutputUris'];
+      if (rawSuperseded is List) {
+        for (final uri in rawSuperseded.whereType<String>()) {
+          if (uri.trim().isNotEmpty && !await _exportService.deleteExport(uri)) {
+            throw StateError('تعذّر تنظيف نسخة سابقة؛ لم يُحذف سجل التصدير.');
+          }
+        }
+      }
       final deleted = await _exportService.deleteExport(outputUri);
       if (!deleted) {
         throw StateError('لم يتم حذف ملف الفيديو من Android.');
@@ -314,9 +375,29 @@ class _ReviewPageState extends State<ReviewPage> {
                         busy ? null : () => _deleteExport(context, project, export),
                     icon: const Icon(Icons.delete_outline_rounded),
                   ),
+                  if ((export['supersededOutputUris'] as List?)?.isNotEmpty == true)
+                    OutlinedButton.icon(
+                      key: ValueKey('cleanup-export-$clipId'),
+                      onPressed: busy
+                          ? null
+                          : () => _cleanupSupersededExports(context, project, export),
+                      icon: const Icon(Icons.cleaning_services_outlined),
+                      label: const Text('تنظيف النسخ السابقة'),
+                    ),
                 ],
               ),
-            ],
+            ] else if ((export['supersededOutputUris'] as List?)?.isNotEmpty == true)
+              Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: OutlinedButton.icon(
+                  key: ValueKey('cleanup-export-$clipId'),
+                  onPressed: busy
+                      ? null
+                      : () => _cleanupSupersededExports(context, project, export),
+                  icon: const Icon(Icons.cleaning_services_outlined),
+                  label: const Text('تنظيف النسخ السابقة'),
+                ),
+              ),
           ],
         ),
       ),
@@ -619,7 +700,10 @@ class _ReviewPageState extends State<ReviewPage> {
     );
   }
 
-  Future<void> _runFullPipeline(CutawanProject project) async {
+  Future<void> _runFullPipeline(
+    CutawanProject project, {
+    String? onlyClipId,
+  }) async {
     if (_pipelineRunning || _busyProjectId != null) {
       return;
     }
@@ -638,6 +722,7 @@ class _ReviewPageState extends State<ReviewPage> {
         transcribe: _transcribe,
         discover: _discover,
         analyzeFraming: _analyzeFraming,
+        onlyClipId: onlyClipId,
         onProgress: (stage, progress) {
           if (!mounted) {
             return;
@@ -654,9 +739,12 @@ class _ReviewPageState extends State<ReviewPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'اكتمل خط المعالجة: ${result.exportedCount} ملف MP4 جديد، '
-              '${result.skippedCount} نتيجة مستعادة، '
-              '${result.candidatesCount} مقطع مقترح.',
+              onlyClipId == null
+                  ? 'اكتمل خط المعالجة: ${result.exportedCount} ملف MP4 جديد، '
+                      '${result.skippedCount} نتيجة مستعادة، '
+                      '${result.candidatesCount} مقطع مقترح.'
+                  : 'اكتمل إخراج المقطع المحدد: ${result.exportedCount} ملف جديد؛ '
+                      'تم الاحتفاظ بـ ${result.skippedCount} مخرجاً آخر بعد التحقق منه.',
             ),
           ),
         );
@@ -678,6 +766,38 @@ class _ReviewPageState extends State<ReviewPage> {
       }
     }
   }
+  Future<void> _renderSingleClip(
+    BuildContext context,
+    CutawanProject project,
+    ClipCandidate candidate,
+  ) async {
+    final hasExistingExport = (_exportRecords[project.id] ?? const [])
+        .any((record) => record['clipId'] == candidate.id);
+    if (hasExistingExport) {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('إعادة تصدير المقطع؟'),
+          content: const Text(
+            'سيُنشأ ملف جديد ويُتحقق من فك ترميزه بالكامل. ستبقى النسخة الحالية متاحة حتى ينجح البديل؛ وأي نسخة قديمة يتعذر حذفها ستبقى ظاهرة للتنظيف.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('إلغاء'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: const Text('إعادة التصدير'),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true || !mounted) return;
+    }
+    await _runFullPipeline(project, onlyClipId: candidate.id);
+  }
+
   String _workflowStageLabel(CutawanProject project) {
     if (_busyProjectId == project.id && _busyStage != null && !_pipelineRunning) {
       return switch (_busyStage) {
@@ -1190,16 +1310,31 @@ class _ReviewPageState extends State<ReviewPage> {
                               style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
                         ],
                         const SizedBox(height: 9),
-                        SizedBox(
-                          width: double.infinity,
-                          child: FilledButton.tonalIcon(
-                            key: ValueKey<String>('edit-clip-${candidate.id}'),
-                            onPressed: isBusy
-                                ? null
-                                : () => _openClipEditor(context, project, candidateSet, candidate),
-                            icon: const Icon(Icons.tune_rounded),
-                            label: const Text('فتح محرر هذا المقطع'),
-                          ),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            FilledButton.tonalIcon(
+                              key: ValueKey<String>('edit-clip-${candidate.id}'),
+                              onPressed: isBusy
+                                  ? null
+                                  : () => _openClipEditor(context, project, candidateSet, candidate),
+                              icon: const Icon(Icons.tune_rounded),
+                              label: const Text('فتح المحرر'),
+                            ),
+                            OutlinedButton.icon(
+                              key: ValueKey<String>('render-clip-${candidate.id}'),
+                              onPressed: canStart
+                                  ? () => _renderSingleClip(context, project, candidate)
+                                  : null,
+                              icon: const Icon(Icons.refresh_rounded),
+                              label: Text(
+                                exports.any((item) => item['clipId'] == candidate.id)
+                                    ? 'إعادة تصدير هذا المقطع'
+                                    : 'تصدير هذا المقطع',
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
