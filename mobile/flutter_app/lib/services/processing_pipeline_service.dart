@@ -458,7 +458,7 @@ class ProcessingPipelineService {
         if (rendered != null) {
           final completionIsValid = await _exporter.verifyExport(
             outputUri: rendered.outputUri,
-            sha256: validatedRender.sha256,
+            sha256: rendered.sha256,
             sizeBytes: rendered.sizeBytes,
             durationMs: rendered.durationMs,
             width: rendered.width,
@@ -529,14 +529,14 @@ class ProcessingPipelineService {
           throw StateError('Rendered MP4 failed the output validation gate.');
         }
 
+        final previousExportRecord =
+            previousExport ?? const <String, dynamic>{};
         final supersededUris = <String>{
-          if (previousExport != null &&
-              previousExport['outputUri'] is String &&
-              previousExport['outputUri'] != validatedRender.outputUri)
-            previousExport['outputUri'] as String,
-          if (previousExport != null &&
-              previousExport['supersededOutputUris'] is List)
-            ...(previousExport['supersededOutputUris'] as List)
+          if (previousExportRecord['outputUri'] is String &&
+              previousExportRecord['outputUri'] != validatedRender.outputUri)
+            previousExportRecord['outputUri'] as String,
+          if (previousExportRecord['supersededOutputUris'] is List)
+            ...(previousExportRecord['supersededOutputUris'] as List)
                 .whereType<String>()
                 .where((uri) => uri.trim().isNotEmpty && uri != validatedRender.outputUri),
         };
@@ -602,7 +602,7 @@ class ProcessingPipelineService {
         // dies before both writes finish, the same clip can be adopted again.
         await _exporter.acknowledgeCompletedRender(
           renderKey: fingerprint,
-          sha256: rendered.sha256,
+          sha256: validatedRender.sha256,
         );
         records.add(record);
         exported++;
