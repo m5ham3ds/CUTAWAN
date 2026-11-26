@@ -376,7 +376,7 @@ class ProcessingPipelineService {
             );
           }
           final otherIsValid = await _exporter.verifyExport(
-            outputUri: previousExport!['outputUri'] as String,
+            outputUri: previousExport['outputUri'] as String,
             sha256: previousExport['sha256'] as String,
             sizeBytes: (previousExport['sizeBytes'] as num).toInt(),
             durationMs: (previousExport['durationMs'] as num).toInt(),
@@ -458,7 +458,7 @@ class ProcessingPipelineService {
         if (rendered != null) {
           final completionIsValid = await _exporter.verifyExport(
             outputUri: rendered.outputUri,
-            sha256: rendered.sha256,
+            sha256: validatedRender.sha256,
             sizeBytes: rendered.sizeBytes,
             durationMs: rendered.durationMs,
             width: rendered.width,
@@ -512,43 +512,49 @@ class ProcessingPipelineService {
             },
           );
         }
-        if (!rendered.validated ||
-            rendered.outputUri.isEmpty ||
-            rendered.sizeBytes < 2048 ||
-            rendered.durationMs <= 0 ||
-            rendered.width <= 0 ||
-            rendered.height <= 0 ||
-            !ProcessingJobService.isSha256(rendered.sha256) ||
-            !rendered.fullyDecodeValidated ||
-            rendered.decodedVideoBuffers <= 0 ||
-            (rendered.hasAudio && rendered.decodedAudioBuffers <= 0)) {
+        final validatedRender = rendered;
+        if (validatedRender == null) {
+          throw StateError('No rendered MP4 was returned for ${candidate.id}.');
+        }
+        if (!validatedRender.validated ||
+            validatedRender.outputUri.isEmpty ||
+            validatedRender.sizeBytes < 2048 ||
+            validatedRender.durationMs <= 0 ||
+            validatedRender.width <= 0 ||
+            validatedRender.height <= 0 ||
+            !ProcessingJobService.isSha256(validatedRender.sha256) ||
+            !validatedRender.fullyDecodeValidated ||
+            validatedRender.decodedVideoBuffers <= 0 ||
+            (validatedRender.hasAudio && validatedRender.decodedAudioBuffers <= 0)) {
           throw StateError('Rendered MP4 failed the output validation gate.');
         }
 
         final supersededUris = <String>{
-          if (previousExport?['outputUri'] is String &&
-              previousExport?['outputUri'] != rendered.outputUri)
-            previousExport!['outputUri'] as String,
-          if (previousExport?['supersededOutputUris'] is List)
-            ...(previousExport!['supersededOutputUris'] as List)
+          if (previousExport != null &&
+              previousExport['outputUri'] is String &&
+              previousExport['outputUri'] != validatedRender.outputUri)
+            previousExport['outputUri'] as String,
+          if (previousExport != null &&
+              previousExport['supersededOutputUris'] is List)
+            ...(previousExport['supersededOutputUris'] as List)
                 .whereType<String>()
-                .where((uri) => uri.trim().isNotEmpty && uri != rendered.outputUri),
+                .where((uri) => uri.trim().isNotEmpty && uri != validatedRender.outputUri),
         };
         final record = <String, Object?>{
           'clipId': candidate.id,
           'projectId': projectId,
           'title': candidate.title,
-          'outputUri': rendered.outputUri,
-          'displayName': rendered.displayName,
-          'sha256': rendered.sha256,
-          'sizeBytes': rendered.sizeBytes,
-          'durationMs': rendered.durationMs,
-          'width': rendered.width,
-          'height': rendered.height,
-          'hasAudio': rendered.hasAudio,
-          'fullyDecodeValidated': rendered.fullyDecodeValidated,
-          'decodedVideoBuffers': rendered.decodedVideoBuffers,
-          'decodedAudioBuffers': rendered.decodedAudioBuffers,
+          'outputUri': validatedRender.outputUri,
+          'displayName': validatedRender.displayName,
+          'sha256': validatedRender.sha256,
+          'sizeBytes': validatedRender.sizeBytes,
+          'durationMs': validatedRender.durationMs,
+          'width': validatedRender.width,
+          'height': validatedRender.height,
+          'hasAudio': validatedRender.hasAudio,
+          'fullyDecodeValidated': validatedRender.fullyDecodeValidated,
+          'decodedVideoBuffers': validatedRender.decodedVideoBuffers,
+          'decodedAudioBuffers': validatedRender.decodedAudioBuffers,
           'validated': true,
           'startMs': candidate.startMs,
           'endMs': candidate.endMs,
