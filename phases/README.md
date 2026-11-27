@@ -15,15 +15,15 @@ The Android Flutter app at `mobile/flutter_app/` is the only active mobile produ
 |---|---|
 | Main branch / mobile app-code SHA | `716408d244b688f028bececf5f72b9e356cee8e0` |
 | Branch inventory | Only `main` exists |
-| Android #456 | <badge>Success</badge>: Format, strict `flutter analyze --fatal-infos`, **279/279 Flutter tests**, ARM64 APK build, Media3 integration, eight-scenario preview/export matrix (24/24 timestamp comparisons), ARM64-only ABI check and APK upload all passed |
+| Android #456 | **Success**: Format, strict `flutter analyze --fatal-infos`, **279/279 Flutter tests**, ARM64 APK build, Media3 integration, eight-scenario preview/export matrix (24/24 timestamp comparisons), ARM64-only ABI check and APK upload all passed |
 | Android #456 APK | Artifact [`cutawan-mobile-arm64-debug`](https://github.com/m5ham3ds/CUTAWAN/actions/runs/46065622887/artifacts/15231197350), 60,654,040 bytes; ZIP SHA-256 `808461f0e618642c30c948667a9f03e6f0e0b1e5947051f2b46a832f0cc94728` |
 | Android #456 native packaging | Exactly `arm64-v8a`; 10 unique native libraries, no duplicate basenames; GGML libraries `libggml-cpu.so`, `libggml.so`, `libggml-base.so` verified |
 | Flutter coverage #456 | Artifact [`cutawan-mobile-flutter-coverage`](https://github.com/m5ham3ds/CUTAWAN/actions/runs/46065622887/artifacts/15231250678), ZIP SHA-256 `b711840f1f7dd9c47505938d8a450e44bc2f02d2eed676983c877cbe53ac6c61` |
-| Root CI #515 | Success: checks, typecheck/lint/tests, offline pipeline, Xvfb UI smoke and Apple Silicon packaging |
-| Branch Policy #165 | Success: `main` is the only branch |
+| Root CI #515 (app code) and #516 (documentation sync) | Success: checks, typecheck/lint/tests, offline pipeline, Xvfb UI smoke and Apple Silicon packaging |
+| Branch Policy #166 | Success: `main` is the only branch |
 | Release #507 | Skipped as expected; this push was not a release build |
 
-Links: [Android #456](https://github.com/m5ham3ds/CUTAWAN/actions/runs/46065622887) · [Root CI #515](https://github.com/m5ham3ds/CUTAWAN/actions/runs/46065622952) · [Branch Policy #165](https://github.com/m5ham3ds/CUTAWAN/actions/runs/46065622871).
+Links: [Android #456](https://github.com/m5ham3ds/CUTAWAN/actions/runs/46065622887) · [Root CI #516](https://github.com/m5ham3ds/CUTAWAN/actions/runs/46067373675) · [Root CI #515](https://github.com/m5ham3ds/CUTAWAN/actions/runs/46065622952) · [Branch Policy #166](https://github.com/m5ham3ds/CUTAWAN/actions/runs/46067373583).
 
 The APK is built from source SHA `716408d` and includes the Phase 10 candidate-evaluation tooling. The successful automated gates do not constitute physical handset acceptance; Phase 8/9/10 device evidence remains open.
 

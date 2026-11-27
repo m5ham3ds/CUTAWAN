@@ -85,7 +85,7 @@ No physical handset evidence corpus, reviewed transcript WER/timing, candidate/c
 - Android #456: format and strict `flutter analyze --fatal-infos` passed; **279/279 Flutter tests passed**; ARM64 APK build passed; Media3 and all eight preview/export parity cases passed (24/24 timestamp comparisons); native package verification found exactly `arm64-v8a` and ten unique native libraries with no duplicates; APK and coverage artifacts uploaded.
 - APK artifact: [cutawan-mobile-arm64-debug, artifact 15231197350](https://github.com/m5ham3ds/CUTAWAN/actions/runs/46065622887/artifacts/15231197350), 60,654,040 bytes; ZIP SHA-256 `808461f0e618642c30c948667a9f03e6f0e0b1e5947051f2b46a832f0cc94728`.
 - Flutter coverage artifact: [15231250678](https://github.com/m5ham3ds/CUTAWAN/actions/runs/46065622887/artifacts/15231250678).
-- Root CI #515 succeeded: checks, offline pipeline, Xvfb UI smoke and Apple Silicon packaging. Branch Policy #165 succeeded; `main` is the only branch.
+- Root CI #515 (application code) and #516 (documentation synchronization) succeeded: checks, offline pipeline, Xvfb UI smoke and Apple Silicon packaging. Branch Policy #166 succeeded; `main` is the only branch.
 
 The #456 APK contains the Phase 10 transcription and candidate-evaluation tooling, but no physical field evidence is prefilled. CI/emulator results do not replace physical-device acceptance.
 
