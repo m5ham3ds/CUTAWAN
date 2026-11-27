@@ -242,7 +242,7 @@ void main() {
     );
     await tester.pump();
 
-    final diagnostics = find.text('تشخيص وقبول Android');
+    final diagnostics = find.text('تشخيص الجهاز');
     await tester.scrollUntilVisible(
       diagnostics,
       260,
@@ -403,7 +403,7 @@ void main() {
       await _tabUntilFocused(
         tester,
         find.ancestor(
-          of: find.text('تشخيص وقبول Android'),
+          of: find.text('تشخيص الجهاز'),
           matching: find.byType(ListTile),
         ).first,
       );
@@ -640,7 +640,6 @@ void fullPageTabOrderTests() {
       find.byKey(const ValueKey('dashboard-refresh-storage')),
       pageTile('المهام والمشاريع'),
       pageTile('المراجعة والتحرير'),
-      pageTile('مركز النماذج'),
       find.ancestor(
         of: find.text('عرض الكل'),
         matching: find.byType(TextButton),
@@ -673,8 +672,8 @@ void fullPageTabOrderTests() {
     await tester.pump();
 
     await expectFullTabOrder(tester, [
-      pageTile('تشخيص وقبول Android'),
-      pageTile('مركز النماذج والاتصالات'),
+      pageTile('تشخيص الجهاز'),
+      pageTile('مركز النماذج'),
       find.byKey(const ValueKey('settings-theme-system')),
       find.byKey(const ValueKey('settings-theme-light')),
       find.byKey(const ValueKey('settings-theme-dark')),
