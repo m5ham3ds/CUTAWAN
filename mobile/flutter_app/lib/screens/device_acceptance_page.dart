@@ -134,8 +134,6 @@ class _DeviceAcceptancePageState extends State<DeviceAcceptancePage> {
   @override
   Widget build(BuildContext context) {
     final report = _report;
-    final scheme = Theme.of(context).colorScheme;
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('تشخيص الجهاز'),
