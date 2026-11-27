@@ -87,11 +87,11 @@ void main() {
         expect(find.text('مركز النماذج'), findsOneWidget);
         expect(find.text('النماذج المحلية'), findsOneWidget);
         await tester.scrollUntilVisible(
-          find.text('اختيار محرك الذكاء الاصطناعي'),
+          find.text('طريقة المعالجة'),
           260,
           scrollable: find.byType(Scrollable).first,
         );
-        expect(find.text('اختيار محرك الذكاء الاصطناعي'), findsOneWidget);
+        expect(find.text('طريقة المعالجة'), findsOneWidget);
         expect(tester.takeException(), isNull);
 
         await tester.pumpWidget(const SizedBox.shrink());

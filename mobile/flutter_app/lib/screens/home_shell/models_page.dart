@@ -477,31 +477,10 @@ class _ModelsPageState extends State<ModelsPage> {
                   30,
                 ),
                 children: [
-                  CutawanPanel(
-                    accent: true,
-                    padding: const EdgeInsets.all(17),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const CutawanEyebrow(
-                          'LOCAL AI',
-                          icon: Icons.memory_rounded,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'النماذج المحلية',
-                          style: theme.textTheme.titleLarge
-                              ?.copyWith(fontWeight: FontWeight.w900),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          'تعمل هذه النماذج على الهاتف بعد تنزيل الأوزان والتحقق من سلامتها، ولا تحتاج إلى مفاتيح API.',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                            height: 1.4,
-                          ),
-                        ),
-                      ],
+                  Text(
+                    'النماذج المحلية',
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w900,
                     ),
                   ),
           if (_error != null) ...[
@@ -527,9 +506,8 @@ class _ModelsPageState extends State<ModelsPage> {
           _modelCard(
             context,
             title: 'Whisper Base متعدد اللغات',
-            description:
-                'تفريغ محلي للعربية والإنجليزية مع توقيتات الكلمات. الحجم التقريبي 148 MB؛ يعمل بوضع CPU على ARM64.',
-            metadata: 'whisper.cpp · لا تُضمّن الأوزان في APK',
+            description: 'تحويل الكلام إلى نص مع توقيت الكلمات.',
+            metadata: '148 MB تقريباً · يعمل على الجهاز',
             installed: _whisperInstalled,
             onInstall: _downloadWhisper,
             onRemove: _deleteWhisper,
@@ -538,9 +516,8 @@ class _ModelsPageState extends State<ModelsPage> {
           _modelCard(
             context,
             title: 'Qwen2.5-0.5B-Instruct Q4_K_M',
-            description:
-                'نموذج GGUF محلي للتعليقات التحريرية على المقاطع. الحجم نحو 491.4 MB.',
-            metadata: 'llama.cpp · Apache-2.0 · لا يعدّل التوقيت أو التقييم',
+            description: 'مساعد محلي لاقتراحات تحرير المقاطع.',
+            metadata: '491 MB تقريباً · يعمل على الجهاز',
             installed: _qwenInstalled,
             onInstall: _downloadQwen,
             onRemove: _deleteQwen,
@@ -551,7 +528,7 @@ class _ModelsPageState extends State<ModelsPage> {
           ],
           const Divider(height: 36),
           Text(
-            'اختيار محرك الذكاء الاصطناعي',
+            'طريقة المعالجة',
             style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
           ),
           const SizedBox(height: 8),
@@ -573,13 +550,6 @@ class _ModelsPageState extends State<ModelsPage> {
                 ? null
                 : (values) => _setExecutionMode(values.first),
           ),
-          const SizedBox(height: 8),
-          Text(
-            _executionMode == 'local'
-                ? 'يستخدم Qwen المحلي إن كان مثبتاً؛ وإلا تحفظ المقاطع بالترتيب الحتمي.'
-                : 'يستخدم المزوّد الخارجي والنموذج المحفوظين. يتطلب موافقة صريحة.',
-            style: theme.textTheme.bodySmall,
-          ),
           const SizedBox(height: 12),
           CheckboxListTile(
             contentPadding: EdgeInsets.zero,
@@ -589,17 +559,17 @@ class _ModelsPageState extends State<ModelsPage> {
                 : (value) => _setCloudConsent(value ?? false),
             title: const Text('أوافق على إرسال مقتطفات نص التفريغ للمزوّد الخارجي'),
             subtitle: const Text(
-              'لا يُرسل ملف الفيديو أو مفتاح API ضمن نص الطلب. سياسة الاحتفاظ بالبيانات تخضع للمزوّد.',
+              'يُرسل النص فقط، ولا يُرسل ملف الفيديو أو مفتاح API. راجع سياسة المزوّد.',
             ),
           ),
           const Divider(height: 36),
           Text(
-            'منصات النماذج السحابية',
+            'المزوّد الخارجي',
             style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
           ),
           const SizedBox(height: 8),
           Text(
-            'قائمة النماذج تُجلب من حسابك. ظهور النموذج لا يعني أنه مجاني أو أنه يدعم المحادثة؛ توافره وسعره تحددهما المنصة.',
+            'تأكد من دعم النموذج والتكلفة لدى المزوّد قبل استخدامه.',
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
               height: 1.45,
@@ -622,14 +592,13 @@ class _ModelsPageState extends State<ModelsPage> {
             onChanged: _remoteBusy ? null : _selectProvider,
           ),
           const SizedBox(height: 8),
-          Text(provider.description, style: theme.textTheme.bodySmall),
           if (_provider == AiProviderId.compatible) ...[
             const SizedBox(height: 12),
             TextField(
               controller: _baseUrlController,
               keyboardType: TextInputType.url,
               decoration: const InputDecoration(
-                labelText: 'Base URL',
+                labelText: 'عنوان الخدمة',
                 hintText: 'https://provider.example.com/v1/',
                 prefixIcon: Icon(Icons.link),
               ),
@@ -647,8 +616,7 @@ class _ModelsPageState extends State<ModelsPage> {
                   ? 'المفتاح محفوظ — أدخل مفتاحاً جديداً للاستبدال'
                   : 'أدخل مفتاح API',
               prefixIcon: const Icon(Icons.key_outlined),
-              helperText:
-                  'لا يُعرض المفتاح بعد الحفظ ولا يُكتب في ملفات المشروع.',
+              helperText: 'لا يظهر المفتاح بعد الحفظ.',
             ),
           ),
           const SizedBox(height: 10),
@@ -659,7 +627,7 @@ class _ModelsPageState extends State<ModelsPage> {
               FilledButton.tonalIcon(
                 onPressed: _remoteBusy ? null : _saveRemoteSettings,
                 icon: const Icon(Icons.lock_outline),
-                label: const Text('حفظ الإعدادات بأمان'),
+                label: const Text('حفظ'),
               ),
               if (_keySaved) ...[
                 TextButton.icon(
@@ -700,13 +668,6 @@ class _ModelsPageState extends State<ModelsPage> {
               onChanged: _remoteBusy ? null : _saveSelectedRemoteModel,
             ),
             const SizedBox(height: 8),
-            Text(
-              'المعرّف: $_selectedRemoteModel',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 10),
             FilledButton.icon(
               onPressed: _remoteBusy ? null : _testRemoteModel,
               icon: _remoteBusy
@@ -716,18 +677,15 @@ class _ModelsPageState extends State<ModelsPage> {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Icon(Icons.wifi_tethering),
-              label: const Text('اختبار النموذج فعلياً'),
+              label: const Text('اختبار الاتصال'),
             ),
           ],
           const SizedBox(height: 14),
-          const CutawanStatusNote(
-            text: 'تُحفظ المفاتيح عبر تخزين آمن على الجهاز مع استخدام Android Keystore. تعطيل النسخ الاحتياطي يمنع نقل النص المشفّر إلى جهاز لا يملك مفتاح Keystore الأصلي.',
-          ),
           const SizedBox(height: 12),
           TextButton.icon(
             onPressed: _busy || _remoteBusy ? null : _refreshModels,
             icon: const Icon(Icons.refresh),
-            label: const Text('إعادة فحص النماذج المحلية'),
+            label: const Text('تحديث حالة النماذج'),
           ),
                 ],
               ),

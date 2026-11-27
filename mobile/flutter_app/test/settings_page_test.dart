@@ -134,10 +134,10 @@ void main() {
     );
     await tester.pump();
 
-    final diagnosticsTile = find.text('تشخيص وقبول Android');
+    final diagnosticsTile = find.text('تشخيص الجهاز');
     await _scrollSettingsUntilFound(tester, diagnosticsTile, distance: 360);
     await tester.tap(diagnosticsTile);
-    final modelsTile = find.text('مركز النماذج والاتصالات');
+    final modelsTile = find.text('مركز النماذج');
     await _scrollSettingsUntilFound(tester, modelsTile, distance: 360);
     await tester.tap(modelsTile);
 
