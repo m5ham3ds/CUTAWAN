@@ -3,7 +3,8 @@
 **Last synchronized:** 2026-11-27  
 **Repository:** `m5ham3ds/CUTAWAN`  
 **Authoritative branch:** `main` only  
-**Current source HEAD:** `98e31ea4ef702c48eeace7093865e5fc6e282ae1`
+**Repository HEAD (documentation sync):** `92a7887244ddac326c01ea16573e1e5b4580e1a8`  
+**Current mobile app-code SHA:** `98e31ea4ef702c48eeace7093865e5fc6e282ae1` (unchanged by the documentation-only sync commit)
 
 This file is the current source of truth for the ten-phase CUTAWAN Mobile plan. The individual Phase 1–10 files below describe the implementation mapped to the checked-in project. Dated implementation records are retained as historical evidence; when an older snapshot says that a feature is still missing, this register and the newest dated addendum take precedence.
 
