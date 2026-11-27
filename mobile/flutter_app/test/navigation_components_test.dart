@@ -298,9 +298,7 @@ void main() {
                   child: Column(
                     children: [
                       CutawanTopBar(
-                        onModels: () {},
                         onRefresh: () async {},
-                        onDiagnostics: () {},
                         onSettings: () {},
                       ),
                       const Expanded(child: SizedBox.expand()),

@@ -166,10 +166,10 @@ class _DeviceAcceptancePageState extends State<DeviceAcceptancePage> {
               _buildQuickMetrics(context, report),
               const SizedBox(height: 18),
               _sectionTitle(context, 'معلومات الجهاز'),
-              _buildDeviceDetails(context, report),
+              _buildDeviceDetails(report),
               const SizedBox(height: 18),
               _sectionTitle(context, 'البطارية والذاكرة'),
-              _buildResourceDetails(context, report),
+              _buildResourceDetails(report),
               const SizedBox(height: 18),
               FilledButton.icon(
                 onPressed: _copyReport,
@@ -286,10 +286,7 @@ class _DeviceAcceptancePageState extends State<DeviceAcceptancePage> {
     );
   }
 
-  Widget _buildDeviceDetails(
-    BuildContext context,
-    Map<String, Object?> report,
-  ) {
+  Widget _buildDeviceDetails(Map<String, Object?> report) {
     return Card(
       child: Padding(
         padding: const EdgeInsetsDirectional.fromSTEB(14, 6, 14, 6),
@@ -323,10 +320,7 @@ class _DeviceAcceptancePageState extends State<DeviceAcceptancePage> {
     );
   }
 
-  Widget _buildResourceDetails(
-    BuildContext context,
-    Map<String, Object?> report,
-  ) {
+  Widget _buildResourceDetails(Map<String, Object?> report) {
     return Card(
       child: Padding(
         padding: const EdgeInsetsDirectional.fromSTEB(14, 6, 14, 6),
