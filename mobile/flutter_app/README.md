@@ -3,7 +3,7 @@
 CUTAWAN Mobile is the native Android companion application built with Flutter and Dart under `mobile/flutter_app/`. It is the only mobile product target. The root Electron application is legacy/reference desktop code and remains separate; this app is not a WebView wrapper.
 
 **Current phase status:** see the [canonical ten-phase register](../../phases/README.md). Detailed implementation status, CI evidence and physical-device gates are maintained there.  
-**Current mobile app-code SHA:** `98e31ea4ef702c48eeace7093865e5fc6e282ae1` (the subsequent repository commit `92a7887244ddac326c01ea16573e1e5b4580e1a8` contains documentation synchronization only).
+**Current mobile app-code SHA:** `98e31ea4ef702c48eeace7093865e5fc6e282ae1` (subsequent documentation-only commits did not change application source).
 
 ## Product and architecture rules
 
