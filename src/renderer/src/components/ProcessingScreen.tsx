@@ -53,7 +53,7 @@ export default function ProcessingScreen(): React.JSX.Element {
 
         <div className="mt-8 h-2 overflow-hidden rounded-full bg-surface-700">
           <div
-            className="h-full rounded-full bg-zinc-200 transition-all duration-500"
+            className="h-full rounded-full bg-brand-500 transition-all duration-500"
             style={{ width: `${Math.max(2, pct)}%` }}
           />
         </div>

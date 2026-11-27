@@ -155,7 +155,7 @@ export default function SettingsModal(): React.JSX.Element {
       onClick={() => setSettingsOpen(false)}
     >
       <div
-        className="flex h-[85vh] w-full max-w-4xl overflow-hidden rounded-2xl border border-white/10 bg-surface-900/90 shadow-2xl shadow-black/60 backdrop-blur-2xl"
+        className="flex h-[85vh] w-full max-w-4xl overflow-hidden rounded-3xl border border-white/10 bg-surface-900/90 shadow-2xl shadow-black/60 backdrop-blur-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <aside className="flex w-56 shrink-0 flex-col border-r border-surface-700 bg-surface-900/50 p-3">

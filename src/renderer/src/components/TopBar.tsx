@@ -40,9 +40,9 @@ export default function TopBar(): React.JSX.Element {
           <img
             src={appIcon}
             alt=""
-            className="h-8 w-8 rounded-lg object-cover shadow-inner shadow-purple-500/20"
+            className="h-8 w-8 rounded-lg object-cover shadow-inner shadow-black/40"
           />
-          <span className="text-[15px] font-semibold tracking-tight">Cutawan</span>
+          <span className="text-[15px] font-semibold tracking-tight text-brand-500">Cutawan</span>
           <span className="rounded-full border border-surface-600 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-zinc-500">
             Open source
           </span>

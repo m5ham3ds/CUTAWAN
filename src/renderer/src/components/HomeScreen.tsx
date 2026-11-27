@@ -166,7 +166,7 @@ function ImportHero(): React.JSX.Element {
             </div>
             <div className="mt-2.5 h-1.5 overflow-hidden rounded-full bg-surface-700">
               <div
-                className={`h-full rounded-full bg-zinc-200 transition-all ${
+                className={`h-full rounded-full bg-brand-500 transition-all ${
                   importProgress.progress < 0 ? 'w-1/4 animate-pulse' : ''
                 }`}
                 style={
