@@ -90,7 +90,7 @@ class _DeviceAcceptancePageState extends State<DeviceAcceptancePage> {
     } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('تعذّر نسخ التقرير: ${error}')),
+        SnackBar(content: Text('تعذّر نسخ التقرير: $error')),
       );
     }
   }
