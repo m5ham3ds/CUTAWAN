@@ -142,6 +142,7 @@ Map<String, Object?> evaluatePhase10Transcription(
     'schema': phase10TranscriptionEvaluationSchema,
     'schemaVersion': phase10TranscriptionEvaluationSchemaVersion,
     'evaluatedAtUtc': DateTime.now().toUtc().toIso8601String(),
+    'measuredAtUtc': measuredAtUtc.toIso8601String(),
     'application': <String, Object?>{'buildSha': buildSha.toLowerCase()},
     'device': <String, Object?>{
       'manufacturer': manufacturer,
