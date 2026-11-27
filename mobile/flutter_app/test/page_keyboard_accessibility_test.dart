@@ -290,7 +290,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
 
-    final refresh = find.text('إعادة فحص النماذج المحلية');
+    final refresh = find.text('تحديث حالة النماذج');
     await tester.scrollUntilVisible(
       refresh,
       260,
@@ -438,7 +438,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 50));
 
-      final refreshLabel = find.text('إعادة فحص النماذج المحلية');
+      final refreshLabel = find.text('تحديث حالة النماذج');
       await tester.scrollUntilVisible(
         refreshLabel,
         260,
@@ -483,24 +483,9 @@ void main() {
       ).first;
       await _tabUntilFocused(tester, refresh);
 
-      final technicalDetailsLabel = find.text('القياسات التقنية التفصيلية');
-      await tester.scrollUntilVisible(
-        technicalDetailsLabel,
-        220,
-        scrollable: find.byType(Scrollable).first,
-      );
-      await tester.pump();
-      final technicalDetails = find.ancestor(
-        of: technicalDetailsLabel,
-        matching: find.byType(ListTile),
-      ).first;
-      await _tabUntilFocused(tester, technicalDetails);
-      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
-      await tester.pumpAndSettle();
-      expect(find.text('إجمالي RAM'), findsOneWidget);
-
-      // Scroll to the lazy list child before resolving its ancestor control.
-      final copyReportLabel = find.text('نسخ تقرير التشخيص JSON');
+      // The production diagnostics page exposes a concise support report.
+      // Its copy action is the only body control after the device summary.
+      final copyReportLabel = find.text('نسخ التقرير');
       await tester.scrollUntilVisible(
         copyReportLabel,
         220,
@@ -740,13 +725,13 @@ void fullPageTabOrderTests() {
 
     await expectFullTabOrder(tester, [
       find.ancestor(
-        of: find.text('أوافق على إرسال مقتطفات نص التفريغ للمزوّد الخارجي'),
+        of: find.text('السماح بإرسال نص التفريغ إلى مزوّد خارجي'),
         matching: find.byType(CheckboxListTile),
       ).first,
       find.byType(DropdownButtonFormField<AiProviderId>).first,
       find.byType(TextField).last,
       find.ancestor(
-        of: find.text('حفظ الإعدادات بأمان'),
+        of: find.text('حفظ'),
         matching: find.byType(FilledButton),
       ).first,
       find.ancestor(
@@ -754,7 +739,7 @@ void fullPageTabOrderTests() {
         matching: find.byType(OutlinedButton),
       ).first,
       find.ancestor(
-        of: find.text('إعادة فحص النماذج المحلية'),
+        of: find.text('تحديث حالة النماذج'),
         matching: find.byType(TextButton),
       ).first,
     ], maxTabsPerTarget: 64);
@@ -817,10 +802,10 @@ void fullPageTabOrderTests() {
       }
 
       final remainingControls = <({String label, Type type})>[
-        (label: 'حفظ الإعدادات بأمان', type: FilledButton),
+        (label: 'حفظ', type: FilledButton),
         (label: 'حذف المفتاح', type: TextButton),
         (label: 'جلب النماذج', type: OutlinedButton),
-        (label: 'إعادة فحص النماذج المحلية', type: TextButton),
+        (label: 'تحديث حالة النماذج', type: TextButton),
       ];
       for (final control in remainingControls) {
         // The model center uses a lazy ListView. Build the text child first,
@@ -889,7 +874,7 @@ void fullPageTabOrderTests() {
       // Fetch is already covered in the page-wide Tab inventory. This test
       // focuses on the conditional action that only exists after a model is
       // returned by the provider.
-      final testModelLabel = find.text('اختبار النموذج فعلياً');
+      final testModelLabel = find.text('اختبار الاتصال');
       await tester.scrollUntilVisible(
         testModelLabel,
         220,

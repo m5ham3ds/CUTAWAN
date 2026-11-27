@@ -316,7 +316,7 @@ void main() {
         final list = find.byType(ListView).first;
         _expectInsideSafeRegion(tester, list, variant);
 
-        final refreshLabel = find.text('إعادة فحص النماذج المحلية');
+        final refreshLabel = find.text('تحديث حالة النماذج');
         await tester.scrollUntilVisible(
           refreshLabel,
           180,

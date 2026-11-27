@@ -122,6 +122,11 @@ void main() {
       find.text('نسخ قالب نتائج الاختبارات الميدانية JSON'),
       findsNothing,
     );
+    await tester.scrollUntilVisible(
+      find.text('نسخ التقرير'),
+      220,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('نسخ التقرير'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });

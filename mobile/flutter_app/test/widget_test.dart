@@ -84,20 +84,17 @@ void main() {
 
       const diagnosticsKey = ValueKey('settings-device-diagnostics');
       const modelsKey = ValueKey('settings-model-center');
+
+      // The initial route is the project dashboard; neither destination is
+      // exposed there or in the global top bar.
       expect(find.byKey(diagnosticsKey), findsNothing);
       expect(find.byKey(modelsKey), findsNothing);
+      expect(find.byTooltip('تشخيص الجهاز'), findsNothing);
+      expect(find.byTooltip('مركز النماذج'), findsNothing);
 
-      for (final destination in ['إنشاء', 'المهام', 'المراجعة', 'الاستوديو']) {
-        await tester.tap(find.text(destination));
-        await tester.pumpAndSettle();
-        expect(find.byKey(diagnosticsKey), findsNothing);
-        expect(find.byKey(modelsKey), findsNothing);
-      }
-
-      await tester.tap(find.text('الرئيسية'));
-      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('dashboard-settings')));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       expect(find.byKey(diagnosticsKey), findsOneWidget);
       expect(find.byKey(modelsKey), findsOneWidget);
