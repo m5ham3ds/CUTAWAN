@@ -1,19 +1,43 @@
 import 'package:flutter/material.dart';
 
 import '../design/app_tokens.dart';
+import '../domain/app_preferences.dart';
 
 class CutawanTheme {
   const CutawanTheme._();
 
-  /// RAVEN23 orange remains a restrained brand/progress accent.
-  static const Color accent = Color(0xFFF57C00);
+  /// CUTAWAN's default primary brand colour is red.
+  static const Color accent = Color(0xFFD32F2F);
+
+  static Color colorFor(AppAccentColor value) => switch (value) {
+        AppAccentColor.red => const Color(0xFFD32F2F),
+        AppAccentColor.blue => const Color(0xFF1976D2),
+        AppAccentColor.orange => const Color(0xFFEF6C00),
+        AppAccentColor.purple => const Color(0xFF7B1FA2),
+        AppAccentColor.yellow => const Color(0xFFF9A825),
+      };
+
+  static Color onColorFor(AppAccentColor value) => switch (value) {
+        AppAccentColor.orange || AppAccentColor.yellow => const Color(0xFF17191B),
+        _ => Colors.white,
+      };
   static const Color darkPage = Color(0xFF111315);
   static const Color lightPage = Color(0xFFFCFCFD);
 
-  static ThemeData light() => _build(Brightness.light);
-  static ThemeData dark() => _build(Brightness.dark);
+  static ThemeData light({
+    AppAccentColor accentColor = AppAccentColor.red,
+  }) => _build(Brightness.light, accentColor);
 
-  static ThemeData _build(Brightness brightness) {
+  static ThemeData dark({
+    AppAccentColor accentColor = AppAccentColor.red,
+  }) => _build(Brightness.dark, accentColor);
+
+  static ThemeData _build(
+    Brightness brightness,
+    AppAccentColor accentColor,
+  ) {
+    final accent = colorFor(accentColor);
+    final onAccent = onColorFor(accentColor);
     final dark = brightness == Brightness.dark;
     final page = dark ? darkPage : lightPage;
     final ink = dark ? const Color(0xFFF7F7F7) : const Color(0xFF141516);
@@ -58,7 +82,7 @@ class CutawanTheme {
       brightness: brightness,
     ).copyWith(
       primary: accent,
-      onPrimary: const Color(0xFF201A17),
+      onPrimary: onAccent,
       primaryContainer: raised,
       onPrimaryContainer: ink,
       secondary: secondary,

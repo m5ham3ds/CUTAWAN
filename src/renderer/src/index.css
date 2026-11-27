@@ -19,7 +19,7 @@
 
 /*
  * Near-monochrome dark palette. Hierarchy comes from contrast and subtle
- * translucency ("glass"), not hue: the single accent scale is warm white,
+ * translucency ("glass"), not hue: the single accent scale is red,
  * reserved for primary actions and selection states.
  */
 @theme {
@@ -29,12 +29,12 @@
   --color-surface-800: #242628;
   --color-surface-700: #2f3134;
   --color-surface-600: #3c3e41;
-  --color-accent-400: #a7a8a8;
-  --color-accent-500: #d6d7d7;
-  --color-accent-600: #f7f7f7;
-  --color-brand-400: #f79639;
-  --color-brand-500: #f57c00;
-  --color-brand-600: #d96b00;
+  --color-accent-400: #EF9A9A;
+  --color-accent-500: #E53935;
+  --color-accent-600: #C62828;
+  --color-brand-400: #EF9A9A;
+  --color-brand-500: #D32F2F;
+  --color-brand-600: #B71C1C;
   --color-zinc-100: #f7f7f7;
   --color-zinc-200: #e6e7e7;
   --color-zinc-300: #d6d7d7;
