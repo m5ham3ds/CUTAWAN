@@ -271,7 +271,6 @@ class CutawanTheme {
         unselectedLabelColor: muted,
         indicatorColor: ink,
         indicatorSize: TabBarIndicatorSize.label,
-        indicatorWeight: 2,
         dividerColor: Colors.transparent,
         labelStyle: AppType.button,
         unselectedLabelStyle: AppType.metadata,
