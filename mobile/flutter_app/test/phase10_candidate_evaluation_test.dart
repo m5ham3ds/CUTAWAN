@@ -32,6 +32,18 @@ Map<String, Object?> _input({
   List<Map<String, Object?>>? decisions,
   Map<String, Object?>? settings,
 }) {
+  final candidateItems = candidates ??
+      <Map<String, Object?>>[
+        _candidate('clip-01', 10000, 20000, score: 95),
+        _candidate('clip-02', 60000, 70000, score: 90),
+      ];
+  final decisionItems = decisions ??
+      candidateItems
+          .map((candidate) => <String, Object?>{
+                'candidateId': candidate['id'],
+                'decision': 'keep',
+              })
+          .toList(growable: false);
   return <String, Object?>{
     'schema': phase10CandidateEvaluationSchema,
     'schemaVersion': phase10CandidateEvaluationSchemaVersion,
@@ -62,21 +74,13 @@ Map<String, Object?> _input({
     'candidateRun': <String, Object?>{
       'runId': 'run-01',
       'rankingEngine': 'deterministic-evidence-v1',
-      'candidates': candidates ??
-          <Map<String, Object?>>[
-            _candidate('clip-01', 10000, 20000, score: 95),
-            _candidate('clip-02', 60000, 70000, score: 90),
-          ],
+      'candidates': candidateItems,
     },
     'humanReview': <String, Object?>{
       'reviewStatus': 'human-reviewed',
       'reviewerId': 'editor-01',
       'reviewedAtUtc': _reviewedAt,
-      'decisions': decisions ??
-          <Map<String, Object?>>[
-            <String, Object?>{'candidateId': 'clip-01', 'decision': 'keep'},
-            <String, Object?>{'candidateId': 'clip-02', 'decision': 'repair'},
-          ],
+      'decisions': decisionItems,
     },
     'settings': ?settings,
   };
