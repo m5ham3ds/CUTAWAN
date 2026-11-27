@@ -117,3 +117,17 @@ The Diagnostics page now has a separate **نسخ قالب نتائج الاخت�
 Current source SHA `98e31ea4ef702c48eeace7093865e5fc6e282ae1`, Android run [#448](https://github.com/m5ham3ds/CUTAWAN/actions/runs/46034533321): format and strict `flutter analyze --fatal-infos` passed; **260/260 Flutter tests passed**. The APK build then failed because Maven Central returned HTTP 429 while Gradle resolved `org.jetbrains.kotlin:kotlin-gradle-plugins-bom:2.2.20` through `plugins.gradle.org`; the retry also failed with the same external rate-limit response. Therefore no APK from SHA `98e31ea` or Phase 10 template field run is available yet. Root CI [#507](https://github.com/m5ham3ds/CUTAWAN/actions/runs/46034533276) and Branch Policy [#157](https://github.com/m5ham3ds/CUTAWAN/actions/runs/46034533273) succeeded; `main` remains the only branch.
 
 The previous latest successful ARM64 APK is Android [#447](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45859864265), built from `83053e7284e9225a94797d82020235b1914563d1`. It predates the field-evidence template and must not be represented as containing that UI. All physical metrics, corpus results, on-device security, lifecycle and quality acceptance remain uncollected.
+
+
+## Transcript WER and word-timing evaluator — 2026-11-27
+
+Added a Flutter/Dart field-evaluation utility at `mobile/flutter_app/lib/tooling/phase10/`:
+
+- `transcript_evaluation.dart` validates the schema, pinned 40-character application build SHA, 64-character fixture SHA-256, manually confirmed physical-device metadata, human-reviewed reference transcript, Arabic/English language match, and ordered word timestamps within the media duration.
+- It computes Levenshtein word-level substitutions, deletions, insertions and WER; exact-match coverage/precision; and median/P95 absolute word-start and word-end errors for exact normalized matches only.
+- The versioned `cutawan-ar-en-v1` normalizer lowercases Latin, removes Arabic harakat/tatweel, normalizes alef forms/alef maqsura and trims leading/trailing Arabic/Latin punctuation.
+- The DP implementation stores a byte per traceback cell and two cost rows, with an eight-million-cell hard limit. Longer transcripts must be split into consecutive source-time windows rather than risking unbounded memory.
+- CLI entry point: `dart run lib/tooling/phase10/evaluate_transcript.dart --input <evaluation.json> --output <metrics.json>`.
+- Unit tests cover exact matches, S/D/I counts, Arabic normalization, nearest-rank P95, missing hypothesis words, invalid physical/build/reference/hash evidence, invalid word times and oversized alignment rejection.
+
+The evaluator reports measurements only. It defines no pass threshold, does not alter phase acceptance statuses and does not add synthetic data to the corpus. No physical-device WER/timing result has been collected by this implementation. See [the evaluator protocol and input contract](PHASE-10-TRANSCRIPTION-EVALUATION-TOOL-2026-11-27.md).

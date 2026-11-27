@@ -38,7 +38,7 @@ Links: [current Android #448](https://github.com/m5ham3ds/CUTAWAN/actions/runs/4
 | [7](07-ai-providers-and-secure-credentials.md) | Multi-provider AI and credential security | OpenAI, Gemini, Hugging Face and OpenAI-compatible provider adapters, account model discovery, secure credential store and explicit consent gates delivered | Physical Keystore backup/restore/rotation/deletion, real accounts/models, billing and policy acceptance |
 | [8](08-end-to-end-pipeline-and-export.md) | Durable processing, rendering and export | Media3 full-track end-of-stream decode validation, WorkManager foreground rendering, durable completion handoff, project cancellation and targeted per-clip re-render/cleanup delivered; automated Android #447 passed | Physical ARM64 real-media, background/relaunch/force-stop, notifications/cancellation, OEM behavior, playback and output integrity |
 | [9](09-professional-mobile-ui.md) | Professional UI, editor workflows and responsive/accessibility work | Dashboard/Create/Jobs/Review/Clip Editor/Caption Studio/Settings/Models/Diagnostics workflows, Filmstrip, source-time keyframes, visual fades, sequence composition/dip-to-black and eight-scenario 24/24 parity matrix delivered | Physical handset RTL/LTR, large text, landscape, insets, real keyboard focus, editor/export and OEM acceptance; no audio crossfade/full multitrack mix |
-| [10](10-physical-device-acceptance.md) | Physical-device quality, security and performance acceptance | Diagnostics and privacy-filtered versioned field-evidence JSON template implemented; Phase 10 preparation is active | Human-confirmed handset, hash-locked corpus, WER/timing, candidate/crop quality, full decode, sustained PSS/battery/thermal, process/SAF/Keystore/consent evidence and review |
+| [10](10-physical-device-acceptance.md) | Physical-device quality, security and performance acceptance | Diagnostics, privacy-filtered versioned field-evidence template and bounded Arabic/English WER + word-timing evaluator implemented; Phase 10 preparation remains active | Human-confirmed handset, hash-locked corpus, human-reviewed transcripts, actual WER/timing results, candidate/crop quality, full decode, sustained PSS/battery/thermal, process/SAF/Keystore/consent evidence and review |
 
 ## Current interpretation
 
@@ -55,7 +55,8 @@ Links: [current Android #448](https://github.com/m5ham3ds/CUTAWAN/actions/runs/4
 2. After that build succeeds, use its exact APK and embedded `BUILD_SHA` as the current candidate. The #447 APK may be used for Phase 8/9 device checks, but it does not contain the Phase 10 JSON template.
 3. Complete [Phase 8 physical media/WorkManager checklist](PHASE-08-PHYSICAL-MEDIA-AND-WORKMANAGER-ACCEPTANCE-2026-11-26.md) and [Phase 9 physical handset checklist](PHASE-09-PHYSICAL-HANDSET-ACCEPTANCE-2026-11-26.md) with real device evidence; keep each unrun item explicitly unrun.
 4. Use Diagnostics to copy the privacy-filtered device report and the versioned field-evidence template, then populate fixture hashes, methods, measurements and review outcomes only from actual tests.
-5. Update these phase records after results are reproducible and reviewed. Never fill physical evidence from emulator/CI fixtures or inferred device identity.
+5. Use the Phase 10 transcription evaluator on each human-reviewed Arabic/English reference and corresponding physical-device Whisper output; preserve the source SHA, build SHA and device identity with the resulting metrics.  
+6. Update these phase records after results are reproducible and reviewed. Never fill physical evidence from emulator/CI fixtures or inferred device identity.
 
 ## Detailed phase documents
 
@@ -78,6 +79,7 @@ Links: [current Android #448](https://github.com/m5ham3ds/CUTAWAN/actions/runs/4
 - [Phase 9 preview/export pixel-parity acceptance](PHASE-09-PREVIEW-EXPORT-PIXEL-PARITY-ACCEPTANCE-2026-11-26.md)
 - [Phase 9 Clip Editor keyframes/transitions/preview geometry](PHASE-09-CLIP-EDITOR-THUMBNAILS-KEYFRAMES-TRANSITIONS-PREVIEW-GEOMETRY-2026-11-24.md)
 - [Phase 10 Diagnostics implementation and field-evidence template](PHASE-10-DEVICE-DIAGNOSTICS-IMPLEMENTATION-RECORD-2026-11-21.md)
+- [Phase 10 transcription WER/timing evaluator](PHASE-10-TRANSCRIPTION-EVALUATION-TOOL-2026-11-27.md)
 - [Phase 3–4 detailed integration record](../docs/mobile/PHASES_3_4_INTEGRATION.md)
 - [Phase 5–6 detailed integration record](../docs/mobile/PHASES_5_6_INTEGRATION.md)
 

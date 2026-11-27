@@ -75,6 +75,8 @@ Physical handset review remains open. Dip-to-black is video-only; no audio cross
 
 Device Diagnostics collects non-identifying runtime/device metrics and performs an ephemeral secure-storage canary round-trip. A separate Diagnostics action exports a versioned, privacy-filtered field-evidence JSON template with Phase 8/9/10 check identifiers. It initializes tests as `not-run` and acceptance as `not-accepted`; it does not execute field tests or infer physical-device identity.
 
+The Phase 10 tooling also includes a deterministic Arabic/English WER and word-timing evaluator. It requires a manually confirmed physical handset, pinned build SHA, SHA-256-locked fixture, and human-reviewed reference transcript. It reports substitutions/deletions/insertions, WER, matched-word coverage, and median/P95 timing errors for exact word matches. It is bounded to eight million alignment cells and does not set acceptance thresholds or mark any phase accepted. See [the evaluator protocol](../../phases/PHASE-10-TRANSCRIPTION-EVALUATION-TOOL-2026-11-27.md).
+
 No physical handset evidence corpus, reviewed transcript WER/timing, candidate/crop quality result, full-decode field report, sustained performance/thermal/battery result, SAF/process-death/Keystore lifecycle or end-to-end consent field result has been collected.
 
 ## Current verified CI status — 2026-11-27
