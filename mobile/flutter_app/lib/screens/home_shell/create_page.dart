@@ -256,7 +256,7 @@ class _CreatePageState extends State<CreatePage> {
     return CutawanPanel(
       accent: true,
       child: Row(children: [
-        Icon(Icons.video_file_outlined, color: scheme.primary, size: 28),
+        Icon(Icons.video_file_outlined, color: scheme.onSurfaceVariant, size: 28),
         const SizedBox(width: 12),
         Expanded(child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -278,7 +278,7 @@ class _CreatePageState extends State<CreatePage> {
             icon: const Icon(Icons.edit_outlined),
           )
         else
-          Icon(Icons.check_circle_rounded, color: scheme.primary),
+          Icon(Icons.check_circle_rounded, color: scheme.onSurfaceVariant),
       ]),
     );
   }
@@ -329,7 +329,7 @@ class _CreatePageState extends State<CreatePage> {
         }),
         if (_busy && _downloadProgress != null) ...[
           const SizedBox(height: 14),
-          LinearProgressIndicator(value: _downloadProgress!.fraction, borderRadius: BorderRadius.circular(99)),
+          LinearProgressIndicator(value: _downloadProgress!.fraction, color: scheme.primary, borderRadius: BorderRadius.circular(99)),
           const SizedBox(height: 7),
           Text(_downloadProgress!.totalBytes == null
               ? 'تم تنزيل ${formatCutawanBytes(_downloadProgress!.receivedBytes)}'
@@ -532,7 +532,7 @@ class _CreatePageState extends State<CreatePage> {
         ],
       ])),
       CutawanPanel(child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Icon(Icons.center_focus_strong_rounded, color: scheme.primary),
+        Icon(Icons.center_focus_strong_rounded, color: scheme.onSurfaceVariant),
         const SizedBox(width: 12),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text('تحليل التأطير التلقائي', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800)),
@@ -585,24 +585,24 @@ class _CreatePageState extends State<CreatePage> {
     return Expanded(child: Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 11),
       decoration: BoxDecoration(
-        color: active ? scheme.primary.withValues(alpha: 0.12) : scheme.surfaceContainer,
-        borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: active ? scheme.primary : scheme.outlineVariant),
+        color: active ? scheme.onSurface.withValues(alpha: 0.08) : scheme.surfaceContainer,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: active ? scheme.onSurface : scheme.outlineVariant),
       ),
       child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
         CircleAvatar(
           radius: 13,
-          backgroundColor: active || complete ? scheme.primary : scheme.surfaceContainerHighest,
+          backgroundColor: active || complete ? scheme.onSurface : scheme.surfaceContainerHighest,
           child: complete
               ? Icon(Icons.check_rounded, size: 16, color: scheme.onPrimary)
               : Text('$number', style: TextStyle(
-                  color: active ? scheme.onPrimary : scheme.onSurfaceVariant,
+                  color: active ? scheme.surface : scheme.onSurfaceVariant,
                   fontSize: 12, fontWeight: FontWeight.w800,
                 )),
         ),
         const SizedBox(width: 8),
         Flexible(child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis,
-          style: TextStyle(color: active ? scheme.primary : scheme.onSurfaceVariant, fontWeight: FontWeight.w800))),
+          style: TextStyle(color: active ? scheme.onSurface : scheme.onSurfaceVariant, fontWeight: FontWeight.w800))),
       ]),
     ));
   }
@@ -620,12 +620,12 @@ class _CreatePageState extends State<CreatePage> {
           Row(children: [
             Container(
               width: 42, height: 42,
-              decoration: BoxDecoration(color: scheme.primary.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(14)),
-              child: Icon(Icons.movie_creation_outlined, color: scheme.primary),
+              decoration: BoxDecoration(color: scheme.onSurfaceVariant.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(14)),
+              child: Icon(Icons.movie_creation_outlined, color: scheme.onSurfaceVariant),
             ),
             const SizedBox(width: 12),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('مشروع فيديو جديد', style: theme.textTheme.labelLarge?.copyWith(color: scheme.primary, fontWeight: FontWeight.w800)),
+              Text('مشروع فيديو جديد', style: theme.textTheme.labelLarge?.copyWith(color: scheme.onSurfaceVariant, fontWeight: FontWeight.w800)),
               const SizedBox(height: 3),
               Text('من المصدر إلى مقاطع تستحق المشاهدة.', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900)),
             ])),

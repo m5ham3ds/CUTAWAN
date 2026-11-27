@@ -278,7 +278,7 @@ class _JobsPageState extends State<JobsPage> {
                 label: 'قيد التنفيذ',
                 value: '$running',
                 icon: Icons.play_circle_outline_rounded,
-                tint: theme.colorScheme.primary,
+                tint: theme.colorScheme.onSurfaceVariant,
               ),
             ),
             SizedBox(
@@ -342,10 +342,10 @@ class _JobsPageState extends State<JobsPage> {
             width: 42,
             height: 42,
             decoration: BoxDecoration(
-              color: theme.colorScheme.primary.withValues(alpha: 0.12),
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(13),
             ),
-            child: Icon(Icons.storage_outlined, color: theme.colorScheme.primary),
+            child: Icon(Icons.storage_outlined, color: theme.colorScheme.onSurfaceVariant),
           ),
           title: const Text('مساحة تنزيلات Cutawan'),
           subtitle: Text(
@@ -436,7 +436,7 @@ class _JobsPageState extends State<JobsPage> {
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: scheme.surfaceContainerLow,
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(6),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -454,7 +454,7 @@ class _JobsPageState extends State<JobsPage> {
                                         ? Icons.pause_circle_outline_rounded
                                         : Icons.play_circle_outline_rounded,
                         size: 17,
-                        color: scheme.primary,
+                        color: scheme.onSurfaceVariant,
                       ),
                       const SizedBox(width: 7),
                       Expanded(
@@ -484,6 +484,7 @@ class _JobsPageState extends State<JobsPage> {
                       borderRadius: BorderRadius.circular(99),
                       backgroundColor: scheme.surfaceContainerHighest,
                       value: progress,
+                      color: scheme.onSurfaceVariant,
                       minHeight: 6,
                     ),
                   ),

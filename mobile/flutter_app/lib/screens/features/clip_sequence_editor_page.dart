@@ -581,8 +581,8 @@ class _ClipSequenceEditorPageState extends State<ClipSequenceEditorPage> {
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
-        color: scheme.surfaceContainerHighest.withValues(alpha: 0.45),
-        borderRadius: BorderRadius.circular(12),
+        color: scheme.surfaceContainer,
+        borderRadius: BorderRadius.circular(6),
         border: Border.all(color: scheme.outlineVariant),
       ),
       child: Column(
@@ -606,7 +606,7 @@ class _ClipSequenceEditorPageState extends State<ClipSequenceEditorPage> {
             const SizedBox(height: 4),
             Text(
               'انتقال تعتيم إلى المقطع التالي · ${item.transitionAfter!.durationMs} ms',
-              style: theme.textTheme.labelSmall?.copyWith(color: scheme.primary),
+              style: theme.textTheme.labelSmall?.copyWith(color: scheme.onSurfaceVariant),
             ),
           ],
           const SizedBox(height: 4),
@@ -795,7 +795,7 @@ class _ClipSequenceEditorPageState extends State<ClipSequenceEditorPage> {
                         ),
                         Text(
                           '${sequence.clips.length} مقطع',
-                          style: theme.textTheme.labelLarge?.copyWith(color: scheme.primary),
+                          style: theme.textTheme.labelLarge?.copyWith(color: scheme.onSurfaceVariant),
                         ),
                       ],
                     ),

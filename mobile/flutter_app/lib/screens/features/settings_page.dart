@@ -89,7 +89,7 @@ class _SettingsPageState extends State<SettingsPage> {
                           children: [
                             Row(
                               children: [
-                                Icon(Icons.dark_mode_outlined, color: scheme.primary),
+                                Icon(Icons.dark_mode_outlined, color: scheme.onSurfaceVariant),
                                 const SizedBox(width: 9),
                                 Expanded(
                                   child: Text(
@@ -158,7 +158,7 @@ class _SettingsPageState extends State<SettingsPage> {
                         ),
                         secondary: Icon(
                           Icons.motion_photos_off_outlined,
-                          color: scheme.primary,
+                          color: scheme.onSurfaceVariant,
                         ),
                         title: const Text('تقليل الحركة'),
                         subtitle: const Text('تقليل الحركات والانتقالات داخل التطبيق.'),
@@ -192,7 +192,7 @@ class _SettingsPageState extends State<SettingsPage> {
               Card(
                 child: ListTile(
                   minVerticalPadding: 12,
-                  leading: Icon(Icons.policy_outlined, color: scheme.primary),
+                  leading: Icon(Icons.policy_outlined, color: scheme.onSurfaceVariant),
                   title: const Text('التراخيص والإشعارات'),
                   trailing: const Icon(Icons.chevron_left_rounded),
                   onTap: () => showLicensePage(
@@ -251,8 +251,8 @@ class _SettingsActionTile extends StatelessWidget {
       child: ListTile(
         minVerticalPadding: 12,
         leading: CircleAvatar(
-          backgroundColor: scheme.primary.withValues(alpha: 0.12),
-          child: Icon(icon, color: scheme.primary),
+          backgroundColor: scheme.onSurface.withValues(alpha: 0.08),
+          child: Icon(icon, color: scheme.onSurfaceVariant),
         ),
         title: Text(
           title,

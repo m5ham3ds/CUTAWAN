@@ -29,6 +29,8 @@ void main() {
       final iconOutline = theme.iconButtonTheme.style?.side?.resolve(focused);
       final filledOutline =
           theme.filledButtonTheme.style?.side?.resolve(focused);
+      final filledBackground = theme.filledButtonTheme.style?.backgroundColor
+          ?.resolve(const <WidgetState>{}) ?? scheme.onSurface;
       final outlinedOutline =
           theme.outlinedButtonTheme.style?.side?.resolve(focused);
       final textOutline =
@@ -53,7 +55,7 @@ void main() {
         greaterThanOrEqualTo(3),
       );
       expect(
-        _contrastRatio(filledOutline.color, scheme.primary),
+        _contrastRatio(filledOutline.color, filledBackground),
         greaterThanOrEqualTo(3),
       );
       expect(

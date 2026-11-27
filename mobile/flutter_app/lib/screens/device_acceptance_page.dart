@@ -377,7 +377,7 @@ class _MetricCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(metric.icon, size: 19, color: scheme.primary),
+            Icon(metric.icon, size: 19, color: scheme.onSurfaceVariant),
             const SizedBox(height: 8),
             Text(
               metric.label,

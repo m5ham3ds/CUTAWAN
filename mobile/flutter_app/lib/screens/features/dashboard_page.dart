@@ -66,7 +66,7 @@ class DashboardPage extends StatelessWidget {
                             'مساحة عملك',
                             style: Theme.of(context).textTheme.labelLarge
                                 ?.copyWith(
-                              color: Theme.of(context).colorScheme.primary,
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
                               fontWeight: FontWeight.w800,
                             ),
                           ),
@@ -198,7 +198,7 @@ class DashboardPage extends StatelessWidget {
                               .withValues(alpha: 0.12),
                           child: Icon(
                             Icons.video_file_outlined,
-                            color: Theme.of(context).colorScheme.primary,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                         ),
                         title: Text(
@@ -272,7 +272,7 @@ class _DashboardStorageCardState extends State<_DashboardStorageCard> {
           child: ListTile(
             minVerticalPadding: 12,
             leading: CircleAvatar(
-              backgroundColor: scheme.primary.withValues(alpha: 0.12),
+              backgroundColor: scheme.onSurface.withValues(alpha: 0.08),
               child: Icon(Icons.storage_outlined, color: scheme.primary),
             ),
             title: const Text('مساحة تنزيلات CUTAWAN'),
@@ -302,12 +302,12 @@ class _DashboardHero extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(6),
         gradient: LinearGradient(
           begin: AlignmentDirectional.topStart,
           end: AlignmentDirectional.bottomEnd,
           colors: [
-            scheme.primary.withValues(alpha: 0.17),
+            scheme.onSurface.withValues(alpha: 0.06),
             scheme.surfaceContainer,
           ],
         ),

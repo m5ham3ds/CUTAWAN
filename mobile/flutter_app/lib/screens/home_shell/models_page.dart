@@ -493,7 +493,7 @@ class _ModelsPageState extends State<ModelsPage> {
           ],
           if (_busy) ...[
             const SizedBox(height: 16),
-            LinearProgressIndicator(value: _progress),
+            LinearProgressIndicator(value: _progress, color: Theme.of(context).colorScheme.primary),
             const SizedBox(height: 6),
             Text(
               _progress == null

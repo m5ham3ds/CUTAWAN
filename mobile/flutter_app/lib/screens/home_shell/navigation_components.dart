@@ -1,5 +1,10 @@
+import 'dart:ui' show ImageFilter;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+
+import '../../design/app_palette.dart';
+import '../../design/app_tokens.dart';
 
 typedef CutawanNavigationDestination = ({
   String label,
@@ -21,30 +26,20 @@ class CutawanTopBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
+    final palette = AppPalette.of(context);
     final compact = MediaQuery.sizeOf(context).width < 390;
+    final gutter = AppSpace.gutter(context);
 
     return Padding(
-      padding: EdgeInsets.fromLTRB(compact ? 8 : 20, 10, compact ? 8 : 20, 10),
+      padding: EdgeInsets.fromLTRB(gutter, 8, gutter, 8),
       child: Row(
         children: [
-          Container(
-            width: compact ? 34 : 40,
-            height: compact ? 34 : 40,
-            decoration: BoxDecoration(
-              color: scheme.primary,
-              borderRadius: BorderRadius.circular(13),
-              boxShadow: [
-                BoxShadow(
-                  color: scheme.primary.withValues(alpha: 0.18),
-                  blurRadius: 18,
-                  offset: const Offset(0, 6),
-                ),
-              ],
-            ),
-            child: Icon(Icons.auto_awesome_rounded, color: scheme.onPrimary, size: 21),
+          Icon(
+            Icons.auto_awesome_rounded,
+            color: theme.colorScheme.primary,
+            size: compact ? 24 : 28,
           ),
-          SizedBox(width: compact ? 8 : 12),
+          const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -52,78 +47,39 @@ class CutawanTopBar extends StatelessWidget {
                 Text(
                   'CUTAWAN',
                   maxLines: 1,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    letterSpacing: 0.4,
-                    fontWeight: FontWeight.w900,
-                    fontSize: compact ? 12 : 17,
+                  style: AppType.sectionHeader.copyWith(
+                    color: palette.foreground,
+                    letterSpacing: 0.3,
                   ),
                 ),
                 if (!compact)
                   Text(
                     'AI CREATOR STUDIO',
                     maxLines: 1,
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: scheme.onSurfaceVariant,
-                      letterSpacing: 0.7,
-                      fontSize: 8,
+                    style: AppType.kicker.copyWith(
+                      color: palette.mutedText,
+                      fontSize: 9,
+                      letterSpacing: 1.0,
                     ),
                   ),
               ],
             ),
           ),
-          if (!compact) ...[
-            _TopBarAction(
-              icon: Icons.refresh_rounded,
+          if (!compact)
+            IconButton(
               tooltip: 'تحديث المشاريع',
-              onTap: onRefresh,
+              onPressed: () => onRefresh(),
+              icon: const Icon(Icons.refresh_rounded),
             ),
-            const SizedBox(width: 8),
-          ],
-          _TopBarAction(
-            icon: Icons.settings_outlined,
+          IconButton(
             tooltip: 'الإعدادات',
-            onTap: onSettings,
+            onPressed: () {
+              HapticFeedback.selectionClick();
+              onSettings();
+            },
+            icon: const Icon(Icons.settings_outlined),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _TopBarAction extends StatelessWidget {
-  const _TopBarAction({
-    required this.icon,
-    required this.tooltip,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String tooltip;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Tooltip(
-      message: tooltip,
-      child: Material(
-        color: scheme.surfaceContainer,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
-          side: BorderSide(color: scheme.outlineVariant),
-        ),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(14),
-          onTap: () {
-            HapticFeedback.selectionClick();
-            onTap();
-          },
-          child: SizedBox(
-            width: 48,
-            height: 48,
-            child: Icon(icon, size: 19, color: scheme.onSurface),
-          ),
-        ),
       ),
     );
   }
@@ -137,44 +93,111 @@ class CutawanNavigationBar extends StatelessWidget {
     required this.destinations,
     required this.animation,
   });
+
   final int selectedIndex;
   final ValueChanged<int> onSelected;
   final List<CutawanNavigationDestination> destinations;
   final Animation<double> animation;
+
+  static const double height = 60;
+
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final safePadding = MediaQuery.paddingOf(context);
-    final bottom = safePadding.bottom;
-    final compact = MediaQuery.sizeOf(context).width < 390;
-    final horizontalMargin = compact ? 4.0 : 14.0;
-    return Container(
-      margin: EdgeInsets.fromLTRB(
-        horizontalMargin + safePadding.left,
-        0,
-        horizontalMargin + safePadding.right,
-        bottom > 0 ? bottom + 8 : 13,
+    final palette = AppPalette.of(context);
+    final media = MediaQuery.of(context);
+    final reduceMotion = media.disableAnimations;
+    final bottom = media.padding.bottom;
+
+    final bar = DecoratedBox(
+      decoration: BoxDecoration(
+        color: reduceMotion ? palette.page : palette.scrim(0.94),
       ),
-      padding: EdgeInsets.fromLTRB(compact ? 1 : 7, 6, compact ? 1 : 7, 6),
-      decoration: BoxDecoration(color: scheme.surfaceContainer.withValues(alpha: 0.96), borderRadius: BorderRadius.circular(24), border: Border.all(color: scheme.outlineVariant), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.24), blurRadius: 28, offset: const Offset(0, 10))]),
-      child: ClipRect(child: Row(children: List.generate(destinations.length, (index) {
-        final item = destinations[index];
-        final selected = index == selectedIndex;
-        return Expanded(child: Semantics(button: true, selected: selected, label: item.hint, child: InkWell(
-          borderRadius: BorderRadius.circular(18),
-          onTap: () => onSelected(index),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 240), curve: Curves.easeOutCubic,
-            padding: const EdgeInsets.symmetric(vertical: 7),
-            decoration: BoxDecoration(color: selected ? scheme.primary.withValues(alpha: 0.13) : Colors.transparent, borderRadius: BorderRadius.circular(18)),
-            child: Column(mainAxisSize: MainAxisSize.min, children: [
-              AnimatedScale(scale: selected ? 1.08 : 1, duration: const Duration(milliseconds: 220), curve: Curves.easeOutBack, child: Icon(selected ? item.selected : item.icon, size: 22, color: selected ? scheme.primary : scheme.onSurfaceVariant)),
-              const SizedBox(height: 5),
-              AnimatedDefaultTextStyle(duration: const Duration(milliseconds: 180), style: TextStyle(fontSize: compact ? 9 : 10, fontWeight: selected ? FontWeight.w900 : FontWeight.w600, color: selected ? scheme.primary : scheme.onSurfaceVariant), child: Text(item.label)),
-            ]),
+      child: Padding(
+        padding: EdgeInsets.only(bottom: bottom),
+        child: SizedBox(
+          height: height,
+          child: MediaQuery.withClampedTextScaling(
+            maxScaleFactor: 1.3,
+            child: Row(
+              children: [
+                for (var index = 0; index < destinations.length; index++)
+                  Expanded(
+                    child: _NavigationItem(
+                      destination: destinations[index],
+                      selected: index == selectedIndex,
+                      onTap: () => onSelected(index),
+                    ),
+                  ),
+              ],
+            ),
           ),
-        )));
-      }))),
+        ),
+      ),
+    );
+
+    if (reduceMotion) return bar;
+    return ClipRect(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+        child: bar,
+      ),
+    );
+  }
+}
+
+class _NavigationItem extends StatelessWidget {
+  const _NavigationItem({
+    required this.destination,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final CutawanNavigationDestination destination;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
+    final color = selected ? palette.foreground : palette.mutedText;
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: destination.hint,
+      excludeSemantics: true,
+      child: InkWell(
+        onTap: () {
+          HapticFeedback.selectionClick();
+          onTap();
+        },
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 48),
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  selected ? destination.selected : destination.icon,
+                  size: 24,
+                  color: color,
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  destination.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppType.metadata.copyWith(
+                    fontSize: 11,
+                    color: color,
+                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

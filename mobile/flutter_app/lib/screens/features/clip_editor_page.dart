@@ -212,7 +212,7 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
                                   borderRadius: BorderRadius.circular(9),
                                   border: Border.all(
                                     color: active
-                                        ? theme.colorScheme.primary
+                                        ? theme.colorScheme.onSurface
                                         : theme.colorScheme.outlineVariant,
                                     width: active ? 2 : 1,
                                   ),
@@ -821,7 +821,7 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
       padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
         color: scheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(6),
         border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.75)),
       ),
       child: Column(
@@ -833,10 +833,10 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(
-                  color: scheme.primary.withValues(alpha: 0.12),
+                  color: scheme.onSurface.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(icon, color: scheme.primary, size: 19),
+                child: Icon(icon, color: scheme.onSurfaceVariant, size: 19),
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -884,7 +884,7 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
               child: AspectRatio(
                 aspectRatio: _targetAspectRatio(),
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(10),
                   child: ColoredBox(
                     color: Colors.black,
                     child: Stack(
@@ -913,7 +913,7 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
                             padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
                             decoration: BoxDecoration(
                               color: Colors.black.withValues(alpha: 0.58),
-                              borderRadius: BorderRadius.circular(20),
+                              borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(
                               _ratioLabel(_draftPreferences.aspectRatio),
@@ -1248,7 +1248,7 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
                 color: color,
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: active ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.outlineVariant,
+                  color: active ? Theme.of(context).colorScheme.onSurface : Theme.of(context).colorScheme.outlineVariant,
                   width: active ? 3 : 1,
                 ),
               ),
@@ -1473,12 +1473,12 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
                               decoration: BoxDecoration(
-                                color: scheme.primary.withValues(alpha: 0.12),
+                                color: scheme.onSurface.withValues(alpha: 0.08),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Text(
                                 '${widget.candidate.score.round()}/100',
-                                style: TextStyle(color: scheme.primary, fontWeight: FontWeight.w900),
+                                style: TextStyle(color: scheme.onSurfaceVariant, fontWeight: FontWeight.w900),
                               ),
                             ),
                           ],

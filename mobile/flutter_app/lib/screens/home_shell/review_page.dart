@@ -859,7 +859,7 @@ class _ReviewPageState extends State<ReviewPage> {
     final color = complete
         ? scheme.secondary
         : active
-            ? scheme.primary
+            ? scheme.onSurface
             : scheme.onSurfaceVariant;
     return CutawanPanel(
       padding: const EdgeInsets.all(11),
@@ -871,7 +871,7 @@ class _ReviewPageState extends State<ReviewPage> {
             height: 30,
             decoration: BoxDecoration(
               color: color.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(6),
             ),
             child: Icon(complete ? Icons.check_rounded : icon, size: 17, color: color),
           ),
@@ -984,7 +984,7 @@ class _ReviewPageState extends State<ReviewPage> {
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.video_file_outlined, color: scheme.primary, size: 26),
+                      Icon(Icons.video_file_outlined, color: scheme.onSurfaceVariant, size: 26),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Column(
@@ -1239,7 +1239,7 @@ class _ReviewPageState extends State<ReviewPage> {
                 if (candidateSet != null)
                   Text('${candidateSet.candidates.length}',
                       style: theme.textTheme.titleMedium?.copyWith(
-                        color: scheme.primary,
+                        color: scheme.onSurfaceVariant,
                         fontWeight: FontWeight.w900,
                       )),
               ],
@@ -1293,7 +1293,7 @@ class _ReviewPageState extends State<ReviewPage> {
                             ),
                             Text('${candidate.score.toStringAsFixed(0)}/100',
                                 style: theme.textTheme.labelLarge?.copyWith(
-                                  color: scheme.primary,
+                                  color: scheme.onSurfaceVariant,
                                   fontWeight: FontWeight.w900,
                                 )),
                           ],

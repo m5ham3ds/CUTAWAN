@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../design/app_palette.dart';
+import '../../design/app_tokens.dart';
 import '../../domain/project_contract.dart';
 
 String formatCutawanBytes(int bytes) {
@@ -18,13 +20,13 @@ class CutawanStatusNote extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
+    final palette = AppPalette.of(context);
     return Container(
-      padding: const EdgeInsets.all(17),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: scheme.surfaceContainer,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: scheme.outlineVariant),
+        color: palette.surface,
+        borderRadius: BorderRadius.circular(AppRadii.card),
+        border: Border.all(color: palette.hairline),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -32,14 +34,14 @@ class CutawanStatusNote extends StatelessWidget {
           Icon(
             Icons.info_outline_rounded,
             size: 19,
-            color: scheme.secondary,
+            color: palette.mutedText,
           ),
           const SizedBox(width: 11),
           Expanded(
             child: Text(
               text,
               style: theme.textTheme.bodySmall?.copyWith(
-                color: scheme.onSurfaceVariant,
+                color: palette.secondaryText,
               ),
             ),
           ),
@@ -64,21 +66,17 @@ class CutawanEyebrow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    final palette = AppPalette.of(context);
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         if (icon != null) ...[
-          Icon(icon, size: 13, color: scheme.primary),
+          Icon(icon, size: 13, color: palette.mutedText),
           const SizedBox(width: 7),
         ],
         Text(
           text.toUpperCase(),
-          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: scheme.primary,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 1.15,
-              ),
+          style: AppType.kicker.copyWith(color: palette.mutedText),
         ),
       ],
     );
@@ -99,19 +97,13 @@ class CutawanPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    final palette = AppPalette.of(context);
     return Container(
       padding: padding,
       decoration: BoxDecoration(
-        color: accent
-            ? scheme.primary.withValues(alpha: 0.075)
-            : scheme.surfaceContainer,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(
-          color: accent
-              ? scheme.primary.withValues(alpha: 0.26)
-              : scheme.outlineVariant,
-        ),
+        color: accent ? palette.raisedSurface : palette.surface,
+        borderRadius: BorderRadius.circular(AppRadii.card),
+        border: Border.all(color: palette.hairline),
       ),
       child: child,
     );
@@ -176,7 +168,8 @@ class CutawanMetricCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final color = tint ?? theme.colorScheme.primary;
+    final palette = AppPalette.of(context);
+    final color = tint ?? palette.mutedText;
     return CutawanPanel(
       padding: const EdgeInsets.all(14),
       child: Column(
@@ -219,7 +212,7 @@ class CutawanStatusBadge extends StatelessWidget {
     final theme = Theme.of(context);
     final color = switch (status) {
       ProjectJobStatus.completed => theme.colorScheme.secondary,
-      ProjectJobStatus.running => theme.colorScheme.primary,
+      ProjectJobStatus.running => theme.colorScheme.onSurfaceVariant,
       ProjectJobStatus.failed => theme.colorScheme.error,
       ProjectJobStatus.cancelled => theme.colorScheme.onSurfaceVariant,
       ProjectJobStatus.prepared => theme.colorScheme.tertiary,
@@ -229,7 +222,7 @@ class CutawanStatusBadge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.11),
-        borderRadius: BorderRadius.circular(99),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: color.withValues(alpha: 0.27)),
       ),
       child: Row(
@@ -273,6 +266,7 @@ class CutawanEmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final palette = AppPalette.of(context);
     return CutawanPanel(
       padding: const EdgeInsets.fromLTRB(24, 30, 24, 28),
       child: Column(
@@ -282,10 +276,10 @@ class CutawanEmptyState extends StatelessWidget {
             width: 66,
             height: 66,
             decoration: BoxDecoration(
-              color: theme.colorScheme.primary.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(22),
+              color: palette.idleFillFaint,
+              borderRadius: BorderRadius.circular(AppRadii.card),
             ),
-            child: Icon(icon, size: 30, color: theme.colorScheme.primary),
+            child: Icon(icon, size: 30, color: palette.mutedText),
           ),
           const SizedBox(height: 17),
           Text(
