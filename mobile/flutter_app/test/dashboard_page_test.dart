@@ -78,7 +78,6 @@ void main() {
                     onCreate: () {},
                     onOpenJobs: () {},
                     onOpenReview: () {},
-                    onOpenModels: () {},
                     onOpenSettings: () {},
                     onOpenProject: (_) {},
                     storageUsageBytes: () async => 2 * 1024 * 1024,
@@ -117,7 +116,6 @@ void main() {
     var settings = 0;
     var jobs = 0;
     var review = 0;
-    var models = 0;
     final project = _makeDashboardProject('dashboard-resume');
     final projects = ValueNotifier<List<CutawanProject>>([project]);
     var openedProjectId = '';
@@ -132,7 +130,6 @@ void main() {
             onCreate: () => create++,
             onOpenJobs: () => jobs++,
             onOpenReview: () => review++,
-            onOpenModels: () => models++,
             onOpenSettings: () => settings++,
             onOpenProject: (project) => openedProjectId = project.id,
             storageUsageBytes: () async {
@@ -173,7 +170,8 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('dashboard-refresh-storage')));
     await tester.pumpAndSettle();
     expect(storageReads, 2);
-    for (final label in ['المهام والمشاريع', 'المراجعة والتحرير', 'مركز النماذج']) {
+    expect(find.text('مركز النماذج'), findsNothing);
+    for (final label in ['المهام والمشاريع', 'المراجعة والتحرير']) {
       final finder = find.text(label);
       await tester.scrollUntilVisible(
         finder,
@@ -188,7 +186,6 @@ void main() {
     expect(settings, 1);
     expect(jobs, 1);
     expect(review, 1);
-    expect(models, 1);
 
     final projectTile = find.byKey(
       ValueKey('dashboard-project-${project.id}'),

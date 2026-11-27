@@ -167,7 +167,6 @@ void main() {
                   onCreate: () {},
                   onOpenJobs: () {},
                   onOpenReview: () {},
-                  onOpenModels: () {},
                   onOpenSettings: () {},
                   onOpenProject: (_) {},
                   storageUsageBytes: () async => 2 * 1024 * 1024,
@@ -218,7 +217,7 @@ void main() {
       );
       await tester.pump();
       final target = find.ancestor(
-        of: find.text('تشخيص وقبول Android'),
+        of: find.text('تشخيص الجهاز'),
         matching: find.byType(ListTile),
       ).first;
       await _expectFocusedGolden(
@@ -264,7 +263,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 60));
 
-      final label = find.text('إعادة فحص النماذج المحلية');
+      final label = find.text('تحديث حالة النماذج');
       await tester.scrollUntilVisible(
         label,
         220,

@@ -210,7 +210,6 @@ void main() {
             onCreate: () {},
             onOpenJobs: () {},
             onOpenReview: () {},
-            onOpenModels: () {},
             onOpenSettings: () {},
             onOpenProject: (_) {},
             storageUsageBytes: () async => 2 * 1024 * 1024,

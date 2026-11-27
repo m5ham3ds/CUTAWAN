@@ -160,7 +160,6 @@ class _HomeShellState extends State<HomeShell> with SingleTickerProviderStateMix
           onCreate: () => _selectDestination(1),
           onOpenJobs: () => _selectDestination(2),
           onOpenReview: () => _selectDestination(3),
-          onOpenModels: _openModels,
           onOpenSettings: _openSettings,
           onOpenProject: _openProjectInReview,
           storageUsageBytes: _readStorageUsage,
@@ -200,7 +199,10 @@ class _HomeShellState extends State<HomeShell> with SingleTickerProviderStateMix
       child: Scaffold(
         extendBody: true,
         body: SafeArea(bottom: false, child: Column(children: [
-          CutawanTopBar(onModels: _openModels, onRefresh: _reloadProjects, onDiagnostics: _openDeviceDiagnostics, onSettings: _openSettings),
+          CutawanTopBar(
+            onRefresh: _reloadProjects,
+            onSettings: _openSettings,
+          ),
           Expanded(child: AnimatedSwitcher(
             duration: _reduceMotion ? Duration.zero : const Duration(milliseconds: 280),
             reverseDuration: _reduceMotion ? Duration.zero : const Duration(milliseconds: 210),

@@ -9,7 +9,6 @@ class DashboardPage extends StatelessWidget {
     required this.onCreate,
     required this.onOpenJobs,
     required this.onOpenReview,
-    required this.onOpenModels,
     required this.onOpenSettings,
     required this.onOpenProject,
     required this.storageUsageBytes,
@@ -20,7 +19,6 @@ class DashboardPage extends StatelessWidget {
   final VoidCallback onCreate;
   final VoidCallback onOpenJobs;
   final VoidCallback onOpenReview;
-  final VoidCallback onOpenModels;
   final VoidCallback onOpenSettings;
   final ValueChanged<CutawanProject> onOpenProject;
   final Future<int> Function() storageUsageBytes;
@@ -169,13 +167,6 @@ class DashboardPage extends StatelessWidget {
                   title: 'المراجعة والتحرير',
                   subtitle: 'راجع التفريغ والاقتراحات وحرّر حدود المقاطع',
                   onTap: onOpenReview,
-                ),
-                const SizedBox(height: 8),
-                _DashboardAction(
-                  icon: Icons.memory_rounded,
-                  title: 'مركز النماذج',
-                  subtitle: 'إدارة Whisper والنماذج المحلية والمزوّدين',
-                  onTap: onOpenModels,
                 ),
                 const SizedBox(height: 20),
                 Row(

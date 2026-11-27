@@ -11,61 +11,121 @@ typedef CutawanNavigationDestination = ({
 class CutawanTopBar extends StatelessWidget {
   const CutawanTopBar({
     super.key,
-    required this.onModels,
     required this.onRefresh,
-    required this.onDiagnostics,
     required this.onSettings,
   });
-  final VoidCallback onModels;
+
   final Future<void> Function() onRefresh;
-  final VoidCallback onDiagnostics;
   final VoidCallback onSettings;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    final width = MediaQuery.sizeOf(context).width;
-    final compact = width < 390;
+    final compact = MediaQuery.sizeOf(context).width < 390;
+
     return Padding(
       padding: EdgeInsets.fromLTRB(compact ? 8 : 20, 10, compact ? 8 : 20, 10),
-      child: Row(children: [
-        Container(width: compact ? 34 : 40, height: compact ? 34 : 40, decoration: BoxDecoration(color: scheme.primary, borderRadius: BorderRadius.circular(13), boxShadow: [BoxShadow(color: scheme.primary.withValues(alpha: 0.18), blurRadius: 18, offset: const Offset(0, 6))]), child: Icon(Icons.auto_awesome_rounded, color: scheme.onPrimary, size: 21)),
-        SizedBox(width: compact ? 8 : 12),
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('CUTAWAN', maxLines: 1, style: theme.textTheme.titleMedium?.copyWith(letterSpacing: 0.4, fontWeight: FontWeight.w900, fontSize: compact ? 12 : 17)),
-          if (!compact)
-            Text('AI CREATOR STUDIO', maxLines: 1, style: theme.textTheme.labelSmall?.copyWith(color: scheme.onSurfaceVariant, letterSpacing: 0.7, fontSize: 8)),
-        ])),
-        if (!compact) ...[
-          _TopBarAction(icon: Icons.refresh_rounded, tooltip: 'تحديث المشاريع', onTap: onRefresh),
-          const SizedBox(width: 8),
+      child: Row(
+        children: [
+          Container(
+            width: compact ? 34 : 40,
+            height: compact ? 34 : 40,
+            decoration: BoxDecoration(
+              color: scheme.primary,
+              borderRadius: BorderRadius.circular(13),
+              boxShadow: [
+                BoxShadow(
+                  color: scheme.primary.withValues(alpha: 0.18),
+                  blurRadius: 18,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            child: Icon(Icons.auto_awesome_rounded, color: scheme.onPrimary, size: 21),
+          ),
+          SizedBox(width: compact ? 8 : 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'CUTAWAN',
+                  maxLines: 1,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    letterSpacing: 0.4,
+                    fontWeight: FontWeight.w900,
+                    fontSize: compact ? 12 : 17,
+                  ),
+                ),
+                if (!compact)
+                  Text(
+                    'AI CREATOR STUDIO',
+                    maxLines: 1,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: scheme.onSurfaceVariant,
+                      letterSpacing: 0.7,
+                      fontSize: 8,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          if (!compact) ...[
+            _TopBarAction(
+              icon: Icons.refresh_rounded,
+              tooltip: 'تحديث المشاريع',
+              onTap: onRefresh,
+            ),
+            const SizedBox(width: 8),
+          ],
+          _TopBarAction(
+            icon: Icons.settings_outlined,
+            tooltip: 'الإعدادات',
+            onTap: onSettings,
+          ),
         ],
-        _TopBarAction(icon: Icons.settings_outlined, tooltip: 'الإعدادات', onTap: onSettings),
-        _TopBarAction(icon: Icons.monitor_heart_outlined, tooltip: 'تشخيص الجهاز', onTap: onDiagnostics),
-        _TopBarAction(icon: Icons.memory_rounded, tooltip: 'مركز النماذج', onTap: onModels, accent: true),
-      ]),
+      ),
     );
   }
 }
 
 class _TopBarAction extends StatelessWidget {
-  const _TopBarAction({required this.icon, required this.tooltip, required this.onTap, this.accent = false});
+  const _TopBarAction({
+    required this.icon,
+    required this.tooltip,
+    required this.onTap,
+  });
+
   final IconData icon;
   final String tooltip;
   final VoidCallback onTap;
-  final bool accent;
+
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return Tooltip(message: tooltip, child: Material(
-      color: accent ? scheme.primary.withValues(alpha: 0.12) : scheme.surfaceContainer,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14), side: BorderSide(color: accent ? scheme.primary.withValues(alpha: 0.28) : scheme.outlineVariant)),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(14),
-        onTap: () { HapticFeedback.selectionClick(); onTap(); },
-        child: SizedBox(width: 48, height: 48, child: Icon(icon, size: 19, color: accent ? scheme.primary : scheme.onSurface)),
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: scheme.surfaceContainer,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+          side: BorderSide(color: scheme.outlineVariant),
+        ),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: () {
+            HapticFeedback.selectionClick();
+            onTap();
+          },
+          child: SizedBox(
+            width: 48,
+            height: 48,
+            child: Icon(icon, size: 19, color: scheme.onSurface),
+          ),
+        ),
       ),
-    ));
+    );
   }
 }
 

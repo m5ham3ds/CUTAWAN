@@ -66,11 +66,15 @@ void main() {
 
   testWidgets('settings route exposes diagnostics and model center actions', (tester) async {
     await tester.pumpWidget(const CutawanApp());
+    expect(find.byTooltip('تشخيص الجهاز'), findsNothing);
+    expect(find.byTooltip('مركز النماذج'), findsNothing);
+    expect(find.text('مركز النماذج'), findsNothing);
+
     await tester.tap(find.byKey(const ValueKey('dashboard-settings')));
     await tester.pumpAndSettle();
     expect(find.text('إعدادات CUTAWAN'), findsOneWidget);
-    expect(find.text('تشخيص وقبول Android'), findsOneWidget);
-    expect(find.text('مركز النماذج والاتصالات'), findsOneWidget);
+    expect(find.text('تشخيص الجهاز'), findsOneWidget);
+    expect(find.text('مركز النماذج'), findsOneWidget);
   });
 
   testWidgets('caption studio exposes 12 presets, RTL preview and separate animation controls', (tester) async {

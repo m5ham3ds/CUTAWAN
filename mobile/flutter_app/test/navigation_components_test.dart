@@ -146,7 +146,7 @@ void main() {
   );
 
   testWidgets(
-    'top bar actions provide 48dp labelled touch targets on a compact phone',
+    'global top bar keeps only the settings destination',
     (tester) async {
       tester.view.physicalSize = const Size(320, 640);
       tester.view.devicePixelRatio = 1;
@@ -154,8 +154,6 @@ void main() {
       addTearDown(tester.view.resetDevicePixelRatio);
 
       var settingsTaps = 0;
-      var diagnosticsTaps = 0;
-      var modelsTaps = 0;
       await tester.pumpWidget(
         MaterialApp(
           theme: CutawanTheme.light(),
@@ -165,9 +163,7 @@ void main() {
               child: Align(
                 alignment: Alignment.topCenter,
                 child: CutawanTopBar(
-                  onModels: () => modelsTaps++,
                   onRefresh: () async {},
-                  onDiagnostics: () => diagnosticsTaps++,
                   onSettings: () => settingsTaps++,
                 ),
               ),
@@ -176,19 +172,13 @@ void main() {
         ),
       );
 
-      for (final tooltip in ['الإعدادات', 'تشخيص الجهاز', 'مركز النماذج']) {
-        expect(find.byTooltip(tooltip), findsOneWidget);
-        expect(
-          tester.getSize(find.byTooltip(tooltip)),
-          const Size(48, 48),
-        );
-      }
+      expect(find.byTooltip('الإعدادات'), findsOneWidget);
+      expect(tester.getSize(find.byTooltip('الإعدادات')), const Size(48, 48));
+      expect(find.byTooltip('تشخيص الجهاز'), findsNothing);
+      expect(find.byTooltip('مركز النماذج'), findsNothing);
+
       await tester.tap(find.byTooltip('الإعدادات'));
-      await tester.tap(find.byTooltip('تشخيص الجهاز'));
-      await tester.tap(find.byTooltip('مركز النماذج'));
       expect(settingsTaps, 1);
-      expect(diagnosticsTaps, 1);
-      expect(modelsTaps, 1);
       expect(tester.takeException(), isNull);
     },
   );
@@ -218,9 +208,7 @@ void main() {
                   child: Column(
                     children: [
                       CutawanTopBar(
-                        onModels: () {},
                         onRefresh: () async {},
-                        onDiagnostics: () {},
                         onSettings: () => settingsTaps++,
                       ),
                       const Expanded(child: SizedBox.expand()),
@@ -244,14 +232,8 @@ void main() {
         tester.getSize(find.byTooltip('الإعدادات')),
         const Size(48, 48),
       );
-      expect(
-        tester.getSize(find.byTooltip('تشخيص الجهاز')),
-        const Size(48, 48),
-      );
-      expect(
-        tester.getSize(find.byTooltip('مركز النماذج')),
-        const Size(48, 48),
-      );
+      expect(find.byTooltip('تشخيص الجهاز'), findsNothing);
+      expect(find.byTooltip('مركز النماذج'), findsNothing);
       expect(find.bySemanticsLabel(RegExp('Dashboard')), findsOneWidget);
       expect(find.bySemanticsLabel(RegExp('Captions')), findsOneWidget);
       await tester.tap(find.byTooltip('الإعدادات'));
