@@ -778,10 +778,12 @@ double _optionalRatio(
   if (value is! num) throw FormatException('$field must be numeric');
   final ratio = value.toDouble();
   _expect(ratio.isFinite, '$field must be finite');
+  final allowedRange = allowZero
+      ? 'between 0 and 1'
+      : 'greater than 0 and at most 1';
   _expect(
     allowZero ? ratio >= 0 && ratio <= 1 : ratio > 0 && ratio <= 1,
-    '$field must be ' +
-        (allowZero ? 'between 0 and 1' : 'greater than 0 and at most 1'),
+    '$field must be $allowedRange',
   );
   return ratio;
 }

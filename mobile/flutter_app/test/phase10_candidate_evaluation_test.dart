@@ -78,7 +78,7 @@ Map<String, Object?> _input({
             <String, Object?>{'candidateId': 'clip-02', 'decision': 'repair'},
           ],
     },
-    if (settings != null) 'settings': settings,
+    'settings': ?settings,
   };
 }
 
