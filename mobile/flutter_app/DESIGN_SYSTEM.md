@@ -19,7 +19,7 @@ The brand accent is RAVEN23 orange, \`#F57C00\`. Keep it restrained: wordmark/br
 ## Components and geometry
 
 - Cards: 6px corners, hairline border, no elevation.
-- Buttons and input fields: 6px corners, 48dp minimum Flutter height, neutral filled/outlined/text treatments.
+- Buttons, icon actions and navigation targets: 48dp minimum touch targets, 6px corners where applicable, and neutral filled/outlined/text treatments.
 - Chips: pill shape (18px radius); selected chips use foreground fill with inverse text.
 - Sheets and modal surfaces: 16px corners.
 - Hero/preview frames: 10px corners; preview imagery remains opaque and unaltered.
