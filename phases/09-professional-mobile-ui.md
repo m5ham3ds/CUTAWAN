@@ -1,3 +1,7 @@
+> **Current status correction — 2026-11-27:** The records in this file are chronological implementation snapshots. Older statements that Filmstrip thumbnails, source-time keyframes, clip fades/sequence composition, dip-to-black, or preview/export pixel comparison were not implemented are superseded by the later records dated 2026-11-24 to 2026-11-26 and the current register. Current accepted automated scope includes the extracted Dashboard/Create/Jobs/Review/Clip Editor/Caption Studio/Settings/Models/Diagnostics workflows; Filmstrip; source-time focus keyframes; per-clip visual fades; sequence composition and video-only dip-to-black; page responsiveness/keyboard test slices; and the eight-scenario preview/export matrix (24/24 comparisons). **Not accepted:** physical ARM64 handset visual/accessibility behavior; exhaustive caption-animation/media parity; audio crossfade or full multitrack mix. Phase 10 preparation was explicitly allowed in parallel on 2026-11-27; this does not accept Phase 10 or waive Phase 8/9 physical gates. See [current phase register](README.md) and [physical handset checklist](PHASE-09-PHYSICAL-HANDSET-ACCEPTANCE-2026-11-26.md).
+
+---
+
 # Phase 9 — Native Flutter phone app redesign
 
 ## Non-negotiable target

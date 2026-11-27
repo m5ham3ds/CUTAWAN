@@ -1,3 +1,7 @@
+> **Historical implementation detail — first Phase 5–6 delivery.** This document preserves the initial reframing and Caption Studio implementation record. Later renderer, editor, transcript-timing and preview/export changes supersede some of its original limitations; use [Phase 5](../../phases/05-face-guided-reframing.md), [Phase 6](../../phases/06-caption-studio-and-timed-preview.md) and the [canonical register](../../phases/README.md) for current status.
+
+---
+
 # Android implementation record — Phases 5 and 6
 
 **Repository:** `m5ham3ds/CUTAWAN`  

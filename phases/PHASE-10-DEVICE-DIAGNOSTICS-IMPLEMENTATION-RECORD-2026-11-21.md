@@ -62,3 +62,16 @@ Install an APK built from a SHA recorded in GitHub Actions on a physical ARM64 A
 - Root/desktop CI [45043179788](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45043179788), run 341 — success.
 
 **Field status remains unchanged:** no physical handset diagnostic JSON, hash-locked Arabic/English media corpus, WER/timing report, manually reviewed candidate/crop quality, on-device full decode, sustained battery/thermal/performance measurements, process-death/SAF/Keystore lifecycle or end-to-end consent result has been collected. Phase 10 remains incomplete.
+
+
+## Field-evidence template extension — 2026-11-27
+
+Added a separate Diagnostics-page action, **نسخ قالب نتائج الاختبارات الميدانية JSON**, without changing the meaning of the baseline device snapshot or treating it as a test runner.
+
+- `DeviceAcceptanceService.fieldEvidenceCheckIds` provides stable check identifiers for Phase 8 physical media/WorkManager, Phase 9 physical UI/editor, and Phase 10 quality/security/performance gates.
+- `createFieldEvidenceTemplate(diagnosticReport)` exports schema `org.cutawan.phase10.field-evidence`, version 1.
+- The template includes only allow-listed non-identifying device/build measurements and whether the build SHA is pinned. It excludes serials, credentials, API keys, personal paths, source filenames and media contents.
+- Physical-device identity begins `not-confirmed`; fixture inventory is empty; checks begin `not-run`; evidence/measurements are empty; all phase acceptance values are `not-accepted`.
+- Service and page tests verify default non-acceptance, privacy filtering and the new copy action.
+
+Validation on current SHA `98e31ea4ef702c48eeace7093865e5fc6e282ae1`: Android #448 passed format, strict analysis and **260/260 tests**, then APK packaging was blocked by Maven Central HTTP 429 for Kotlin Gradle plugin BOM 2.2.20 on both attempts. No new APK has been produced from this SHA. This is automated template-contract evidence only; no field report or physical Phase 10 result has been captured.

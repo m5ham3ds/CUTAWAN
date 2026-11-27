@@ -1,3 +1,7 @@
+> **Historical planning document — superseded on 2026-11-27.** This file records the original port strategy and its earlier eight-stage numbering. It is not the current implementation tracker. The active product has a ten-phase register, updated source paths, accepted automated slices and open physical-device gates. Use [`phases/README.md`](../phases/README.md) for current phase status and [`mobile/flutter_app/README.md`](../mobile/flutter_app/README.md) for the app's present feature map. Historical statements below such as "no Flutter project" or "no Android renderer" describe the initial baseline only and must not be interpreted as current state.
+
+---
+
 # Android / Flutter Port — Product and Engineering Roadmap
 
 **Status (2026-11-21):** Phases 1–2 retain their implementation and historical automated gates; current-source Mobile Android and physical SAF/process-death evidence are still required. Phase 3 now has a bounded WAV reader that downmixes and resamples source audio to mono 16 kHz with a windowed-sinc low-pass filter, plus contiguous two-second-overlap chunk ownership. The latest implementation still requires a green Mobile Android run and physical Arabic/English WER, timing, memory and thermal acceptance.  

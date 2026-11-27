@@ -1,3 +1,7 @@
+> **Historical implementation detail — first Phase 3–4 delivery.** This document preserves design and source-selection evidence from the initial integration. Later code and acceptance updates may supersede its current-limit or "not yet implemented" statements; use [Phase 3](../../phases/03-local-whisper-transcription.md), [Phase 4](../../phases/04-candidate-discovery-and-editorial-evidence.md) and the [canonical register](../../phases/README.md) for the live state.
+
+---
+
 # Android Phase 3–4 implementation record
 
 **Target:** `m5ham3ds/CUTAWAN`, default branch `main`  

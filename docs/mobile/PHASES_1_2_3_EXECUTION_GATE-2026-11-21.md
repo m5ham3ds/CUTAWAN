@@ -1,3 +1,7 @@
+> **Historical execution-gate snapshot — 2026-11-21.** The test counts, source SHAs, "latest run" instructions and phase sequencing below belong to that date and are not the current acceptance status. Use [`phases/README.md`](../../phases/README.md) and [Phase 1](../../phases/01-android-foundation-and-arm64.md), [Phase 2](../../phases/02-media-ingestion-and-project-lifecycle.md) and [Phase 3](../../phases/03-local-whisper-transcription.md) for the synchronized project state.
+
+---
+
 # Phase 1–3 execution plan and acceptance gate — 2026-11-21
 
 **Repository:** `m5ham3ds/CUTAWAN`  

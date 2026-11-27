@@ -1,3 +1,7 @@
+> **Current status correction — 2026-11-27:** This file contains dated implementation snapshots; older "still open" and "next step" statements are historical unless repeated in the current register below. The current implementation includes (1) MediaCodec end-of-stream decode validation for every output audio/video track, (2) WorkManager foreground rendering via `NativeRenderWorker`/`NativeRenderEngine` with durable completion handoff and project-scoped cancellation, and (3) targeted per-clip re-render with peer-export preservation and safe replacement cleanup. The direct targeted re-render regression test passed in Android #447. Android #447 is the latest successful packaged build; Android #448 on current SHA `98e31ea4ef702c48eeace7093865e5fc6e282ae1` passed format, strict analysis and 260/260 Flutter tests, but APK packaging failed on Maven Central HTTP 429 while resolving Kotlin Gradle plugin BOM 2.2.20. Physical ARM64 media, background, process-death/force-stop, notification, cancellation, OEM and real-output checks remain **NOT ACCEPTED**. See [current phase register](README.md) and [physical checklist](PHASE-08-PHYSICAL-MEDIA-AND-WORKMANAGER-ACCEPTANCE-2026-11-26.md).
+
+---
+
 # Phase 8 — End-to-end processing pipeline and real video export
 
 ## Objective

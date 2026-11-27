@@ -1,3 +1,7 @@
+> **Build-candidate note — 2026-11-27:** The last fully packaged ARM64 candidate is still Android #447 with in-app `BUILD_SHA=83053e7284e9225a94797d82020235b1914563d1`; it includes the Phase 8/9 renderer and UI code but not the Phase 10 field-evidence template UI added on current source `98e31ea4ef702c48eeace7093865e5fc6e282ae1`. Android #448 passed format, strict analysis and 260/260 Flutter tests on that current SHA, but the APK step was blocked by Maven Central HTTP 429. Use #447 only for Phase 8/9 field checks and record its exact SHA. For Phase 10 template-export checks, wait until a successful APK built from the current SHA is available. Phase 10 preparation may proceed in parallel; final acceptance remains gated by Phases 8/9 evidence.
+
+---
+
 # Phase 9 — Physical ARM64 handset acceptance checklist
 
 **Status:** `BLOCKED — NOT RUN ON PHYSICAL HARDWARE`  

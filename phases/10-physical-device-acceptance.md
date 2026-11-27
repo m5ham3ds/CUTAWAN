@@ -108,3 +108,12 @@ Mobile Android workflow [44870965616](https://github.com/m5ham3ds/CUTAWAN/action
 - Coverage artifact: [14693648956](https://github.com/m5ham3ds/CUTAWAN/actions/runs/44870965616/artifacts/14693648956).
 
 This is an accepted automated implementation/build gate only. Phase 10 is still not physically accepted: the device needs a human-confirmed handset report and actual hashed Arabic/English audio/video fixtures, manually reviewed word references, WER/timing/candidate/crop results, on-device full decode, sustained performance/thermal/battery measurements and lifecycle/security/consent tests. Mocked and widget tests do not count toward those field gates.
+
+
+## Current implementation and automation update — 2026-11-27
+
+The Diagnostics page now has a separate **نسخ قالب نتائج الاختبارات الميدانية JSON** action. `DeviceAcceptanceService.createFieldEvidenceTemplate(diagnosticReport)` creates schema `org.cutawan.phase10.field-evidence`, version 1, with stable check IDs grouped under Phase 8, Phase 9 and Phase 10. It copies only approved non-identifying device/build metadata, starts physical-device confirmation as `not-confirmed`, fixture inventory empty, every check as `not-run`, evidence/measurement fields empty, and all acceptance statuses as `not-accepted`. It does not run tests or infer results. Dedicated service and widget tests cover this contract and the copy action.
+
+Current source SHA `98e31ea4ef702c48eeace7093865e5fc6e282ae1`, Android run [#448](https://github.com/m5ham3ds/CUTAWAN/actions/runs/46034533321): format and strict `flutter analyze --fatal-infos` passed; **260/260 Flutter tests passed**. The APK build then failed because Maven Central returned HTTP 429 while Gradle resolved `org.jetbrains.kotlin:kotlin-gradle-plugins-bom:2.2.20` through `plugins.gradle.org`; the retry also failed with the same external rate-limit response. Therefore no APK from SHA `98e31ea` or Phase 10 template field run is available yet. Root CI [#507](https://github.com/m5ham3ds/CUTAWAN/actions/runs/46034533276) and Branch Policy [#157](https://github.com/m5ham3ds/CUTAWAN/actions/runs/46034533273) succeeded; `main` remains the only branch.
+
+The previous latest successful ARM64 APK is Android [#447](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45859864265), built from `83053e7284e9225a94797d82020235b1914563d1`. It predates the field-evidence template and must not be represented as containing that UI. All physical metrics, corpus results, on-device security, lifecycle and quality acceptance remain uncollected.

@@ -1,86 +1,89 @@
 # CUTAWAN Mobile — Native Flutter Android App
 
-This is the primary CUTAWAN product target: a native Android phone application built with Flutter and Dart. All current product UI work, feature development, redesign, tests, and Android releases must be implemented here.
+CUTAWAN Mobile is the native Android companion application built with Flutter and Dart under `mobile/flutter_app/`. It is the only mobile product target. The root Electron application is legacy/reference desktop code and remains separate; this app is not a WebView wrapper.
 
-The Electron desktop application at the repository root is legacy/reference code. It is not the mobile application and must not be used as the implementation target for mobile requests. CUTAWAN Mobile is not a WebView wrapper.
+**Current phase status:** see the [canonical ten-phase register](../../phases/README.md). Detailed implementation status, CI evidence and physical-device gates are maintained there.
 
-## Product implementation rules
+## Product and architecture rules
 
-- Flutter/Dart is the application foundation.
-- Native Android integrations use platform channels and Android APIs from `tooling/android/MainActivity.kt`.
-- Keep presentation, domain models, repositories, and processing services separate.
-- Every interactive control must have a real function and corresponding loading/error/cancel/disabled feedback.
-- Preserve project data, local-first storage, privacy and cloud-consent rules.
-- Arabic RTL and English LTR must both work.
-- Layouts must adapt to 320dp phones, larger devices, safe areas, keyboard insets, text scaling, and landscape.
-- Use real motion for navigation, screen entrance, progress, selection, editing and caption preview; motion must remain purposeful and accessible.
-- Use open-source libraries and design references only after checking compatibility and licenses. Record any reused source, license, and modifications.
+- Flutter/Dart owns UI, domain contracts, repositories, job orchestration, local inference coordination and user preferences.
+- Native Android integrations are maintained in `tooling/android/MainActivity.kt`, `NativeRenderEngine.kt` and `NativeRenderWorker.kt`.
+- Keep presentation, domain, persistence and processing services separated.
+- Preserve saved project data and migrate schema changes deliberately.
+- Local-first processing remains the default. Remote provider calls require explicit consent and send only bounded editorial text; source video and provider secrets are not uploaded by the editorial provider feature.
+- Preserve Arabic RTL and English LTR, narrow-phone layouts, large text, safe areas, keyboard insets, orientation and accessibility behavior.
+- Do not present a placeholder action as a completed operation. Export success requires a real output and full native decode validation.
+- The root Electron/React app is outside this mobile implementation scope and must remain untouched unless desktop work is explicitly requested.
 
-## Current implemented scope
+## Implemented scope by phase
 
-### Phase 1 — Flutter application shell
+### Phase 1 — app shell and Android foundation
 
-- Native Flutter navigation for source input, jobs/projects, review, Caption Studio, and the AI Model Center.
-- Versioned project and media domain models shared through JSON.
-- Clip count, target duration, aspect ratio, resolution preference, caption and speaker-tracking controls.
-- The 12 existing Cutawan caption visual presets and an independent animation catalogue.
-- Warm dark Material 3 interface with Arabic labels and explicit status for capabilities that are not connected.
+Flutter/Material 3 shell, shared navigation components, Dashboard, Create, Jobs, Review, Clip Editor, Caption Studio, Settings, Models Center and Diagnostics routes are present. Android platform generation and ARM64-only APK checks are part of Mobile Android CI.
 
-### Phase 2 — Local and direct-video source ingestion
+### Phase 2 — source import and project lifecycle
 
-- Versioned project JSON schema (schemaVersion 1), schema-0 migration, and rejection of unsupported future schemas.
-- Local media import through Android Storage Access Framework (ACTION_OPEN_DOCUMENT), with persistable read access to content URIs.
-- Direct HTTP/HTTPS video-file downloads with byte progress and user cancellation.
-- Redirect validation, HTTPS downgrade rejection, social-platform host blocking, video MIME/extension validation, an 8 GiB download ceiling, and a 64 MiB free-space reserve.
-- Free-space preflight plus periodic checks during larger downloads; incomplete temporary files are removed on cancel/failure and cleaned on the next run.
-- Android metadata inspection: display name, MIME type, size, duration, dimensions, and rotation.
-- Atomic local JSON project persistence under the application-support directory.
-- Persisted clip preferences and prepared/cancellable job records.
-- Jobs and Review read saved projects; Review can re-probe the source URI after app restart.
-- Storage usage for app-managed downloads is displayed in Jobs. Users can remove a downloaded file with its project; removing a SAF project releases its saved read grant when no other project uses that source.
+- SAF video selection with persisted read grants and native metadata probing.
+- Direct HTTP/HTTPS video-file streaming with progress/cancel, redirect and HTTPS-downgrade validation, MIME/platform/private-host checks, download limit, storage reserve and partial-file cleanup.
+- Versioned project/source contracts, schema-0 migration, durable app-private project/job/artifact records and safe source/grant cleanup.
 
-Direct URL import accepts a direct video-file endpoint only. It does not extract media from social platform pages or bypass DRM, authentication barriers, or access controls. An authorized direct CDN/file URL is required.
+Direct URL import accepts a direct video-file URL; it does not extract media from social-platform pages or bypass DRM/authentication/access restrictions.
 
-### Phase 3 — local Whisper transcription
+### Phase 3 — local Whisper
 
-- Android decodes the source audio track to a temporary WAV using MediaExtractor and MediaCodec.
-- `WhisperPcmReader` reads bounded WAV ranges, downmixes channels, converts supported PCM/float formats and resamples with a windowed-sinc low-pass filter to mono 16 kHz Float32 samples.
-- `WhisperChunkPlanner` uses 30-second windows with two seconds of context overlap and contiguous midpoint ownership; RMS evidence and Whisper input use the same normalized sample timeline.
-- The multilingual Whisper Base model remains user-installed and checksum-verified.
-- VAD, certified Arabic/English WER and timing accuracy, and physical-device memory/thermal acceptance remain open.
+Android MediaExtractor/MediaCodec audio extraction, bounded WAV range reading, channel downmix, 16 kHz mono resampling with a low-pass filter, 30-second Whisper chunks with two-second overlap and midpoint ownership, user-installed multilingual Whisper Base model with SHA verification, and word-timed transcript records.
 
-### Phase 9 — dashboard, settings and clip-editor slice
+VAD-backed silence rejection and measured Arabic/English WER/word-timing accuracy are not accepted. Physical device memory, latency and thermal behavior remain to be measured.
 
-- Added a dedicated Dashboard with project counts, recent projects and navigation into Create, Jobs, Review and AI Center.
-- Added a Settings route linking to device diagnostics and model/privacy configuration. The theme follows Android system appearance; no inert preference switches are presented as functional.
-- Added a video editor using Flutter `video_player`: it opens the project's SAF content URI or local file, plays/pauses/seeks, adjusts source-time start/end, renames a candidate and saves the output aspect ratio.
-- The editor preview currently uses a centered crop for the selected aspect ratio. Dynamic reframe segments and burned captions remain part of the export pipeline; exact preview/export parity is not claimed.
-- Candidate timing participates in caption and render fingerprints. Editing a trim range regenerates subtitle sidecars and invalidates affected exports without rerunning discovery or overwriting manual edits.
+### Phase 4 — candidate discovery
 
-## Current Phase 8–10 implementation and remaining acceptance
+Deterministic transcript-timed candidate boundaries, source/duration validation, audio RMS and sampled frame-change evidence, ranking, overlap/text deduplication and source coverage are implemented. Optional local Qwen annotation can add approved editorial text only; it cannot alter candidate identity, timestamps, scores or evidence. Frame-change samples are not semantic scene understanding.
 
-### Phase 8 — pipeline and background rendering
+### Phase 5 — reframing
 
-- The pipeline has Media3 full-track decode validation, deterministic checkpoints, a WorkManager foreground render worker, progress/cancellation notification handling, project-scoped cancellation, and a durable completion handoff so Flutter can adopt a render that finishes while its UI process is absent.
-- These behaviors have automated Android/desktop CI coverage. They are not proof of physical-device OEM background behavior, explicit force-stop semantics, process-death recovery, notification action delivery or real-media quality. Those field checks remain open; targeted per-clip retry is also tracked as separate outstanding work.
+Bounded native frontal-face sampling produces validated focus tracks and full-source reframe plans with safe `fit` fallback. Media3 consumes time-ranged crop segments. This is not active-speaker detection or audiovisual diarization; physical crop retention and continuity review remain open.
 
-### Phase 9 — current Clip Editor and Caption Studio scope
+### Phase 6 — Caption Studio
 
-- The Clip Editor uses `video_player` on the selected SAF URI/local file/network source, plays/pauses/seeks, trims the source-time interval, displays native-generated Filmstrip thumbnails, supports automatic/fit/manual framing with source-time manual-focus keyframes, applies caption cues, and persists clip-local settings.
-- Visual fade-in/fade-out settings (up to 1.5 seconds each) are persisted per clip and exported as a Media3 black overlay. They do not fade audio and are not transitions between separate clips.
-- Preview crop alignment uses a shared conversion from the same normalized crop rectangle used by export for both automatic and manual framing. The 228-test Android run covers horizontal/vertical crop edges and invalid region input; this establishes geometry consistency, not pixel-measured preview/export equivalence.
-- Remaining editor scope: true clip-to-clip transitions, an explicit multi-track/sequence composition model, measured preview/export pixel parity and physical ARM64 handset acceptance.
-- Remaining editor features from the phase target: filmstrip/timeline thumbnails, keyframed manual focus/reframe, transitions/multitrack editing and measured preview/export parity. The current static focus sliders are not keyframes; do not describe them as such.
-- Caption Studio loads saved transcript word timings into a project-scoped animated preview, but that sample/group preview is not synchronized to live video playback. Only Static and Karaoke Fill are export-supported motion modes; other catalogue animations remain preview-only and are reported as such.
-- The responsive/accessibility baseline includes 24 page goldens, page-level Tab target inventory and four-page simulated landscape/safe-area coverage. Latest Mobile Android run [45313033547](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45313033547), source SHA `7b6122f33d5aecb4e9d5be1ef3d0080a6b452376`, passed **228/228 Flutter tests**, strict analysis, ARM64-only ABI/native-library verification and APK upload. These are automated CI/widget checks, not actual handset evidence.
+Twelve caption styles, ten independent preview animations, editable/persisted typography and color settings, RTL-aware caption layout, and saved-transcript word-timed groups are implemented. The Studio preview is not synchronized to a continuously playing video clock. The native overlay uses timed cues and karaoke-fill emphasis; full animation-catalogue preview/export parity is not claimed.
 
-### Physical acceptance still required
+### Phase 7 — multi-provider AI and credentials
 
-- Phase 8: validate long/VFR/rotated/silent/no-audio/corrupt media, full decode and crop/caption/audio continuity, WorkManager completion and notifications, project cancellation, relaunch/recovery and OEM restrictions on the target ARM64 handset.
-- Phase 9: verify real hardware Tab traversal, rasterized focus visibility for every relevant control, RTL/LTR, large text, landscape, cutouts, gesture/system bars and OEM behavior; also measure crop/caption/fade preview against decoded export frames on a physical ARM64 handset.
-- Phase 10: collect a hash-locked Arabic/English media corpus, manually reviewed transcripts/word timings, WER and timing scores, candidate/crop quality, full MP4 decode results, sustained PSS/RAM/processing/battery/thermal measurements, process-death/SAF/Keystore lifecycle and cloud-consent end-to-end results.
+Provider adapters support OpenAI Chat Completions, Google Gemini, Hugging Face Inference Providers and user-supplied OpenAI-compatible HTTPS endpoints. Model discovery is account/provider scoped. Provider credentials/preferences use secure storage; remote execution and outbound annotation calls are consent-gated. Provider price, quota and task compatibility must be confirmed with the provider. Physical Keystore backup/restore/rotation/deletion tests remain open.
 
-Never claim physical acceptance from CI, widget tests, mock gateways or simulated insets. Record the device, Android/API version, build SHA, fixture hashes, method, measurements and limitations for every field result.
+### Phase 8 — pipeline and video export
+
+- Persisted processing stages/checkpoints and source/configuration fingerprints.
+- Native Media3 render engine validates each output's audio/video tracks by decoding to end-of-stream before publish and on revalidation.
+- WorkManager foreground worker, progress/cancellation notification, project-scoped cancellation and durable completion handoff.
+- Targeted per-clip re-render: requested clip is regenerated, untouched peers require valid matching fingerprints/native verification, and prior output is cleaned only after replacement persistence; cleanup failures remain actionable.
+- Timed captions and time-ranged reframing are rendered into MP4. Output records include validation evidence and SHA.
+
+Real ARM64 media, process-death/force-stop/relaunch, notification, cancellation, OEM, playback and physical output quality checks remain open.
+
+### Phase 9 — professional UI and editor workflows
+
+- Dashboard, Settings, Models/Diagnostics and HomeShell/Create/Jobs/Review flows are extracted into feature-scoped screens.
+- Clip Editor includes playback/trim, native Filmstrip thumbnails, automatic/fit/manual crop and source-time focus keyframes, clip-level visual fades, project clip sequencing and video-only dip-to-black transitions.
+- Eight preview/export scenarios passed 24/24 matched-timestamp pixel comparisons at the fixed MAE/worst-patch thresholds.
+- Responsive, page-golden, RTL/LTR, landscape/safe-area and keyboard-focus test slices are present.
+
+Physical handset review remains open. Dip-to-black is video-only; no audio crossfade or complete multitrack audio mix is implemented. The eight-case parity matrix is not exhaustive caption-animation or all-media certification.
+
+### Phase 10 — physical device quality and acceptance
+
+Device Diagnostics collects non-identifying runtime/device metrics and performs an ephemeral secure-storage canary round-trip. A separate Diagnostics action exports a versioned, privacy-filtered field-evidence JSON template with Phase 8/9/10 check identifiers. It initializes tests as `not-run` and acceptance as `not-accepted`; it does not execute field tests or infer physical-device identity.
+
+No physical handset evidence corpus, reviewed transcript WER/timing, candidate/crop quality result, full-decode field report, sustained performance/thermal/battery result, SAF/process-death/Keystore lifecycle or end-to-end consent field result has been collected.
+
+## Current verified CI status — 2026-11-27
+
+- Current source: `98e31ea4ef702c48eeace7093865e5fc6e282ae1`.
+- Android #448: format passed, strict `flutter analyze --fatal-infos` passed, **260/260 Flutter tests passed**. APK packaging failed because Maven Central returned HTTP 429 resolving Kotlin Gradle plugin BOM 2.2.20 on both attempts. No APK for current SHA has been produced yet.
+- Latest fully successful ARM64 APK is Android #447 on build SHA `83053e7284e9225a94797d82020235b1914563d1`: **258/258 tests**, Media3 instrumentation, 24/24 preview/export comparisons, ARM64-only ABI/native-library checks and artifact upload passed. This artifact predates the Phase 10 field-evidence-template button.
+- Root CI #507 succeeded. Branch Policy #157 succeeded; `main` is the only branch.
+
+See the [current phase register](../../phases/README.md) for exact workflow links, artifact metadata and the current field checklists. CI/emulator results do not replace physical-device acceptance.
 
 ## Build and validation
 
@@ -94,25 +97,4 @@ flutter test --reporter expanded
 flutter build apk --debug --target-platform android-arm64
 ```
 
-CI uses Flutter 3.47.6, generates the Android project, compiles the Kotlin bridge, analyzes and tests Dart code, builds an ARM64 APK and uploads the artifact.
-
-
-### Phase 10 — on-device acceptance diagnostics
-
-The app header now includes **تشخيص الجهاز**. Open it on the target Android phone to collect a non-identifying baseline (device model, Android/API version, RAM and process PSS, free app storage, battery/temperature, thermal status and app version). The copied JSON includes the build SHA for CI-produced APKs.
-
-The screen also performs a temporary secure-storage write/read/delete check without touching saved provider credentials. This checks the current install's secure-storage round trip only; it does not prove backup/restore, reinstall or key-rotation behavior.
-
-This baseline does **not** complete Phase 10. Real Arabic/English WER and word timing, fixture hashes, editorial/crop review, full MP4 end-to-end decode, process-death recovery, and physical-device performance/lifecycle evidence must still be collected. Never treat a CI or emulator pass as a physical-device acceptance result.
-
-## Physical Android acceptance
-
-Install the generated APK and validate:
-1. Local video selection via Android document picker.
-2. Authorized direct video URL download, progress, cancellation and cleanup.
-3. Close/force-stop/reopen and verify persisted source access and project metadata.
-4. Run each implemented processing stage and validate its output, cancellation and recovery.
-5. Verify Arabic RTL, English LTR, 320dp width, keyboard, safe areas and landscape.
-6. Verify real device memory, thermal and background lifecycle behavior.
-
-A passing CI build alone is not physical-device acceptance.
+CI uses Flutter 3.47.6, generates Android platform files, compiles the Kotlin bridge, tests Flutter code, builds an ARM64 APK, asserts the packaged ABI/native libraries, runs Media3/integration checks when build dependencies are available, and uploads artifacts.

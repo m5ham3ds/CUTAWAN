@@ -1,3 +1,7 @@
+> **Build-candidate note — 2026-11-27:** Android #447 remains the latest successful ARM64 APK build available for the Phase 8/9 field checklist (in-app `BUILD_SHA=83053e7284e9225a94797d82020235b1914563d1`; artifact ZIP SHA-256 recorded below). The newer current source commit is `98e31ea4ef702c48eeace7093865e5fc6e282ae1`; its Android #448 workflow passed format, strict analysis and 260/260 Flutter tests but did not package an APK because Maven Central returned HTTP 429 for Kotlin Gradle plugin BOM 2.2.20. Do not claim the #447 APK contains the Phase 10 JSON template added on #98e31; it does not. Phase 8/9 renderer/editor code is present in #447. Update this candidate only after a successful build from the newer source.
+
+---
+
 # Phase 8 — Physical ARM64 media, background and export acceptance
 
 **Status:** `BLOCKED — NOT RUN ON PHYSICAL HARDWARE`  
