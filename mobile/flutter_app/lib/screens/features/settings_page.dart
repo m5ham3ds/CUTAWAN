@@ -62,14 +62,14 @@ class _SettingsPageState extends State<SettingsPage> {
               const _SettingsSectionTitle(title: 'أدوات التطبيق'),
               const SizedBox(height: 8),
               _SettingsActionTile(
-                key: const ValueKey('settings-device-diagnostics'),
+                tileKey: const ValueKey('settings-device-diagnostics'),
                 icon: Icons.monitor_heart_outlined,
                 title: 'تشخيص الجهاز',
                 onTap: widget.onDiagnostics,
               ),
               const SizedBox(height: 8),
               _SettingsActionTile(
-                key: const ValueKey('settings-model-center'),
+                tileKey: const ValueKey('settings-model-center'),
                 icon: Icons.memory_rounded,
                 title: 'مركز النماذج',
                 onTap: widget.onModels,
@@ -231,12 +231,13 @@ class _SettingsSectionTitle extends StatelessWidget {
 
 class _SettingsActionTile extends StatelessWidget {
   const _SettingsActionTile({
-    super.key,
+    this.tileKey,
     required this.icon,
     required this.title,
     required this.onTap,
   });
 
+  final Key? tileKey;
   final IconData icon;
   final String title;
   final VoidCallback onTap;
@@ -245,6 +246,7 @@ class _SettingsActionTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return Card(
+      key: tileKey,
       clipBehavior: Clip.antiAlias,
       child: ListTile(
         minVerticalPadding: 12,
