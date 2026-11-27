@@ -113,7 +113,11 @@ class CutawanNavigationBar extends StatelessWidget {
         color: reduceMotion ? palette.page : palette.scrim(0.94),
       ),
       child: Padding(
-        padding: EdgeInsets.only(bottom: bottom),
+        padding: EdgeInsets.only(
+          left: media.padding.left,
+          right: media.padding.right,
+          bottom: bottom,
+        ),
         child: SizedBox(
           height: height,
           child: MediaQuery.withClampedTextScaling(

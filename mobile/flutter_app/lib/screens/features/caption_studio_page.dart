@@ -641,7 +641,7 @@ class _CaptionStudioPageState extends State<CaptionStudioPage>
               height: 270,
               decoration: BoxDecoration(
                 color: const Color(0xFF171717),
-                borderRadius: BorderRadius.circular(18),
+                borderRadius: BorderRadius.circular(10),
                 border: Border.all(color: theme.colorScheme.outlineVariant),
               ),
               clipBehavior: Clip.antiAlias,

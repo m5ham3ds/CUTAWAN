@@ -273,7 +273,7 @@ class _DashboardStorageCardState extends State<_DashboardStorageCard> {
             minVerticalPadding: 12,
             leading: CircleAvatar(
               backgroundColor: scheme.onSurface.withValues(alpha: 0.08),
-              child: Icon(Icons.storage_outlined, color: scheme.primary),
+              child: Icon(Icons.storage_outlined, color: scheme.onSurfaceVariant),
             ),
             title: const Text('مساحة تنزيلات CUTAWAN'),
             subtitle: Text(description),
@@ -316,7 +316,7 @@ class _DashboardHero extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.movie_filter_rounded, size: 28, color: scheme.primary),
+          Icon(Icons.movie_filter_rounded, size: 28, color: scheme.onSurfaceVariant),
           const SizedBox(height: 12),
           Text(
             'حوّل الفيديو إلى قصة قصيرة متماسكة.',
@@ -387,7 +387,7 @@ class _DashboardMetric extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, color: warning ? scheme.error : scheme.primary),
+            Icon(icon, color: warning ? scheme.error : scheme.onSurfaceVariant),
             const SizedBox(height: 8),
             Text(
               value.toString(),
@@ -431,7 +431,7 @@ class _DashboardAction extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       child: ListTile(
         minVerticalPadding: 12,
-        leading: Icon(icon, color: scheme.primary),
+        leading: Icon(icon, color: scheme.onSurfaceVariant),
         title: Text(
           title,
           maxLines: 2,
