@@ -134,8 +134,7 @@ class _DeviceAcceptancePageState extends State<DeviceAcceptancePage> {
   @override
   Widget build(BuildContext context) {
     final report = _report;
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
+    final scheme = Theme.of(context).colorScheme;
 
     return Scaffold(
       appBar: AppBar(
@@ -174,15 +173,7 @@ class _DeviceAcceptancePageState extends State<DeviceAcceptancePage> {
               FilledButton.icon(
                 onPressed: _copyReport,
                 icon: const Icon(Icons.copy_all_rounded),
-                label: const Text('نسخ تقرير الدعم'),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'لا يتضمن التقرير ملفات الفيديو أو مفاتيح الحسابات.',
-                textAlign: TextAlign.center,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: scheme.onSurfaceVariant,
-                ),
+                label: const Text('نسخ التقرير'),
               ),
             ],
           ],

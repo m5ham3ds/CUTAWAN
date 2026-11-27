@@ -557,23 +557,15 @@ class _ModelsPageState extends State<ModelsPage> {
             onChanged: _remoteBusy
                 ? null
                 : (value) => _setCloudConsent(value ?? false),
-            title: const Text('أوافق على إرسال مقتطفات نص التفريغ للمزوّد الخارجي'),
+            title: const Text('السماح بإرسال نص التفريغ إلى مزوّد خارجي'),
             subtitle: const Text(
-              'يُرسل النص فقط، ولا يُرسل ملف الفيديو أو مفتاح API. راجع سياسة المزوّد.',
+              'يُرسل نص التفريغ فقط، دون ملف الفيديو أو مفتاح API.',
             ),
           ),
           const Divider(height: 36),
           Text(
             'المزوّد الخارجي',
             style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'تأكد من دعم النموذج والتكلفة لدى المزوّد قبل استخدامه.',
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-              height: 1.45,
-            ),
           ),
           const SizedBox(height: 14),
           DropdownButtonFormField<AiProviderId>(
@@ -616,7 +608,6 @@ class _ModelsPageState extends State<ModelsPage> {
                   ? 'المفتاح محفوظ — أدخل مفتاحاً جديداً للاستبدال'
                   : 'أدخل مفتاح API',
               prefixIcon: const Icon(Icons.key_outlined),
-              helperText: 'لا يظهر المفتاح بعد الحفظ.',
             ),
           ),
           const SizedBox(height: 10),

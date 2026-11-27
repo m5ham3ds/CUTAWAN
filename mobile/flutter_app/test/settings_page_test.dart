@@ -134,10 +134,13 @@ void main() {
     );
     await tester.pump();
 
-    final diagnosticsTile = find.text('تشخيص الجهاز');
+    expect(find.text('مواصفات الجهاز والذاكرة والبطارية'), findsNothing);
+    expect(find.text('النماذج المحلية ومزوّدو الذكاء الاصطناعي'), findsNothing);
+
+    final diagnosticsTile = find.byKey(const ValueKey('settings-device-diagnostics'));
     await _scrollSettingsUntilFound(tester, diagnosticsTile, distance: 360);
     await tester.tap(diagnosticsTile);
-    final modelsTile = find.text('مركز النماذج');
+    final modelsTile = find.byKey(const ValueKey('settings-model-center'));
     await _scrollSettingsUntilFound(tester, modelsTile, distance: 360);
     await tester.tap(modelsTile);
 

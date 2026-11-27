@@ -59,19 +59,19 @@ class _SettingsPageState extends State<SettingsPage> {
               30,
             ),
             children: [
-              const _SettingsSectionTitle(title: 'التطبيق والجهاز'),
+              const _SettingsSectionTitle(title: 'أدوات التطبيق'),
               const SizedBox(height: 8),
               _SettingsActionTile(
+                key: const ValueKey('settings-device-diagnostics'),
                 icon: Icons.monitor_heart_outlined,
                 title: 'تشخيص الجهاز',
-                subtitle: 'مواصفات الجهاز والذاكرة والبطارية',
                 onTap: widget.onDiagnostics,
               ),
               const SizedBox(height: 8),
               _SettingsActionTile(
+                key: const ValueKey('settings-model-center'),
                 icon: Icons.memory_rounded,
                 title: 'مركز النماذج',
-                subtitle: 'النماذج المحلية ومزوّدو الذكاء الاصطناعي',
                 onTap: widget.onModels,
               ),
               const SizedBox(height: 20),
@@ -182,7 +182,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     style: TextStyle(fontWeight: FontWeight.w800),
                   ),
                   subtitle: const Text(
-                    'لا يُرسل نص التفريغ إلى مزوّد خارجي إلا عند اختيار الوضع السحابي وتفعيل الموافقة.',
+                    'لا يغادر نص التفريغ الجهاز إلا عند اختيار الوضع السحابي وتفعيل الموافقة.',
                   ),
                 ),
               ),
@@ -194,7 +194,6 @@ class _SettingsPageState extends State<SettingsPage> {
                   minVerticalPadding: 12,
                   leading: Icon(Icons.policy_outlined, color: scheme.primary),
                   title: const Text('التراخيص والإشعارات'),
-                  subtitle: const Text('عرض تراخيص التطبيق والمكتبات المستخدمة.'),
                   trailing: const Icon(Icons.chevron_left_rounded),
                   onTap: () => showLicensePage(
                     context: context,
@@ -232,15 +231,14 @@ class _SettingsSectionTitle extends StatelessWidget {
 
 class _SettingsActionTile extends StatelessWidget {
   const _SettingsActionTile({
+    super.key,
     required this.icon,
     required this.title,
-    required this.subtitle,
     required this.onTap,
   });
 
   final IconData icon;
   final String title;
-  final String subtitle;
   final VoidCallback onTap;
 
   @override
@@ -260,7 +258,6 @@ class _SettingsActionTile extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
           style: const TextStyle(fontWeight: FontWeight.w800),
         ),
-        subtitle: Text(subtitle, maxLines: 1, overflow: TextOverflow.ellipsis),
         trailing: const Icon(Icons.chevron_left_rounded),
         onTap: onTap,
       ),

@@ -77,6 +77,34 @@ void main() {
     expect(find.text('مركز النماذج'), findsOneWidget);
   });
 
+  testWidgets(
+    'device diagnostics and model center are available only through Settings',
+    (tester) async {
+      await tester.pumpWidget(const CutawanApp());
+
+      const diagnosticsKey = ValueKey('settings-device-diagnostics');
+      const modelsKey = ValueKey('settings-model-center');
+      expect(find.byKey(diagnosticsKey), findsNothing);
+      expect(find.byKey(modelsKey), findsNothing);
+
+      for (final destination in ['إنشاء', 'المهام', 'المراجعة', 'الاستوديو']) {
+        await tester.tap(find.text(destination));
+        await tester.pumpAndSettle();
+        expect(find.byKey(diagnosticsKey), findsNothing);
+        expect(find.byKey(modelsKey), findsNothing);
+      }
+
+      await tester.tap(find.text('الرئيسية'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('dashboard-settings')));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(diagnosticsKey), findsOneWidget);
+      expect(find.byKey(modelsKey), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('caption studio exposes 12 presets, RTL preview and separate animation controls', (tester) async {
     configureCaptionStudioViewport(tester);
     await tester.pumpWidget(const CutawanApp());

@@ -122,7 +122,7 @@ void main() {
       find.text('نسخ قالب نتائج الاختبارات الميدانية JSON'),
       findsNothing,
     );
-    expect(find.text('نسخ تقرير الدعم'), findsOneWidget);
+    expect(find.text('نسخ التقرير'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
