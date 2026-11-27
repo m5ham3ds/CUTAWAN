@@ -3,7 +3,7 @@
 **Last synchronized:** 2026-11-27  
 **Repository:** `m5ham3ds/CUTAWAN`  
 **Authoritative branch:** `main` only  
-**Current mobile app-code SHA:** `98e31ea4ef702c48eeace7093865e5fc6e282ae1` (documentation synchronization commits after this SHA changed project records only, not application source)
+**Current mobile app-code SHA:** `716408d244b688f028bececf5f72b9e356cee8e0` (subsequent phase documentation synchronization commits do not change application source)
 
 This file is the current source of truth for the ten-phase CUTAWAN Mobile plan. The individual Phase 1–10 files below describe the implementation mapped to the checked-in project. Dated implementation records are retained as historical evidence; when an older snapshot says that a feature is still missing, this register and the newest dated addendum take precedence.
 
@@ -13,17 +13,19 @@ The Android Flutter app at `mobile/flutter_app/` is the only active mobile produ
 
 | Check | Current result |
 |---|---|
-| Main branch | `98e31ea4ef702c48eeace7093865e5fc6e282ae1` |
+| Main branch / mobile app-code SHA | `716408d244b688f028bececf5f72b9e356cee8e0` |
 | Branch inventory | Only `main` exists |
-| Android #448, current SHA | Format passed; strict `flutter analyze --fatal-infos` passed; **260/260 Flutter tests passed**; APK packaging failed on external Maven Central HTTP 429 resolving `org.jetbrains.kotlin:kotlin-gradle-plugins-bom:2.2.20` via `plugins.gradle.org` |
-| Android #447, latest fully successful APK | Success on build SHA `83053e7284e9225a94797d82020235b1914563d1`; 258/258 Flutter tests, Media3 instrumentation, eight-scenario pixel matrix (24/24), ARM64-only ABI and unique native-library checks, APK and coverage artifacts passed |
-| Root CI #507 | Success: checks/typecheck/lint/tests, offline pipeline, Xvfb UI smoke and Apple Silicon packaging |
-| Branch Policy #157 | Success: `main` is the only branch |
-| Release #499 | Skipped as expected; not a release build |
+| Android #456 | <badge>Success</badge>: Format, strict `flutter analyze --fatal-infos`, **279/279 Flutter tests**, ARM64 APK build, Media3 integration, eight-scenario preview/export matrix (24/24 timestamp comparisons), ARM64-only ABI check and APK upload all passed |
+| Android #456 APK | Artifact [`cutawan-mobile-arm64-debug`](https://github.com/m5ham3ds/CUTAWAN/actions/runs/46065622887/artifacts/15231197350), 60,654,040 bytes; ZIP SHA-256 `808461f0e618642c30c948667a9f03e6f0e0b1e5947051f2b46a832f0cc94728` |
+| Android #456 native packaging | Exactly `arm64-v8a`; 10 unique native libraries, no duplicate basenames; GGML libraries `libggml-cpu.so`, `libggml.so`, `libggml-base.so` verified |
+| Flutter coverage #456 | Artifact [`cutawan-mobile-flutter-coverage`](https://github.com/m5ham3ds/CUTAWAN/actions/runs/46065622887/artifacts/15231250678), ZIP SHA-256 `b711840f1f7dd9c47505938d8a450e44bc2f02d2eed676983c877cbe53ac6c61` |
+| Root CI #515 | Success: checks, typecheck/lint/tests, offline pipeline, Xvfb UI smoke and Apple Silicon packaging |
+| Branch Policy #165 | Success: `main` is the only branch |
+| Release #507 | Skipped as expected; this push was not a release build |
 
-Links: [current Android #448](https://github.com/m5ham3ds/CUTAWAN/actions/runs/46034533321) · [latest successful Android APK #447](https://github.com/m5ham3ds/CUTAWAN/actions/runs/45859864265) · [Root CI #507](https://github.com/m5ham3ds/CUTAWAN/actions/runs/46034533276) · [Branch Policy #157](https://github.com/m5ham3ds/CUTAWAN/actions/runs/46034533273).
+Links: [Android #456](https://github.com/m5ham3ds/CUTAWAN/actions/runs/46065622887) · [Root CI #515](https://github.com/m5ham3ds/CUTAWAN/actions/runs/46065622952) · [Branch Policy #165](https://github.com/m5ham3ds/CUTAWAN/actions/runs/46065622871).
 
-**Important build distinction:** Android #447 is the latest APK that completed packaging and native/emulator checks; it predates the Phase 10 field-evidence-template addition. Android #448 exercised the current source and all 260 Flutter tests passed, but the Gradle dependency download was rate-limited twice and no APK from SHA `98e31ea` was produced. Do not label #448 a successful Android build or claim its APK contains the new template. Retry the package gate after Maven Central is available.
+The APK is built from source SHA `716408d` and includes the Phase 10 candidate-evaluation tooling. The successful automated gates do not constitute physical handset acceptance; Phase 8/9/10 device evidence remains open.
 
 ## Phase matrix
 
@@ -36,27 +38,26 @@ Links: [current Android #448](https://github.com/m5ham3ds/CUTAWAN/actions/runs/4
 | [5](05-face-guided-reframing.md) | Face sampling and crop planning | Bounded frontal-face sampler, validated full-timeline reframe plans and native time-ranged crop/fit renderer delivered | Real-footage face retention, crop continuity and difficult-scene evaluation; not active-speaker detection |
 | [6](06-caption-studio-and-timed-preview.md) | Caption Studio, styles, motion and transcript preview | 12 style IDs, 10 preview modes, saved style preferences, RTL-aware layout and saved transcript-timed groups delivered | Live-video clock synchronization and complete preview/native-export animation parity |
 | [7](07-ai-providers-and-secure-credentials.md) | Multi-provider AI and credential security | OpenAI, Gemini, Hugging Face and OpenAI-compatible provider adapters, account model discovery, secure credential store and explicit consent gates delivered | Physical Keystore backup/restore/rotation/deletion, real accounts/models, billing and policy acceptance |
-| [8](08-end-to-end-pipeline-and-export.md) | Durable processing, rendering and export | Media3 full-track end-of-stream decode validation, WorkManager foreground rendering, durable completion handoff, project cancellation and targeted per-clip re-render/cleanup delivered; automated Android #447 passed | Physical ARM64 real-media, background/relaunch/force-stop, notifications/cancellation, OEM behavior, playback and output integrity |
-| [9](09-professional-mobile-ui.md) | Professional UI, editor workflows and responsive/accessibility work | Dashboard/Create/Jobs/Review/Clip Editor/Caption Studio/Settings/Models/Diagnostics workflows, Filmstrip, source-time keyframes, visual fades, sequence composition/dip-to-black and eight-scenario 24/24 parity matrix delivered | Physical handset RTL/LTR, large text, landscape, insets, real keyboard focus, editor/export and OEM acceptance; no audio crossfade/full multitrack mix |
-| [10](10-physical-device-acceptance.md) | Physical-device quality, security and performance acceptance | Diagnostics, privacy-filtered versioned field-evidence template and bounded Arabic/English WER + word-timing evaluator implemented; Phase 10 preparation remains active | Human-confirmed handset, hash-locked corpus, human-reviewed transcripts, actual WER/timing results, candidate/crop quality, full decode, sustained PSS/battery/thermal, process/SAF/Keystore/consent evidence and review |
+| [8](08-end-to-end-pipeline-and-export.md) | Durable processing, rendering and export | Media3 full-track end-of-stream decode validation, WorkManager foreground rendering, durable completion handoff, project cancellation and targeted per-clip re-render/cleanup delivered; Android #456 passed the current 279-test suite and Media3 integration | Physical ARM64 real-media, background/relaunch/force-stop, notifications/cancellation, OEM behavior, playback and output integrity |
+| [9](09-professional-mobile-ui.md) | Professional UI, editor workflows and responsive/accessibility work | Dashboard/Create/Jobs/Review/Clip Editor/Caption Studio/Settings/Models/Diagnostics workflows, Filmstrip, source-time keyframes, visual fades, sequence composition/dip-to-black and eight-scenario 24/24 parity matrix passed on Android #456 | Physical handset RTL/LTR, large text, landscape, insets, real keyboard focus, editor/export and OEM acceptance; no audio crossfade/full multitrack mix |
+| [10](10-physical-device-acceptance.md) | Physical-device quality, security and performance acceptance | Diagnostics, privacy-filtered versioned field-evidence template, bounded Arabic/English WER/word-timing evaluator and candidate-quality/editorial-selection evaluator implemented; Phase 10 preparation remains active | Human-confirmed handset, hash-locked corpus, human-reviewed transcripts, actual WER/timing results, candidate/crop quality, full decode, sustained PSS/battery/thermal, process/SAF/Keystore/consent evidence and review |
 
 ## Current interpretation
 
 - Phases 1–7 have their core mobile implementation and automated test coverage. Their remaining hardware, quality, security and provider checks are explicitly listed; a CI pass does not close them.
-- Phase 8's rendering implementation is present and automated checks have passed on #447. Phase 8 remains **open** until the physical ARM64 checklist is completed.
-- Phase 9's listed automated editor/UI slices are implemented. The eight-scenario pixel-parity matrix is accepted only for its measured cases; Phase 9 remains **open** until physical handset visual/accessibility acceptance.
+- Phase 8's rendering implementation is present and automated checks have passed on #456. Phase 8 remains **open** until the physical ARM64 checklist is completed.
+- Phase 9's listed automated editor/UI slices are implemented. Android #456 passed the eight-scenario pixel-parity matrix (24/24 timestamp comparisons); this acceptance applies only to its measured cases; Phase 9 remains **open** until physical handset visual/accessibility acceptance.
 - Phase 10 is the final phase in the current ten-phase plan. The diagnostics/evidence-template tooling is preparation, not field acceptance. No physical measurements or evidence corpus have been reported.
 - At the user's explicit direction on 2026-11-27, Phase 10 preparatory engineering may proceed in parallel with unresolved Phase 8/9 field gates. This does **not** waive prerequisites or permit marking Phase 10 accepted before Phase 8/9 evidence is reviewed.
 - There is no Phase 11 in the active plan.
 
 ## Current next actions
 
-1. Retry the Android ARM64 packaging gate from current SHA `98e31ea` once Maven Central no longer returns HTTP 429. The current-source 260-test suite, formatting and strict analysis already passed; do not rewrite passing application code to address a dependency-host rate limit.
-2. After that build succeeds, use its exact APK and embedded `BUILD_SHA` as the current candidate. The #447 APK may be used for Phase 8/9 device checks, but it does not contain the Phase 10 JSON template.
-3. Complete [Phase 8 physical media/WorkManager checklist](PHASE-08-PHYSICAL-MEDIA-AND-WORKMANAGER-ACCEPTANCE-2026-11-26.md) and [Phase 9 physical handset checklist](PHASE-09-PHYSICAL-HANDSET-ACCEPTANCE-2026-11-26.md) with real device evidence; keep each unrun item explicitly unrun.
-4. Use Diagnostics to copy the privacy-filtered device report and the versioned field-evidence template, then populate fixture hashes, methods, measurements and review outcomes only from actual tests.
-5. Use the Phase 10 transcription evaluator on each human-reviewed Arabic/English reference and corresponding physical-device Whisper output; preserve the source SHA, build SHA and device identity with the resulting metrics.  
-6. Update these phase records after results are reproducible and reviewed. Never fill physical evidence from emulator/CI fixtures or inferred device identity.
+1. Install the Android #456 APK on a real ARM64 handset and manually confirm device identity, embedded `BUILD_SHA`, import/export behavior and the Phase 8/9 field checklists. Keep emulator results separate from physical evidence.
+2. Build a hash-locked Arabic/English media corpus with manually reviewed word-level references and gold editorial moments. Keep source splits, licenses and fixture hashes with the records.
+3. Run the Phase 10 transcription evaluator against each human-reviewed reference and matching physical-device Whisper output; preserve source SHA, build SHA, device identity and source-time window ranges.
+4. Run the Phase 10 candidate evaluator against the same source fixture and human-reviewed gold moments; capture all keep/repair/reject decisions and leave unreviewed candidates explicitly unreviewed.
+5. Complete [Phase 8 physical media/WorkManager checklist](PHASE-08-PHYSICAL-MEDIA-AND-WORKMANAGER-ACCEPTANCE-2026-11-26.md), [Phase 9 physical handset checklist](PHASE-09-PHYSICAL-HANDSET-ACCEPTANCE-2026-11-26.md), and the remaining Phase 10 performance/security/lifecycle/consent checks. Never fill physical evidence from emulator/CI fixtures or inferred device identity.
 
 ## Detailed phase documents
 
@@ -80,6 +81,7 @@ Links: [current Android #448](https://github.com/m5ham3ds/CUTAWAN/actions/runs/4
 - [Phase 9 Clip Editor keyframes/transitions/preview geometry](PHASE-09-CLIP-EDITOR-THUMBNAILS-KEYFRAMES-TRANSITIONS-PREVIEW-GEOMETRY-2026-11-24.md)
 - [Phase 10 Diagnostics implementation and field-evidence template](PHASE-10-DEVICE-DIAGNOSTICS-IMPLEMENTATION-RECORD-2026-11-21.md)
 - [Phase 10 transcription WER/timing evaluator](PHASE-10-TRANSCRIPTION-EVALUATION-TOOL-2026-11-27.md)
+- [Phase 10 candidate quality/human-selection evaluator](PHASE-10-CANDIDATE-EVALUATION-TOOL-2026-11-27.md)
 - [Phase 3–4 detailed integration record](../docs/mobile/PHASES_3_4_INTEGRATION.md)
 - [Phase 5–6 detailed integration record](../docs/mobile/PHASES_5_6_INTEGRATION.md)
 

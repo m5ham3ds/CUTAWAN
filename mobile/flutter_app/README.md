@@ -75,18 +75,21 @@ Physical handset review remains open. Dip-to-black is video-only; no audio cross
 
 Device Diagnostics collects non-identifying runtime/device metrics and performs an ephemeral secure-storage canary round-trip. A separate Diagnostics action exports a versioned, privacy-filtered field-evidence JSON template with Phase 8/9/10 check identifiers. It initializes tests as `not-run` and acceptance as `not-accepted`; it does not execute field tests or infer physical-device identity.
 
-The Phase 10 tooling also includes a deterministic Arabic/English WER and word-timing evaluator. It requires a manually confirmed physical handset, pinned build SHA, SHA-256-locked fixture, and human-reviewed reference transcript. It reports substitutions/deletions/insertions, WER, matched-word coverage, and median/P95 timing errors for exact word matches. It is bounded to eight million alignment cells and does not set acceptance thresholds or mark any phase accepted. See [the evaluator protocol](../../phases/PHASE-10-TRANSCRIPTION-EVALUATION-TOOL-2026-11-27.md).
+The Phase 10 tooling includes two deterministic field-evaluation utilities. The Arabic/English transcription evaluator requires a manually confirmed handset, pinned build SHA, SHA-256-locked fixture and human-reviewed word-timed reference; it reports S/D/I, WER, matched-word coverage and median/P95 timing errors, with an eight-million-cell alignment cap. The candidate evaluator compares a candidate-discovery run with human-reviewed gold moments using one-to-one temporal IoU, precision/recall/F1, duplicate clusters, source-time coverage and separate keep/repair/reject/unreviewed decisions. It caps pairwise workloads and does not set pass thresholds or mark any phase accepted. See [the transcription evaluator protocol](../../phases/PHASE-10-TRANSCRIPTION-EVALUATION-TOOL-2026-11-27.md) and [the candidate evaluator protocol](../../phases/PHASE-10-CANDIDATE-EVALUATION-TOOL-2026-11-27.md).
 
 No physical handset evidence corpus, reviewed transcript WER/timing, candidate/crop quality result, full-decode field report, sustained performance/thermal/battery result, SAF/process-death/Keystore lifecycle or end-to-end consent field result has been collected.
 
 ## Current verified CI status — 2026-11-27
 
-- Current source: `98e31ea4ef702c48eeace7093865e5fc6e282ae1`.
-- Android #448: format passed, strict `flutter analyze --fatal-infos` passed, **260/260 Flutter tests passed**. APK packaging failed because Maven Central returned HTTP 429 resolving Kotlin Gradle plugin BOM 2.2.20 on both attempts. No APK for current SHA has been produced yet.
-- Latest fully successful ARM64 APK is Android #447 on build SHA `83053e7284e9225a94797d82020235b1914563d1`: **258/258 tests**, Media3 instrumentation, 24/24 preview/export comparisons, ARM64-only ABI/native-library checks and artifact upload passed. This artifact predates the Phase 10 field-evidence-template button.
-- Root CI #507 succeeded. Branch Policy #157 succeeded; `main` is the only branch.
+- Current mobile app-code SHA: `716408d244b688f028bececf5f72b9e356cee8e0`.
+- Android #456: format and strict `flutter analyze --fatal-infos` passed; **279/279 Flutter tests passed**; ARM64 APK build passed; Media3 and all eight preview/export parity cases passed (24/24 timestamp comparisons); native package verification found exactly `arm64-v8a` and ten unique native libraries with no duplicates; APK and coverage artifacts uploaded.
+- APK artifact: [cutawan-mobile-arm64-debug, artifact 15231197350](https://github.com/m5ham3ds/CUTAWAN/actions/runs/46065622887/artifacts/15231197350), 60,654,040 bytes; ZIP SHA-256 `808461f0e618642c30c948667a9f03e6f0e0b1e5947051f2b46a832f0cc94728`.
+- Flutter coverage artifact: [15231250678](https://github.com/m5ham3ds/CUTAWAN/actions/runs/46065622887/artifacts/15231250678).
+- Root CI #515 succeeded: checks, offline pipeline, Xvfb UI smoke and Apple Silicon packaging. Branch Policy #165 succeeded; `main` is the only branch.
 
-See the [current phase register](../../phases/README.md) for exact workflow links, artifact metadata and the current field checklists. CI/emulator results do not replace physical-device acceptance.
+The #456 APK contains the Phase 10 transcription and candidate-evaluation tooling, but no physical field evidence is prefilled. CI/emulator results do not replace physical-device acceptance.
+
+See the [current phase register](../../phases/README.md) for exact workflow links, artifact metadata and the current field checklists.
 
 ## Build and validation
 

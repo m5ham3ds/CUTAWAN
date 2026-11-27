@@ -131,3 +131,20 @@ Added a Flutter/Dart field-evaluation utility at `mobile/flutter_app/lib/tooling
 - Unit tests cover exact matches, S/D/I counts, Arabic normalization, nearest-rank P95, missing hypothesis words, invalid physical/build/reference/hash evidence, invalid word times and oversized alignment rejection.
 
 The evaluator reports measurements only. It defines no pass threshold, does not alter phase acceptance statuses and does not add synthetic data to the corpus. No physical-device WER/timing result has been collected by this implementation. See [the evaluator protocol and input contract](PHASE-10-TRANSCRIPTION-EVALUATION-TOOL-2026-11-27.md).
+
+
+## Candidate quality and human-selection evaluator — 2026-11-27
+
+Added a deterministic Flutter/Dart evaluator under `mobile/flutter_app/lib/tooling/phase10/`:
+
+- `candidate_evaluation.dart` validates a pinned application Git SHA, manually confirmed physical-device metadata, a SHA-256-locked source fixture, human-reviewed gold editorial moments, a candidate run and a separately human-reviewed decision set.
+- It computes one-to-one temporal IoU matching, candidate precision/recall/F1, false positives/false negatives, mean matched IoU, duplicate overlap clusters, duplicate candidate ratio, source-interval union coverage and equal-duration source-bucket coverage.
+- It separates `keep`, `repair`, `reject` and `unreviewed`; unreviewed suggestions are not silently counted as rejects.
+- Matching is deterministic greedy IoU-first matching, not an optimal-assignment guarantee. Duplicate detection uses overlap divided by the shorter candidate duration, with a default 0.85 threshold.
+- Workloads are bounded: 2,000 candidates, 1,000 reference moments, 250,000 candidate/reference pairs and 1,000,000 duplicate-pair comparisons.
+- CLI: `dart run lib/tooling/phase10/evaluate_candidates.dart --input <evaluation.json> --output <metrics.json>`.
+- The test suite covers perfect/partial matching, duplicate clusters, source coverage, keep/repair/reject/unreviewed decisions, empty sets, invalid evidence and resource caps.
+
+Android [#456](https://github.com/m5ham3ds/CUTAWAN/actions/runs/46065622887) on source SHA `716408d244b688f028bececf5f72b9e356cee8e0` passed Format, strict analysis and **279/279 Flutter tests**, built the ARM64 APK, passed Media3 and all eight preview/export parity cases (24/24), verified exactly ARM64 with ten unique native libraries and uploaded APK/coverage artifacts. Root CI [#515](https://github.com/m5ham3ds/CUTAWAN/actions/runs/46065622952) and Branch Policy [#165](https://github.com/m5ham3ds/CUTAWAN/actions/runs/46065622871) also passed.
+
+This is automated evaluator and build evidence only. No human gold candidate set or physical-device candidate-quality result has been collected, and no acceptance threshold is inferred. See [the candidate evaluator protocol](PHASE-10-CANDIDATE-EVALUATION-TOOL-2026-11-27.md).
