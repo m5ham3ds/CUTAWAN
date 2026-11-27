@@ -92,71 +92,41 @@ void main() {
     );
 
     expect(find.text('تشخيص الجهاز'), findsOneWidget);
-    expect(find.text('بوابة القبول الميداني'), findsOneWidget);
-    expect(tester.takeException(), isNull);
-
     await tester.scrollUntilVisible(
       find.text('معلومات الجهاز'),
-      260,
+      220,
       scrollable: find.byType(Scrollable).first,
     );
     expect(find.text('معلومات الجهاز'), findsOneWidget);
-    expect(tester.takeException(), isNull);
-
     await tester.scrollUntilVisible(
-      find.text('الأمان والخصوصية'),
-      360,
+      find.text('البطارية والذاكرة'),
+      280,
       scrollable: find.byType(Scrollable).first,
     );
-    expect(find.text('الأمان والخصوصية'), findsOneWidget);
+    expect(find.text('البطارية والذاكرة'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets(
-    'baseline report clearly distinguishes measurements from unrun field tests',
-    (tester) async {
-      await pumpPage(
-        tester,
-        size: const Size(320, 780),
-        theme: CutawanTheme.dark(),
-        textScale: 2,
-      );
+  testWidgets('production diagnostics hide development acceptance details',
+      (tester) async {
+    await pumpPage(
+      tester,
+      size: const Size(390, 844),
+      theme: CutawanTheme.dark(),
+    );
 
-      const scopeTitleKey =
-          ValueKey('device-acceptance-evidence-scope-title');
-      const scopeDescriptionKey =
-          ValueKey('device-acceptance-evidence-scope-description');
-      const phase10StatusKey =
-          ValueKey('device-acceptance-phase10-status');
+    expect(find.text('بوابة القبول الميداني'), findsNothing);
+    expect(find.textContaining('المرحلة 10'), findsNothing);
+    expect(find.text('الأمان والخصوصية'), findsNothing);
+    expect(
+      find.text('نسخ قالب نتائج الاختبارات الميدانية JSON'),
+      findsNothing,
+    );
+    expect(find.text('نسخ تقرير الدعم'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 
-      expect(find.byKey(phase10StatusKey), findsOneWidget);
-      expect(
-        tester.widget<Text>(find.byKey(phase10StatusKey)).data,
-        contains('اعتماد المرحلة 10: غير مكتمل'),
-      );
-
-      await tester.scrollUntilVisible(
-        find.byKey(scopeTitleKey),
-        180,
-        scrollable: find.byType(Scrollable).first,
-      );
-      await tester.pumpAndSettle();
-
-      expect(find.byKey(scopeTitleKey), findsOneWidget);
-      expect(
-        tester.widget<Text>(find.byKey(scopeTitleKey)).data,
-        contains('هذه لقطة قياسات وليست تشغيل اختبارات ميدانية'),
-      );
-      expect(find.byKey(scopeDescriptionKey), findsOneWidget);
-      expect(
-        tester.widget<Text>(find.byKey(scopeDescriptionKey)).data,
-        contains('اختبارات ملفات الوسائط وجودة التفريغ والأداء'),
-      );
-      expect(tester.takeException(), isNull);
-    },
-  );
-
-  testWidgets('uses dark colors and wraps long device identifiers',
+  testWidgets('support diagnostics omit build identifiers and acceptance data',
       (tester) async {
     await pumpPage(
       tester,
@@ -165,38 +135,20 @@ void main() {
     );
 
     await tester.scrollUntilVisible(
-      find.text('1234567890abcdef1234567890abcdef12345678'),
-      300,
+      find.textContaining('X9c Long Device Model Name'),
+      240,
       scrollable: find.byType(Scrollable).first,
     );
     expect(
-      find.text('1234567890abcdef1234567890abcdef12345678'),
+      find.textContaining('HONOR X9c Long Device Model Name'),
       findsOneWidget,
     );
-    expect(find.text('ربط البناء بمصدره'), findsOneWidget);
+    expect(find.text('إصدار التطبيق'), findsOneWidget);
+    expect(find.text('ربط البناء بمصدره'), findsNothing);
+    expect(
+      find.text('1234567890abcdef1234567890abcdef12345678'),
+      findsNothing,
+    );
     expect(tester.takeException(), isNull);
   });
-
-  testWidgets('offers a separate field evidence template action',
-      (tester) async {
-    await pumpPage(
-      tester,
-      size: const Size(320, 780),
-      theme: CutawanTheme.light(),
-      textScale: 1.5,
-    );
-
-    final templateButton =
-        find.text('نسخ قالب نتائج الاختبارات الميدانية JSON');
-    await tester.scrollUntilVisible(
-      templateButton,
-      320,
-      scrollable: find.byType(Scrollable).first,
-    );
-    await tester.pumpAndSettle();
-
-    expect(templateButton, findsOneWidget);
-    expect(tester.takeException(), isNull);
-  });
-
 }

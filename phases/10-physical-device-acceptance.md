@@ -148,3 +148,8 @@ Added a deterministic Flutter/Dart evaluator under `mobile/flutter_app/lib/tooli
 Android [#456](https://github.com/m5ham3ds/CUTAWAN/actions/runs/46065622887) on source SHA `716408d244b688f028bececf5f72b9e356cee8e0` passed Format, strict analysis and **279/279 Flutter tests**, built the ARM64 APK, passed Media3 and all eight preview/export parity cases (24/24), verified exactly ARM64 with ten unique native libraries and uploaded APK/coverage artifacts. Root CI [#515](https://github.com/m5ham3ds/CUTAWAN/actions/runs/46065622952) and Branch Policy [#165](https://github.com/m5ham3ds/CUTAWAN/actions/runs/46065622871) also passed.
 
 This is automated evaluator and build evidence only. No human gold candidate set or physical-device candidate-quality result has been collected, and no acceptance threshold is inferred. See [the candidate evaluator protocol](PHASE-10-CANDIDATE-EVALUATION-TOOL-2026-11-27.md).
+
+
+## User-facing diagnostics cleanup — 2026-11-27
+
+The production Diagnostics page now focuses on handset specifications, runtime memory/storage, battery and thermal state, plus a privacy-filtered support report. Phase 10 acceptance labels, manual-evidence instructions, source-build identifiers and the in-app field-evidence template action are no longer exposed as end-user UI. The field-evidence schema and evaluators remain in the development workflow; this UI cleanup does not modify physical acceptance status or field evidence.
