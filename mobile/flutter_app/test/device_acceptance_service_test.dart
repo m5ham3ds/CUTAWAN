@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -207,4 +209,67 @@ void main() {
     await expectLater(service.collect(), throwsA(isA<StateError>()));
     expect(secureStorage.values, isEmpty);
   });
+
+  test('field evidence template stays unrun and excludes private identifiers', () {
+    final diagnosticReport = <String, Object?>{
+      'buildSha': 'a' * 40,
+      'buildIdentityPinned': true,
+      'appVersionName': '0.2.0',
+      'appVersionCode': 2,
+      'manufacturer': 'HONOR',
+      'model': 'X9c',
+      'androidRelease': '16',
+      'androidSdk': 36,
+      'cpuCoreCount': 8,
+      'totalMemoryBytes': 8 * 1024 * 1024 * 1024,
+      'availableMemoryBytes': 4 * 1024 * 1024 * 1024,
+      'processPssKb': 120000,
+      'availableStorageBytes': 20 * 1024 * 1024 * 1024,
+      'serialNumber': 'must-not-be-exported',
+      'providerApiKey': 'must-not-be-exported',
+      'sourceMediaPath': '/private/source/video.mp4',
+      'sourceFilename': 'private-interview.mp4',
+    };
+
+    final template =
+        DeviceAcceptanceService.createFieldEvidenceTemplate(diagnosticReport);
+
+    expect(template['schema'], 'org.cutawan.phase10.field-evidence');
+    expect(template['schemaVersion'], 1);
+    expect(
+      (template['application'] as Map)['buildSha'],
+      'a' * 40,
+    );
+    expect((template['device'] as Map)['model'], 'X9c');
+    expect((template['physicalDeviceConfirmation'] as Map)['status'],
+        'not-confirmed');
+    expect((template['fixtures'] as List), isEmpty);
+    expect(
+      template['acceptance'],
+      <String, Object?>{
+        'phase8': 'not-accepted',
+        'phase9': 'not-accepted',
+        'phase10': 'not-accepted',
+      },
+    );
+
+    final groups = template['checks'] as Map;
+    expect(groups.keys, containsAll(<String>['phase8', 'phase9', 'phase10']));
+    for (final group in groups.values) {
+      for (final check in (group as Map).values) {
+        expect((check as Map)['status'], 'not-run');
+        expect(check['evidence'], isEmpty);
+        expect(check['measurements'], isEmpty);
+      }
+    }
+
+    final encoded = jsonEncode(template);
+    expect(encoded, isNot(contains('must-not-be-exported')));
+    expect(encoded, isNot(contains('serialNumber')));
+    expect(encoded, isNot(contains('providerApiKey')));
+    expect(encoded, isNot(contains('/private/source')));
+    expect(encoded, isNot(contains('private-interview.mp4')));
+    expect(encoded, isNot(contains('systemDeviceHeuristicIsNotConfirmation":false')));
+  });
+
 }

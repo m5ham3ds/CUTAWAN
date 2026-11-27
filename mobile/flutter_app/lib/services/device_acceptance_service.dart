@@ -22,6 +22,138 @@ class DeviceAcceptanceService {
     defaultValue: 'local-or-untracked',
   );
 
+  /// Required physical field checks grouped by the phase they help close.
+  ///
+  /// These identifiers are a checklist contract only. A generated template
+  /// never marks a field check as passed or treats a system heuristic as proof.
+  static const Map<String, List<String>> fieldEvidenceCheckIds =
+      <String, List<String>>{
+    'phase8': <String>[
+      'physical_arm64_build_identity',
+      'real_media_import_export',
+      'full_track_decode_and_output_integrity',
+      'workmanager_background_completion',
+      'process_death_resume_and_durable_handoff',
+      'notification_permission_and_cancellation',
+      'force_stop_and_oem_battery_behavior',
+      'targeted_rerender_peer_preservation_and_cleanup',
+    ],
+    'phase9': <String>[
+      'arabic_rtl_and_english_ltr',
+      'large_text_portrait_and_landscape',
+      'system_bars_insets_and_cutouts',
+      'keyboard_navigation_and_visible_focus',
+      'clip_editor_trim_filmstrip_framing_and_export',
+    ],
+    'phase10': <String>[
+      'hash_locked_arabic_english_media_corpus',
+      'whisper_wer_and_word_timing',
+      'candidate_precision_completeness_and_duplicates',
+      'face_tracking_and_crop_continuity',
+      'full_decode_and_caption_synchronization',
+      'sustained_memory_storage_and_processing',
+      'battery_and_thermal_behavior',
+      'process_resume_and_saf_permission_lifecycle',
+      'keystore_backup_restore_and_rotation',
+      'network_consent_enforcement',
+    ],
+  };
+
+  static const List<String> _fieldEvidenceDeviceFields = <String>[
+    'manufacturer',
+    'model',
+    'androidRelease',
+    'androidSdk',
+    'cpuCoreCount',
+    'totalMemoryBytes',
+    'availableMemoryBytes',
+    'processPssKb',
+    'processPrivateDirtyKb',
+    'availableStorageBytes',
+    'batteryPercent',
+    'batteryTemperatureTenthsC',
+    'thermalStatus',
+    'lowMemory',
+    'appVersionName',
+    'appVersionCode',
+    'collectedAtUtc',
+  ];
+
+  /// Builds a privacy-filtered, versioned field-test template from diagnostics.
+  ///
+  /// Device identity is not manually confirmed, all checks remain not-run,
+  /// and all phase acceptance fields remain not-accepted until evidence is
+  /// entered and independently reviewed.
+  static Map<String, Object?> createFieldEvidenceTemplate(
+    Map<String, Object?> diagnosticReport,
+  ) {
+    final device = <String, Object?>{};
+    for (final field in _fieldEvidenceDeviceFields) {
+      final value = diagnosticReport[field];
+      if (value != null) {
+        device[field] = value;
+      }
+    }
+
+    final checks = <String, Object?>{};
+    for (final group in fieldEvidenceCheckIds.entries) {
+      checks[group.key] = <String, Object?>{
+        for (final checkId in group.value)
+          checkId: <String, Object?>{
+            'status': 'not-run',
+            'evidence': <String>[],
+            'measurements': <String, Object?>{},
+            'notes': '',
+          },
+      };
+    }
+
+    final reportBuildSha = diagnosticReport['buildSha'];
+    return <String, Object?>{
+      'schema': 'org.cutawan.phase10.field-evidence',
+      'schemaVersion': 1,
+      'createdAtUtc': DateTime.now().toUtc().toIso8601String(),
+      'application': <String, Object?>{
+        'buildSha': reportBuildSha is String ? reportBuildSha : buildSha,
+        'buildIdentityPinned': diagnosticReport['buildIdentityPinned'] == true,
+        'versionName': diagnosticReport['appVersionName'],
+        'versionCode': diagnosticReport['appVersionCode'],
+      },
+      'device': device,
+      'physicalDeviceConfirmation': <String, Object?>{
+        'status': 'not-confirmed',
+        'method': null,
+        'confirmedAtUtc': null,
+      },
+      'fixtures': <Map<String, Object?>>[],
+      'checks': checks,
+      'acceptance': <String, Object?>{
+        'phase8': 'not-accepted',
+        'phase9': 'not-accepted',
+        'phase10': 'not-accepted',
+      },
+      'rules': <String, Object?>{
+        'allowedCheckStatuses': <String>[
+          'not-run',
+          'passed',
+          'failed',
+          'not-applicable',
+        ],
+        'passedCheckRequiresEvidence': true,
+        'manualPhysicalDeviceConfirmationRequired': true,
+        'systemDeviceHeuristicIsNotConfirmation': true,
+        'fixtureSha256Required': true,
+        'reviewRequiredBeforeAcceptance': true,
+        'excludedData': <String>[
+          'serial numbers and device identifiers',
+          'account credentials and API keys',
+          'personal file paths and source filenames',
+          'source media and media contents',
+        ],
+      },
+    };
+  }
+
   Future<Map<String, Object?>> collect() async {
     final native = await _channel.invokeMapMethod<String, dynamic>(
       'getDeviceAcceptanceDiagnostics',

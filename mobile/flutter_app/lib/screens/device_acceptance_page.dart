@@ -67,6 +67,29 @@ class _DeviceAcceptancePageState extends State<DeviceAcceptancePage> {
     }
   }
 
+  Future<void> _copyFieldEvidenceTemplate() async {
+    final report = _report;
+    if (report == null) return;
+
+    final template = DeviceAcceptanceService.createFieldEvidenceTemplate(report);
+    try {
+      await Clipboard.setData(
+        ClipboardData(
+          text: const JsonEncoder.withIndent('  ').convert(template),
+        ),
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('نُسخ قالب الاختبارات الميدانية')),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('تعذر نسخ قالب الاختبارات: $error')),
+      );
+    }
+  }
+
   String _memory(Object? bytes) {
     if (bytes is! num || !bytes.isFinite || bytes < 0) return 'غير متاح';
     final gib = bytes / (1024 * 1024 * 1024);
@@ -263,6 +286,12 @@ class _DeviceAcceptancePageState extends State<DeviceAcceptancePage> {
                 onPressed: _copyReport,
                 icon: const Icon(Icons.copy_all_rounded),
                 label: const Text('نسخ تقرير التشخيص JSON'),
+              ),
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                onPressed: _copyFieldEvidenceTemplate,
+                icon: const Icon(Icons.fact_check_outlined),
+                label: const Text('نسخ قالب نتائج الاختبارات الميدانية JSON'),
               ),
               const SizedBox(height: 8),
               Text(

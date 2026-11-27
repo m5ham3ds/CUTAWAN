@@ -176,4 +176,27 @@ void main() {
     expect(find.text('ربط البناء بمصدره'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('offers a separate field evidence template action',
+      (tester) async {
+    await pumpPage(
+      tester,
+      size: const Size(320, 780),
+      theme: CutawanTheme.light(),
+      textScale: 1.5,
+    );
+
+    final templateButton =
+        find.text('نسخ قالب نتائج الاختبارات الميدانية JSON');
+    await tester.scrollUntilVisible(
+      templateButton,
+      320,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+
+    expect(templateButton, findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
 }

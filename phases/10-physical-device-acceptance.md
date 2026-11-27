@@ -38,6 +38,19 @@ The diagnostic page groups device profile, headline memory/storage metrics, medi
 
 Widget tests cover a 320dp viewport with enlarged text, RTL, long build identifiers, light/dark theme, evidence rows and error-free layout. These are layout regression tests and do not substitute for device acceptance.
 
+## Field evidence template export — preparatory implementation
+
+The Android diagnostics workbench now offers a separate **نسخ قالب نتائج الاختبارات الميدانية JSON** action. It creates a versioned `org.cutawan.phase10.field-evidence` document to record the physical test session without mixing it with the device snapshot.
+
+- The template carries the pinned build SHA (when present), app version and a privacy-filtered device snapshot.
+- It deliberately excludes serial numbers, account credentials, API keys, personal file paths, source filenames and media contents.
+- The physical-device confirmation starts as `not-confirmed`; fixture inventory starts empty.
+- Phase 8, Phase 9 and Phase 10 checks all start as `not-run`, with empty evidence and measurement fields. All acceptance values start as `not-accepted`.
+- Check identifiers are grouped by phase and use the stable statuses `not-run`, `passed`, `failed` and `not-applicable`. A `passed` result requires attached evidence and measurements where applicable.
+- This is evidence-collection preparation only. It does not run media tests, prove a physical handset, approve a result, or close the Phase 8/9 prerequisites. A reviewer must inspect the completed evidence before any acceptance status changes.
+
+The template's unit and widget tests run in the Mobile Android workflow. No real-device measurements are prefilled or inferred from the CI runner.
+
 ## Current automated evidence
 
 - Mobile Android workflow [44868851973](https://github.com/m5ham3ds/CUTAWAN/actions/runs/44868851973) validated the prior baseline instrumentation: 139 Flutter tests, strict analysis, format, ARM64-only APK, and unique native-library checks.
