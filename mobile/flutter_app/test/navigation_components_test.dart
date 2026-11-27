@@ -326,12 +326,15 @@ void main() {
       final rect = tester.getRect(navigationSurface);
       expect(rect.left, 0);
       expect(rect.right, 720);
-      expect(rect.bottom, lessThanOrEqualTo(296));
+      // The visual surface is edge-to-edge, including the transparent system
+      // navigation inset; interactive destination targets remain above it.
+      expect(rect.bottom, 320);
 
       final selectedDestination =
           tester.getRect(find.bySemanticsLabel(RegExp('Projects')));
       expect(selectedDestination.left, greaterThanOrEqualTo(24));
       expect(selectedDestination.right, lessThanOrEqualTo(696));
+      expect(selectedDestination.bottom, lessThanOrEqualTo(296));
       expect(tester.takeException(), isNull);
     },
   );

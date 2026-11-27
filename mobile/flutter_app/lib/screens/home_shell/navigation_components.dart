@@ -164,16 +164,20 @@ class _NavigationItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
     final color = selected ? palette.foreground : palette.mutedText;
+    void activate() {
+      HapticFeedback.selectionClick();
+      onTap();
+    }
+
     return Semantics(
       button: true,
       selected: selected,
+      inMutuallyExclusiveGroup: true,
       label: destination.hint,
+      onTap: activate,
       excludeSemantics: true,
       child: InkWell(
-        onTap: () {
-          HapticFeedback.selectionClick();
-          onTap();
-        },
+        onTap: activate,
         child: ConstrainedBox(
           constraints: const BoxConstraints(minHeight: 48),
           child: Center(

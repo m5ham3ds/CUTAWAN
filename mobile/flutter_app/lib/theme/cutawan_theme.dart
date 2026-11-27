@@ -188,6 +188,8 @@ class CutawanTheme {
       iconTheme: IconThemeData(color: muted),
       iconButtonTheme: IconButtonThemeData(
         style: ButtonStyle(
+          minimumSize: const WidgetStatePropertyAll(Size(48, 48)),
+          tapTargetSize: MaterialTapTargetSize.padded,
           foregroundColor: WidgetStatePropertyAll(muted),
           overlayColor: overlay,
           side: surfaceFocusSide,
