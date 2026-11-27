@@ -90,7 +90,7 @@ class _DeviceAcceptancePageState extends State<DeviceAcceptancePage> {
     } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('تعذّر نسخ التقرير: ' + error.toString())),
+        SnackBar(content: Text('تعذّر نسخ التقرير: ${error}')),
       );
     }
   }
@@ -99,8 +99,8 @@ class _DeviceAcceptancePageState extends State<DeviceAcceptancePage> {
     if (bytes is! num || !bytes.isFinite || bytes < 0) return 'غير متاح';
     final gib = bytes / (1024 * 1024 * 1024);
     return gib >= 1
-        ? gib.toStringAsFixed(2) + ' GB'
-        : (bytes / (1024 * 1024)).toStringAsFixed(0) + ' MB';
+        ? '${gib.toStringAsFixed(2)} GB'
+        : '${(bytes / (1024 * 1024)).toStringAsFixed(0)} MB';
   }
 
   String _thermal(Object? value) {
@@ -118,12 +118,12 @@ class _DeviceAcceptancePageState extends State<DeviceAcceptancePage> {
 
   String _battery(Object? value) {
     if (value is! num || value < 0 || value > 100) return 'غير متاح';
-    return value.round().toString() + '%';
+    return '${value.round()}%';
   }
 
   String _temperature(Object? value) {
     if (value is! num || value < 0) return 'غير متاح';
-    return (value / 10).toStringAsFixed(1) + ' °C';
+    return '${(value / 10).toStringAsFixed(1)} °C';
   }
 
   String _value(Object? value) {
@@ -249,7 +249,7 @@ class _DeviceAcceptancePageState extends State<DeviceAcceptancePage> {
       _MetricData(
         'ذاكرة التطبيق',
         report['processPssKb'] is num
-            ? report['processPssKb'].toString() + ' KB'
+            ? '${report['processPssKb']} KB'
             : 'غير متاح',
         Icons.data_usage_rounded,
       ),
@@ -295,13 +295,11 @@ class _DeviceAcceptancePageState extends State<DeviceAcceptancePage> {
             _DetailRow(
               label: 'الشركة والطراز',
               value:
-                  _value(report['manufacturer']) + ' ' + _value(report['model']),
+                  '${_value(report['manufacturer'])} ${_value(report['model'])}',
             ),
             _DetailRow(
               label: 'إصدار Android',
-              value: _value(report['androidRelease']) +
-                  ' · API ' +
-                  _value(report['androidSdk']),
+              value: '${_value(report['androidRelease'])} · API ${_value(report['androidSdk'])}',
             ),
             _DetailRow(
               label: 'أنوية المعالج',
@@ -309,10 +307,7 @@ class _DeviceAcceptancePageState extends State<DeviceAcceptancePage> {
             ),
             _DetailRow(
               label: 'إصدار التطبيق',
-              value: _value(report['appVersionName']) +
-                  ' (' +
-                  _value(report['appVersionCode']) +
-                  ')',
+              value: '${_value(report['appVersionName'])} (${_value(report['appVersionCode'])})',
             ),
           ],
         ),
