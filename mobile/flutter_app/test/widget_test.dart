@@ -111,7 +111,10 @@ void main() {
 
     await tester.tap(find.byKey(const ValueKey('cutawan-open-drawer')));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('cutawan-drawer-settings')));
+    final drawerSettings = find.byKey(const ValueKey('cutawan-drawer-settings'));
+    await tester.ensureVisible(drawerSettings);
+    await tester.pumpAndSettle();
+    await tester.tap(drawerSettings);
     await tester.pumpAndSettle();
     expect(find.text('إعدادات CUTAWAN'), findsOneWidget);
     expect(find.text('تشخيص الجهاز'), findsOneWidget);
@@ -135,7 +138,12 @@ void main() {
 
       await tester.tap(find.byKey(const ValueKey('cutawan-open-drawer')));
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const ValueKey('cutawan-drawer-settings')));
+      final drawerSettings = find.byKey(
+        const ValueKey('cutawan-drawer-settings'),
+      );
+      await tester.ensureVisible(drawerSettings);
+      await tester.pumpAndSettle();
+      await tester.tap(drawerSettings);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 350));
 

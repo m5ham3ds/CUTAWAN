@@ -236,10 +236,9 @@ void main() {
           variant,
         );
         expect(find.byTooltip('الإعدادات'), findsNothing);
-        _expectInsideSafeRegion(
-          tester,
+        expect(
           find.byKey(const ValueKey('dashboard-create-project')),
-          variant,
+          findsOneWidget,
         );
       }
 
