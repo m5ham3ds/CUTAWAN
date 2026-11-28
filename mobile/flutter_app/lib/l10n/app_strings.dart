@@ -1,285 +1,484 @@
-import 'package:flutter/widgets.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 
-const Map<String, String> _english = {
-  'القائمة': 'Open navigation menu',
-  'الإعدادات': 'Settings',
-  'تحديث المشاريع': 'Refresh projects',
-  'AI CREATOR STUDIO': 'AI CREATOR STUDIO',
-  'الرئيسية': 'Home',
-  'إنشاء': 'Create',
-  'المهام': 'Projects',
-  'المراجعة': 'Review',
-  'الاستوديو': 'Studio',
-  'مساحة العمل': 'WORKSPACE',
-  'الأدوات': 'TOOLS',
-  'تشخيص الجهاز': 'Device diagnostics',
-  'مركز النماذج': 'Model center',
-  'إعدادات CUTAWAN': 'CUTAWAN Settings',
-  'أدوات التطبيق': 'App tools',
-  'اللغة': 'Language',
-  'حسب النظام': 'System default',
-  'العربية': 'Arabic',
-  'الإنجليزية': 'English',
-  'المظهر وإمكانية الوصول': 'Appearance and accessibility',
-  'وضع الألوان': 'Theme',
-  'النظام': 'System',
-  'فاتح': 'Light',
-  'داكن': 'Dark',
-  'اللون الأساسي': 'Primary colour',
-  'الأحمر': 'Red',
-  'الأزرق': 'Blue',
-  'البرتقالي': 'Orange',
-  'البنفسجي': 'Purple',
-  'الأصفر': 'Yellow',
-  'تقليل الحركة': 'Reduce motion',
-  'تقليل الحركات والانتقالات داخل التطبيق.': 'Reduce animations and transitions throughout the app.',
-  'تأكيد اللون الأساسي': 'Confirm primary colour',
-  'هل تريد تطبيق اللون': 'Apply this colour',
-  'تأكيد': 'Confirm',
-  'إلغاء': 'Cancel',
-  'تعذّر حفظ التفضيل على هذا الجهاز. لم يتغير الإعداد.': 'Could not save this preference on this device. The setting was not changed.',
-  'الخصوصية والمعالجة': 'Privacy and processing',
-  'المعالجة المحلية هي الوضع الافتراضي': 'Local processing is the default',
-  'لا يغادر نص التفريغ الجهاز إلا عند اختيار الوضع السحابي وتفعيل الموافقة.': 'Transcript text stays on this device unless you choose cloud processing and explicitly enable consent.',
-  'المعلومات القانونية': 'Legal information',
-  'التراخيص والإشعارات': 'Licenses and notices',
-  'مساحة عملك': 'Your workspace',
-  'مرحباً بك في CUTAWAN': 'Welcome to CUTAWAN',
-  'نظرة عامة': 'Overview',
-  'المشاريع': 'Projects',
-  'مكتملة': 'Completed',
-  'قيد العمل': 'In progress',
-  'تحتاج مراجعة': 'Needs review',
-  'مسارات العمل': 'Workflows',
-  'المهام والمشاريع': 'Jobs and projects',
-  'تابع التقدم والأخطاء والمساحة المستخدمة': 'Track progress, errors, and storage usage.',
-  'المراجعة والتحرير': 'Review and edit',
-  'راجع التفريغ والاقتراحات وحرّر حدود المقاطع': 'Review the transcript and suggestions, then refine clip boundaries.',
-  'المشاريع الأخيرة': 'Recent projects',
-  'عرض الكل': 'View all',
-  'مساحة تنزيلات CUTAWAN': 'CUTAWAN download storage',
-  'حوّل الفيديو إلى قصة قصيرة متماسكة.': 'Turn a video into a coherent short story.',
-  'استورد ملفك، ثم راجع التفريغ واللحظات المقترحة وعدّل المقاطع قبل التصدير.': 'Import a video, review its transcript and suggested moments, then refine clips before exporting.',
-  'إنشاء مشروع جديد': 'Create a new project',
-  'لا توجد مشاريع محفوظة بعد': 'No saved projects yet',
-  'سيظهر سجل الفيديوهات هنا بعد استيراد أول مشروع.': 'Your video history will appear here after you import your first project.',
-  'أضف الفيديو الأصلي': 'Add your source video',
-  'ابدأ بملف واحد. بعد فحصه سننتقل إلى إعداد عدد المقاطع ومدتها ونسبة الإخراج.': 'Start with one file. After it is checked, set the number of clips, their duration, and the output aspect ratio.',
-  'تنزيل الرابط': 'Download link',
-  'اختيار فيديو': 'Choose video',
-  'إلغاء التنزيل': 'Cancel download',
-  'جارٍ اختيار الفيديو وفحص بياناته…': 'Selecting the video and checking its details…',
-  'المصادر المتاحة: ملفات الجهاز وروابط HTTP/HTTPS المباشرة لملفات الفيديو. روابط YouTube وTwitch وVimeo والمنصات التي تتطلب تجاوز قيود الوصول غير مدعومة حاليًا.': 'Supported sources: files on this device and direct HTTP/HTTPS video-file URLs. YouTube, Twitch, Vimeo, and services that require bypassing access restrictions are not currently supported.',
-  'المصدر المختار': 'Selected source',
-  'متابعة إلى إعدادات المقاطع': 'Continue to clip settings',
-  'اضبط المقاطع قبل الإنشاء': 'Configure clips before creating the project',
-  'راجع الإعدادات قبل إنشاء المشروع. سيحتفظ المشروع بها لاستخدامها في مسار المعالجة.': 'Review these settings before creating the project. They will be saved with the project and used by the processing workflow.',
-  'عدد المقاطع المطلوبة': 'Number of clips',
-  'المدة المستهدفة': 'Target duration',
-  'نسبة أبعاد الفيديو': 'Video aspect ratio',
-  'جودة الإخراج': 'Output quality',
-  'إنشاء الترجمة النصية': 'Generate captions',
-  'تفريغ الكلام وتوليد توقيت الكلمات وتركيب الترجمة على المقاطع.': 'Transcribe speech, generate word timings, and burn captions into the clips.',
-  'نمط الترجمة': 'Caption style',
-  'حركة الكلمات': 'Word animation',
-  'تحليل التأطير التلقائي': 'Automatic reframing analysis',
-  'يحلل CUTAWAN الإطارات ويضع خطة للتأطير عند توفر دليل بصري كافٍ. تعمل هذه الخطوة تلقائيًا حاليًا، ولا تعني التعرّف المؤكد على المتحدث النشط.': 'CUTAWAN analyses frames and plans reframing when enough visual evidence is available. This step currently runs automatically and does not confirm who is speaking.',
-  'ملخص المشروع': 'Project summary',
-  'العودة للفيديو': 'Back to video',
-  'بعد الحفظ ستنتقل إلى المراجعة لتشغيل التحليل ومتابعة المقاطع والتصدير.': 'After saving, you will move to Review to run analysis, inspect clips, and export.',
-  'مشروع فيديو جديد': 'New video project',
-  'من المصدر إلى مقاطع تستحق المشاهدة.': 'From source video to clips worth watching.',
-  'الكل': 'All',
-  'النشطة': 'Active',
-  'تحتاج متابعة': 'Needs attention',
-  'توقف بعد إغلاق التطبيق': 'Stopped after the app was closed',
-  'إخراج المقاطع': 'Export clips',
-  'المصدر مستورد': 'Source imported',
-  'جاهز': 'Ready',
-  'في قائمة الانتظار': 'Queued',
-  'فحص مصدر الفيديو': 'Check video source',
-  'تفريغ الكلام': 'Transcribe speech',
-  'اكتشاف المقاطع': 'Detect clips',
-  'تحليل التأطير': 'Reframing analysis',
-  'إعداد الترجمة': 'Prepare captions',
-  'إخراج الفيديو': 'Export video',
-  'التحقق من الملفات': 'Verify files',
-  'اكتملت المعالجة': 'Processing complete',
-  'أوقفها المستخدم': 'Stopped by user',
-  'مشروع محفوظ سابقاً': 'Previously saved project',
-  'فتح المراجعة لبدء المعالجة': 'Open Review to start processing',
-  'عرض المراجعة وحالة التنفيذ': 'View review and processing status',
-  'عرض النتائج': 'View results',
-  'فتح المراجعة للاستئناف': 'Open Review to resume',
-  'حذف المشروع': 'Delete project',
-  'سيُحذف المشروع ونسخة الفيديو التي نزّلها Cutawan من مساحة التطبيق. لا يمكن التراجع عن ذلك.': 'The project and the video copy downloaded by CUTAWAN will be deleted from app storage. This cannot be undone.',
-  'سيُحذف سجل المشروع فقط. ملفك الأصلي في مزود الملفات لن يتغير.': 'Only the project record will be deleted. Your original file in the file provider will not be changed.',
-  'حذف': 'Delete',
-  'تم حذف سجل المشروع من الجهاز.': 'The project record was deleted from this device.',
-  'قيد التنفيذ': 'In progress',
-  'جاهزة': 'Ready',
-  'تعذّر قراءة مساحة التخزين': 'Could not read storage usage',
-  'جارٍ حساب المساحة…': 'Calculating storage…',
-  'تحديث المشاريع والمساحة': 'Refresh projects and storage',
-  'لم تبدأ المعالجة بعد': 'Processing has not started yet',
-  'يتم تحديث الحالة مع تقدم المعالجة.': 'Status updates as processing progresses.',
-  'احتفظ التطبيق بالمرحلة السابقة؛ افتح المراجعة لمحاولة الاستئناف.': 'The app preserved the previous stage. Open Review to try resuming.',
-  'يمكن العودة إلى المراجعة وتشغيل خط المعالجة مجدداً.': 'Return to Review and run the processing workflow again.',
-  'اكتملت المعالجة؛ افتح المراجعة لمشاهدة المقاطع المُخرجة.': 'Processing is complete. Open Review to view the exported clips.',
-  'المشروع محفوظ وجاهز لبدء خط المعالجة من صفحة المراجعة.': 'The project is saved and ready to start processing from the Review page.',
-  'مركز المهام': 'Project center',
-  'متابعة المعالجة': 'Track processing',
-  'راقب كل مشروع، وافهم المرحلة الحالية، ثم افتح المراجعة للبدء أو الاستئناف.': 'Monitor each project, understand its current stage, and open Review to start or resume.',
-  'ابحث باسم المشروع أو ملف الفيديو': 'Search by project or video name',
-  'مسح البحث': 'Clear search',
-  'تحديث': 'Refresh',
-  'لا توجد مهام بعد': 'No projects yet',
-  'أنشئ مشروعاً من صفحة الإنشاء؛ سيظهر هنا وتتابع حالته وخطوات معالجته.': 'Create a project on the Create page. It will appear here with its status and processing steps.',
-  'إنشاء مشروع': 'Create project',
-  'لا توجد مشاريع تطابق عوامل التصفية الحالية.': 'No projects match the current filters.',
-  'مسح البحث والتصفية': 'Clear search and filters',
-  'حذف الفيديو المصدّر؟': 'Delete exported video?',
-  'سيُحذف ملف MP4 من مساحة مخرجات CUTAWAN على الجهاز، كما سيُزال سجلّه من المشروع. لا يمكن التراجع عن هذا الإجراء.': 'The MP4 file will be deleted from CUTAWAN output storage and its record removed from the project. This cannot be undone.',
-  'حذف الملف': 'Delete file',
-  'تم حذف الفيديو وسجل التصدير.': 'The video and export record were deleted.',
-  'فتح الفيديو': 'Open video',
-  'مشاركة': 'Share',
-  'تنظيف النسخ السابقة': 'Clean up previous exports',
-  'فشل فحص مصدر الفيديو': 'Video source check failed',
-  'إعادة تصدير المقطع؟': 'Re-export this clip?',
-  'سيُنشأ ملف جديد ويُتحقق من فك ترميزه بالكامل. ستبقى النسخة الحالية متاحة حتى ينجح البديل؛ وأي نسخة قديمة يتعذر حذفها ستبقى ظاهرة للتنظيف.': 'A new file will be created and fully checked by decoding it. The current version stays available until the replacement succeeds. Any old copy that cannot be deleted will remain listed for cleanup.',
-  'إعادة التصدير': 'Re-export',
-  'فحص توفر الفيديو': 'Check video availability',
-  'أدوات المراحل اليدوية': 'Manual stage tools',
-  'إعادة تنفيذ خطوة محددة عند الحاجة': 'Re-run a specific step when needed',
-  'إعادة التفريغ': 'Re-transcribe',
-  'إعادة تحليل التأطير': 'Re-analyse framing',
-  'إعادة اكتشاف المقاطع': 'Re-detect clips',
-  'اكتشاف المقاطع متاح بعد وجود تفريغ بتوقيت كلمات موثوق.': 'Clip detection is available after a reliable word-timed transcript has been created.',
-  'سيظهر النص هنا بعد إتمام التفريغ الصوتي.': 'The transcript will appear here after transcription is complete.',
-  'خطة التأطير': 'Reframing plan',
-  'سيظهر ملخص التأطير هنا بعد التحليل.': 'The reframing summary will appear here after analysis.',
-  'التحليل البصري يتتبع موضع الوجه الأمامي فقط؛ لا يثبت هوية المتحدث النشط من الصوت والصورة.': 'Visual analysis tracks only the front-facing face position; it does not identify the active speaker from audio and video.',
-  'المقاطع المكتشفة': 'Detected clips',
-  'تحرير تسلسل المقاطع والمسارات': 'Edit clip sequence and tracks',
-  'ستظهر المقاطع هنا بعد اكتمال التفريغ واكتشاف اللحظات المناسبة.': 'Clips will appear here after transcription and detection finish.',
-  'لم يعثر التحليل على مقاطع مكتملة ضمن المدة المحددة. لم تتم إضافة مقاطع وهمية.': 'Analysis found no complete clips within the selected duration. No placeholder clips were added.',
-  'فتح المحرر': 'Open editor',
-  'الفيديوهات المصدّرة': 'Exported videos',
-  'ستظهر هنا ملفات MP4 التي اجتازت فحص التحقق الكامل بعد التصدير.': 'MP4 files that pass full post-export verification will appear here.',
-  'راجع النتائج قبل إخراجها': 'Review results before exporting',
-  'تابع تقدم التحليل، افحص المقاطع المكتشفة، ثم افتح المحرر عند الحاجة.': 'Track analysis, inspect detected clips, and open the editor when needed.',
-  'أنشئ مشروعاً أو اختر مشروعاً أولاً لحفظ الإعدادات.': 'Create or select a project before saving settings.',
-  'لا يوجد تفريغ موثوق لهذا المشروع؛ ستُستخدم كلمات تجريبية في المعاينة فقط.': 'This project has no reliable transcript. Sample words will be used for preview only.',
-  'المعاينة تعرض كلمات التفريغ المحفوظة. مزامنة العرض مع فيديو حي ليست جزءاً من هذه الصفحة.': 'The preview uses saved transcript words. Live video playback synchronisation is not part of this page.',
-  'اختيار النمط يحمّل إعداداته الابتدائية، ويمكن تخصيص الخط والألوان والموضع بعد ذلك.': 'Selecting a style loads its initial settings. You can then customise the font, colours, and position.',
-  'نص عريض': 'Bold text',
-  'أحرف كبيرة للإنجليزية': 'Uppercase English',
-  'إظهار إطار الأمان': 'Show safe frame',
-  'مختبر الهوية النصية': 'Caption style lab',
-  'اضبط شكل الكلمات وتوقيتها ثم احفظ الإعدادات داخل المشروع الذي تختاره.': 'Adjust the appearance and timing of words, then save settings to your selected project.',
-  'إظهار الترجمة في تصدير الفيديو': 'Burn captions into exported video',
-  'عند الإيقاف تبقى إعدادات النمط محفوظة دون حرق الكلمات داخل MP4.': 'When disabled, style settings are saved but captions are not burned into the MP4.',
-  'اتجاه معاينة النص': 'Text preview direction',
-  'العربية · من اليمين إلى اليسار': 'Arabic · right to left',
-  'محرر المقطع': 'Clip editor',
-  'تحرير المقطع المحدد': 'Edit selected clip',
-  'الإعدادات النصية ونسبة الإخراج مشتركة على مستوى المشروع، أما القص ونقطة التركيز فمحفوظان لهذا المقطع وحده.': 'Caption settings and output ratio are shared by the project. Trimming and focus position are saved for this clip only.',
-  'لا توجد توقيتات كلمات موثوقة لهذا المشروع؛ لن تُنشأ ترجمة متزامنة حتى يكتمل التفريغ المحلي.': 'This project has no reliable word timings. Synchronized captions will not be created until local transcription is complete.',
-  'نطاق القص غير صالح.': 'The trim range is invalid.',
-  'تعيين البداية هنا': 'Set start here',
-  'تعيين النهاية هنا': 'Set end here',
-  'يمكن ضبط كل تلاشي حتى 1.5 ثانية، ويُحفظ مع إعدادات هذا المقطع فقط.': 'Each fade can be set up to 1.5 seconds and is saved only with this clip.',
-  'نسبة الإخراج': 'Output ratio',
-  'طريقة التأطير': 'Framing mode',
-  'مركز القص الأفقي': 'Horizontal crop center',
-  'مركز القص العمودي': 'Vertical crop center',
-  'إطارات التركيز': 'Focus keyframes',
-  'يتم توليد الترجمة من توقيتات Whisper المحفوظة.': 'Captions are generated from saved Whisper timings.',
-  'أنماط النص': 'Text styles',
-  'لون النص': 'Text colour',
-  'لون الكلمة النشطة': 'Active word colour',
-  'مزامنة التوقيت': 'Timing offset',
-  'النماذج المحلية': 'Local models',
-  'طريقة المعالجة': 'Processing mode',
-  'محلي': 'Local',
-  'سحابي': 'Cloud',
-  'السماح بإرسال نص التفريغ إلى مزوّد خارجي': 'Allow transcript text to be sent to an external provider',
-  'يُرسل نص التفريغ فقط، دون ملف الفيديو أو مفتاح API.': 'Only transcript text is sent, not the video file or API key.',
-  'المزوّد الخارجي': 'External provider',
-  'المزوّد': 'Provider',
-  'عنوان الخدمة': 'Service URL',
-  'حفظ': 'Save',
-  'حذف المفتاح': 'Delete key',
-  'جلب النماذج': 'Fetch models',
-  'اختبار الاتصال': 'Test connection',
-  'تحديث حالة النماذج': 'Refresh model status',
-  'إزالة': 'Remove',
-  'نسخ التقرير': 'Copy report',
-  'تعذّر جمع بيانات الجهاز': 'Could not collect device information',
-  'إعادة المحاولة': 'Try again',
-  'معلومات الجهاز': 'Device information',
-  'البطارية والذاكرة': 'Battery and memory',
-  'إعادة الفحص': 'Recheck',
-  'غير متاح': 'Unavailable',
-  'طبيعي': 'Normal',
-  'خفيف': 'Light',
-  'متوسط': 'Moderate',
-  'مرتفع': 'High',
-  'حرج': 'Critical',
-  'طارئ': 'Emergency',
-  'إيقاف حراري': 'Thermal shutdown',
-  'الانتقال إلى نهاية المقطع': 'Seek to end of clip',
-  'الانتقال إلى بداية المقطع': 'Seek to start of clip',
-  'تلاشي الصورة': 'Video fade',
-  'تلاشي الدخول': 'Fade in',
-  'تلاشي الخروج': 'Fade out',
-  'عمودي 9:16': 'Portrait 9:16',
-  'مربع 1:1': 'Square 1:1',
-  'أفقي 16:9': 'Landscape 16:9',
-  'أصلية': 'Original',
-  'الإطار كاملاً': 'Fit full frame',
-  'تركيز يدوي': 'Manual focus',
-  'تلقائي': 'Automatic',
-  'تشغيل': 'Play',
-  'إيقاف مؤقت': 'Pause',
-  'تسلسل المقاطع والمسارات': 'Clip sequence and tracks',
-  'حفظ التسلسل': 'Save sequence',
-  'إضافة مسار': 'Add track',
-  'فيديو': 'Video',
-  'صوت': 'Audio',
-  'طبقة': 'Overlay',
-  'تصدير MP4 مركّب': 'Export combined MP4',
-  'إلغاء التصدير': 'Cancel export',
-};
+import '../../domain/project_contract.dart';
 
-const Map<String, String> _dynamicPrefixes = {
-  'تعذّر حفظ التفضيل': 'Could not save preference',
-  'تعذّر قراءة سجل المشاريع: ': 'Could not read project history: ',
-  'تعذّر اختيار الفيديو من Android.': 'Could not choose a video on Android.',
-  'تعذّر تجهيز الفيديو: ': 'Could not prepare the video: ',
-  'تعذّر تنزيل الفيديو: ': 'Could not download the video: ',
-  'تعذّر إنشاء المشروع: ': 'Could not create the project: ',
-  'تعذّر حذف المشروع: ': 'Could not delete the project: ',
-  'تعذّر إيقاف المهمة: ': 'Could not stop the task: ',
-  'تعذّر تنفيذ العملية: ': 'Could not complete the operation: ',
-  'تعذّر حذف الفيديو: ': 'Could not delete the video: ',
-  'تعذّر تحميل نتائج التحليل: ': 'Could not load analysis results: ',
-  'تعذّر نسخ التقرير: ': 'Could not copy the report: ',
-  'تعذّر حفظ إعدادات الاستوديو: ': 'Could not save studio settings: ',
-  'تعذّر حفظ تعديلات المقطع: ': 'Could not save clip edits: ',
-  'فشل اختبار النموذج: ': 'Model test failed: ',
-  'فشل اكتشاف المقاطع: ': 'Clip detection failed: ',
-};
+class DashboardPage extends StatelessWidget {
+  const DashboardPage({
+    required this.projects,
+    required this.onCreate,
+    required this.onOpenJobs,
+    required this.onOpenReview,
+    required this.onOpenSettings,
+    required this.onOpenProject,
+    required this.storageUsageBytes,
+    super.key,
+  });
 
-String cutawanText(BuildContext context, String arabic) {
-  if (Localizations.localeOf(context).languageCode != 'en') return arabic;
-  final direct = _english[arabic];
-  if (direct != null) return direct;
-  for (final entry in _dynamicPrefixes.entries) {
-    if (arabic.startsWith(entry.key)) {
-      return entry.value + arabic.substring(entry.key.length);
-    }
+  final ValueListenable<List<CutawanProject>> projects;
+  final VoidCallback onCreate;
+  final VoidCallback onOpenJobs;
+  final VoidCallback onOpenReview;
+  final VoidCallback onOpenSettings;
+  final ValueChanged<CutawanProject> onOpenProject;
+  final Future<int> Function() storageUsageBytes;
+
+  @override
+  Widget build(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+    final horizontalPadding = width < 360 ? 14.0 : width < 600 ? 18.0 : 24.0;
+    return ValueListenableBuilder<List<CutawanProject>>(
+      valueListenable: projects,
+      builder: (context, items, _) {
+        final completed = items
+            .where((p) => p.job.status == ProjectJobStatus.completed)
+            .length;
+        final running = items
+            .where((p) => p.job.status == ProjectJobStatus.running)
+            .length;
+        final attention = items
+            .where((p) =>
+                p.job.status == ProjectJobStatus.failed ||
+                p.job.status == ProjectJobStatus.cancelled)
+            .length;
+        final recent = items.take(3).toList(growable: false);
+
+        return Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 880),
+            child: ListView(
+              key: const ValueKey('cutawan-dashboard-list'),
+              padding: EdgeInsets.fromLTRB(
+                horizontalPadding,
+                16,
+                horizontalPadding,
+                30,
+              ),
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'مساحة عملك',
+                            style: Theme.of(context).textTheme.labelLarge
+                                ?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'مرحباً بك في CUTAWAN',
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context)
+                                .textTheme
+                                .headlineSmall
+                                ?.copyWith(fontWeight: FontWeight.w900),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      key: const ValueKey('dashboard-settings'),
+                      tooltip: 'الإعدادات',
+                      onPressed: onOpenSettings,
+                      icon: const Icon(Icons.settings_outlined),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                _DashboardHero(onCreate: onCreate),
+                const SizedBox(height: 22),
+                _DashboardSectionHeading(title: 'نظرة عامة'),
+                const SizedBox(height: 10),
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final columns = constraints.maxWidth < 350
+                        ? 2
+                        : constraints.maxWidth < 620
+                            ? 3
+                            : 4;
+                    const gap = 9.0;
+                    final cardWidth =
+                        (constraints.maxWidth - gap * (columns - 1)) /
+                            columns;
+                    return Wrap(
+                      spacing: gap,
+                      runSpacing: gap,
+                      children: [
+                        SizedBox(
+                          width: cardWidth,
+                          child: _DashboardMetric(
+                            label: 'المشاريع',
+                            value: items.length,
+                            icon: Icons.video_library_outlined,
+                          ),
+                        ),
+                        SizedBox(
+                          width: cardWidth,
+                          child: _DashboardMetric(
+                            label: 'مكتملة',
+                            value: completed,
+                            icon: Icons.check_circle_outline_rounded,
+                          ),
+                        ),
+                        SizedBox(
+                          width: cardWidth,
+                          child: _DashboardMetric(
+                            label: 'قيد العمل',
+                            value: running,
+                            icon: Icons.pending_outlined,
+                          ),
+                        ),
+                        if (attention > 0)
+                          SizedBox(
+                            width: cardWidth,
+                            child: _DashboardMetric(
+                              label: 'تحتاج مراجعة',
+                              value: attention,
+                              icon: Icons.error_outline_rounded,
+                              warning: true,
+                            ),
+                          ),
+                      ],
+                    );
+                  },
+                ),
+                const SizedBox(height: 14),
+                _DashboardStorageCard(loadUsage: storageUsageBytes),
+                const SizedBox(height: 22),
+                _DashboardSectionHeading(title: 'مسارات العمل'),
+                const SizedBox(height: 9),
+                _DashboardAction(
+                  icon: Icons.grid_view_rounded,
+                  title: 'المهام والمشاريع',
+                  subtitle: 'تابع التقدم والأخطاء والمساحة المستخدمة',
+                  onTap: onOpenJobs,
+                ),
+                const SizedBox(height: 8),
+                _DashboardAction(
+                  icon: Icons.movie_filter_outlined,
+                  title: 'المراجعة والتحرير',
+                  subtitle: 'راجع التفريغ والاقتراحات وحرّر حدود المقاطع',
+                  onTap: onOpenReview,
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _DashboardSectionHeading(
+                        title: 'المشاريع الأخيرة',
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: onOpenJobs,
+                      child: const Text('عرض الكل'),
+                    ),
+                  ],
+                ),
+                if (recent.isEmpty)
+                  const _DashboardEmptyState()
+                else
+                  for (final project in recent)
+                    Card(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      child: ListTile(
+                        key: ValueKey('dashboard-project-${project.id}'),
+                        minVerticalPadding: 12,
+                        leading: CircleAvatar(
+                          backgroundColor: Theme.of(context)
+                              .colorScheme
+                              .primary
+                              .withValues(alpha: 0.12),
+                          child: Icon(
+                            Icons.video_file_outlined,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        title: Text(
+                          project.title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        subtitle: Text(
+                          '${project.source.width} × ${project.source.height} · ${project.job.stage}',
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        trailing: const Icon(Icons.chevron_left_rounded),
+                        onTap: () => onOpenProject(project),
+                      ),
+                    ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
-  return arabic;
+}
+
+class _DashboardStorageCard extends StatefulWidget {
+  const _DashboardStorageCard({required this.loadUsage});
+
+  final Future<int> Function() loadUsage;
+
+  @override
+  State<_DashboardStorageCard> createState() => _DashboardStorageCardState();
+}
+
+class _DashboardStorageCardState extends State<_DashboardStorageCard> {
+  late Future<int> _usage;
+
+  @override
+  void initState() {
+    super.initState();
+    _usage = Future<int>.sync(widget.loadUsage);
+  }
+
+  void _refresh() {
+    setState(() {
+      _usage = Future<int>.sync(widget.loadUsage);
+    });
+  }
+
+  String _formatUsage(int bytes) {
+    if (bytes <= 0) return '0 KB';
+    if (bytes < 1024 * 1024) {
+      return '${(bytes / 1024).toStringAsFixed(0)} KB';
+    }
+    return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return FutureBuilder<int>(
+      future: _usage,
+      builder: (context, snapshot) {
+        final description = snapshot.hasData
+            ? _formatUsage(snapshot.data!)
+            : snapshot.hasError
+                ? 'تعذّر قراءة مساحة التنزيلات'
+                : 'جارٍ حساب مساحة التنزيلات…';
+        return Card(
+          key: const ValueKey('dashboard-storage-card'),
+          child: ListTile(
+            minVerticalPadding: 12,
+            leading: CircleAvatar(
+              backgroundColor: scheme.onSurface.withValues(alpha: 0.08),
+              child: Icon(Icons.storage_outlined, color: scheme.onSurfaceVariant),
+            ),
+            title: const Text('مساحة تنزيلات CUTAWAN'),
+            subtitle: Text(description),
+            trailing: IconButton(
+              key: const ValueKey('dashboard-refresh-storage'),
+              tooltip: 'تحديث مساحة التخزين',
+              onPressed: _refresh,
+              icon: const Icon(Icons.refresh_rounded),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _DashboardHero extends StatelessWidget {
+  const _DashboardHero({required this.onCreate});
+
+  final VoidCallback onCreate;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(6),
+        gradient: LinearGradient(
+          begin: AlignmentDirectional.topStart,
+          end: AlignmentDirectional.bottomEnd,
+          colors: [
+            scheme.onSurface.withValues(alpha: 0.06),
+            scheme.surfaceContainer,
+          ],
+        ),
+        border: Border.all(color: scheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.movie_filter_rounded, size: 28, color: scheme.onSurfaceVariant),
+          const SizedBox(height: 12),
+          Text(
+            'حوّل الفيديو إلى قصة قصيرة متماسكة.',
+            style: theme.textTheme.titleLarge
+                ?.copyWith(fontWeight: FontWeight.w900),
+          ),
+          const SizedBox(height: 7),
+          Text(
+            'استورد ملفك، ثم راجع التفريغ واللحظات المقترحة وعدّل المقاطع قبل التصدير.',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: scheme.onSurfaceVariant,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              key: const ValueKey('dashboard-create-project'),
+              onPressed: onCreate,
+              icon: const Icon(Icons.add_rounded),
+              label: const Text('إنشاء مشروع جديد'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DashboardSectionHeading extends StatelessWidget {
+  const _DashboardSectionHeading({required this.title});
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      title,
+      style: Theme.of(context)
+          .textTheme
+          .titleMedium
+          ?.copyWith(fontWeight: FontWeight.w900),
+    );
+  }
+}
+
+class _DashboardMetric extends StatelessWidget {
+  const _DashboardMetric({
+    required this.label,
+    required this.value,
+    required this.icon,
+    this.warning = false,
+  });
+
+  final String label;
+  final int value;
+  final IconData icon;
+  final bool warning;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, color: warning ? scheme.error : scheme.onSurfaceVariant),
+            const SizedBox(height: 8),
+            Text(
+              value.toString(),
+              style: theme.textTheme.headlineSmall
+                  ?.copyWith(fontWeight: FontWeight.w900),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              maxLines: 2,
+              softWrap: true,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: scheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DashboardAction extends StatelessWidget {
+  const _DashboardAction({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: ListTile(
+        minVerticalPadding: 12,
+        leading: Icon(icon, color: scheme.onSurfaceVariant),
+        title: Text(
+          title,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(fontWeight: FontWeight.w800),
+        ),
+        subtitle: Text(
+          subtitle,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+        trailing: const Icon(Icons.chevron_left_rounded),
+        onTap: onTap,
+      ),
+    );
+  }
+}
+
+class _DashboardEmptyState extends StatelessWidget {
+  const _DashboardEmptyState();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          children: [
+            Icon(
+              Icons.video_collection_outlined,
+              size: 32,
+              color: scheme.onSurfaceVariant,
+            ),
+            const SizedBox(height: 8),
+            const Text('لا توجد مشاريع محفوظة بعد'),
+            const SizedBox(height: 4),
+            Text(
+              'سيظهر سجل الفيديوهات هنا بعد استيراد أول مشروع.',
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodySmall
+                  ?.copyWith(color: scheme.onSurfaceVariant),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

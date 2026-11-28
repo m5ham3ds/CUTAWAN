@@ -1,6 +1,8 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+
+import '../l10n/app_strings.dart';
 import 'package:flutter/services.dart';
 
 import '../services/device_acceptance_service.dart';
@@ -85,7 +87,7 @@ class _DeviceAcceptancePageState extends State<DeviceAcceptancePage> {
       );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('نُسخ تقرير الجهاز')),
+        const SnackBar(content: Text(cutawanText(context, 'نُسخ تقرير الجهاز')))),
       );
     } catch (error) {
       if (!mounted) return;
@@ -171,7 +173,7 @@ class _DeviceAcceptancePageState extends State<DeviceAcceptancePage> {
               FilledButton.icon(
                 onPressed: _copyReport,
                 icon: const Icon(Icons.copy_all_rounded),
-                label: const Text('نسخ التقرير'),
+                label: Text(cutawanText(context, 'نسخ التقرير'))),
               ),
             ],
           ],
@@ -195,8 +197,7 @@ class _DeviceAcceptancePageState extends State<DeviceAcceptancePage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'تعذّر جمع بيانات الجهاز',
+                  Text(cutawanText(context, 'تعذّر جمع بيانات الجهاز')),
                     style: TextStyle(
                       color: scheme.onErrorContainer,
                       fontWeight: FontWeight.w800,
@@ -213,7 +214,7 @@ class _DeviceAcceptancePageState extends State<DeviceAcceptancePage> {
                     child: TextButton.icon(
                       onPressed: _loading ? null : _refresh,
                       icon: const Icon(Icons.refresh_rounded),
-                      label: const Text('إعادة المحاولة'),
+                      label: Text(cutawanText(context, 'إعادة المحاولة'))),
                     ),
                   ),
                 ],

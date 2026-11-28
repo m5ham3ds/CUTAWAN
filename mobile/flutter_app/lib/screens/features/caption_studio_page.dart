@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+import '../../l10n/app_strings.dart';
+
 import '../../domain/caption_animation.dart';
 import '../../domain/caption_catalog.dart';
 import '../../domain/caption_layout.dart';
@@ -425,7 +427,7 @@ class _CaptionStudioPageState extends State<CaptionStudioPage>
     if (projectId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('أنشئ مشروعاً أو اختر مشروعاً أولاً لحفظ الإعدادات.'),
+          content: Text(cutawanText(context, 'أنشئ مشروعاً أو اختر مشروعاً أولاً لحفظ الإعدادات.'))),
         ),
       );
       return;
@@ -573,8 +575,7 @@ class _CaptionStudioPageState extends State<CaptionStudioPage>
               ),
             )
           else if (selected != null)
-            Text(
-              'لا يوجد تفريغ موثوق لهذا المشروع؛ ستُستخدم كلمات تجريبية في المعاينة فقط.',
+            Text(cutawanText(context, 'لا يوجد تفريغ موثوق لهذا المشروع؛ ستُستخدم كلمات تجريبية في المعاينة فقط.')),
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
@@ -729,8 +730,7 @@ class _CaptionStudioPageState extends State<CaptionStudioPage>
           ],
         ),
         const SizedBox(height: 4),
-        Text(
-          'المعاينة تعرض كلمات التفريغ المحفوظة. مزامنة العرض مع فيديو حي ليست جزءاً من هذه الصفحة.',
+        Text(cutawanText(context, 'المعاينة تعرض كلمات التفريغ المحفوظة. مزامنة العرض مع فيديو حي ليست جزءاً من هذه الصفحة.')),
           style: theme.textTheme.bodySmall?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
@@ -766,8 +766,7 @@ class _CaptionStudioPageState extends State<CaptionStudioPage>
               .toList(growable: false),
         ),
         const SizedBox(height: 8),
-        Text(
-          'اختيار النمط يحمّل إعداداته الابتدائية، ويمكن تخصيص الخط والألوان والموضع بعد ذلك.',
+        Text(cutawanText(context, 'اختيار النمط يحمّل إعداداته الابتدائية، ويمكن تخصيص الخط والألوان والموضع بعد ذلك.')),
           style: theme.textTheme.bodySmall?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
@@ -871,13 +870,13 @@ class _CaptionStudioPageState extends State<CaptionStudioPage>
         ),
         SwitchListTile(
           contentPadding: EdgeInsets.zero,
-          title: const Text('نص عريض'),
+          title: Text(cutawanText(context, 'نص عريض'))),
           value: _bold,
           onChanged: (value) => _update(() => _bold = value),
         ),
         SwitchListTile(
           contentPadding: EdgeInsets.zero,
-          title: const Text('أحرف كبيرة للإنجليزية'),
+          title: Text(cutawanText(context, 'أحرف كبيرة للإنجليزية'))),
           value: _uppercase,
           onChanged: (value) => _update(
             () => _uppercase = value,
@@ -913,7 +912,7 @@ class _CaptionStudioPageState extends State<CaptionStudioPage>
         ),
         SwitchListTile(
           contentPadding: EdgeInsets.zero,
-          title: const Text('إظهار إطار الأمان'),
+          title: Text(cutawanText(context, 'إظهار إطار الأمان'))),
           value: _showSafeFrame,
           onChanged: (value) => setState(() => _showSafeFrame = value),
         ),
@@ -966,8 +965,7 @@ class _CaptionStudioPageState extends State<CaptionStudioPage>
             rebuildLayout: true,
           ),
         ),
-        Text(
-          'القيمة تحفظ داخل المشروع وتؤثر في توقيت الكلمات المُصدّرة. المعاينة التجريبية لا تستبدل تشغيل الفيديو.',
+        Text(cutawanText(context, 'القيمة تحفظ داخل المشروع وتؤثر في توقيت الكلمات المُصدّرة. المعاينة التجريبية لا تستبدل تشغيل الفيديو.')),
           style: theme.textTheme.bodySmall?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
@@ -992,16 +990,14 @@ class _CaptionStudioPageState extends State<CaptionStudioPage>
           icon: Icons.closed_caption_rounded,
         ),
         const SizedBox(height: 12),
-        Text(
-          'مختبر الهوية النصية',
+        Text(cutawanText(context, 'مختبر الهوية النصية')),
           style: theme.textTheme.headlineLarge?.copyWith(
             fontWeight: FontWeight.w900,
             fontSize: 30,
           ),
         ),
         const SizedBox(height: 7),
-        Text(
-          'اضبط شكل الكلمات وتوقيتها ثم احفظ الإعدادات داخل المشروع الذي تختاره.',
+        Text(cutawanText(context, 'اضبط شكل الكلمات وتوقيتها ثم احفظ الإعدادات داخل المشروع الذي تختاره.')),
           style: theme.textTheme.bodyMedium?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
@@ -1031,8 +1027,8 @@ class _CaptionStudioPageState extends State<CaptionStudioPage>
         SwitchListTile(
           key: const ValueKey('caption-export-enabled'),
           contentPadding: EdgeInsets.zero,
-          title: const Text('إظهار الترجمة في تصدير الفيديو'),
-          subtitle: const Text('عند الإيقاف تبقى إعدادات النمط محفوظة دون حرق الكلمات داخل MP4.'),
+          title: Text(cutawanText(context, 'إظهار الترجمة في تصدير الفيديو'))),
+          subtitle: Text(cutawanText(context, 'عند الإيقاف تبقى إعدادات النمط محفوظة دون حرق الكلمات داخل MP4.'))),
           value: _captionsEnabled,
           onChanged: (value) => _update(() => _captionsEnabled = value),
         ),
@@ -1042,7 +1038,7 @@ class _CaptionStudioPageState extends State<CaptionStudioPage>
         SwitchListTile(
           key: const ValueKey('caption-direction-switch'),
           contentPadding: EdgeInsets.zero,
-          title: const Text('اتجاه معاينة النص'),
+          title: Text(cutawanText(context, 'اتجاه معاينة النص'))),
           subtitle: Text(_rtl ? 'العربية · من اليمين إلى اليسار' : 'English · left to right'),
           value: _rtl,
           onChanged: (value) => setState(() => _rtl = value),

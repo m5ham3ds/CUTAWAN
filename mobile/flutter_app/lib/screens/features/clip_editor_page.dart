@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+
+import '../../l10n/app_strings.dart';
 import 'package:video_player/video_player.dart';
 
 import '../../domain/caption_catalog.dart';
@@ -180,7 +182,7 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
             OutlinedButton.icon(
               onPressed: _loadFilmstripFrames,
               icon: const Icon(Icons.refresh_rounded),
-              label: const Text('استخراج الإطارات'),
+              label: Text(cutawanText(context, 'استخراج الإطارات'))),
             )
           else
             SizedBox(
@@ -517,7 +519,7 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
     } else {
       if (updated.length >= 120) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('وصلت إلى الحد الأقصى وهو 120 إطار تركيز.')),
+          const SnackBar(content: Text(cutawanText(context, 'وصلت إلى الحد الأقصى وهو 120 إطار تركيز.')))),
         );
         return;
       }
@@ -740,7 +742,7 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
         _endMs > duration ||
         _endMs - _startMs < 500) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('نطاق القص غير صالح.')),
+        const SnackBar(content: Text(cutawanText(context, 'نطاق القص غير صالح.')))),
       );
       return;
     }
@@ -792,7 +794,7 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('حُفظت تعديلات المقطع والتأطير والترجمة. أعد تشغيل المعالجة لتحديث ملف التصدير.'),
+          content: Text(cutawanText(context, 'حُفظت تعديلات المقطع والتأطير والترجمة. أعد تشغيل المعالجة لتحديث ملف التصدير.'))),
         ),
       );
       Navigator.of(context).pop();
@@ -1010,12 +1012,12 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
               OutlinedButton.icon(
                 onPressed: _markTrimStart,
                 icon: const Icon(Icons.flag_outlined, size: 17),
-                label: const Text('تعيين البداية هنا'),
+                label: Text(cutawanText(context, 'تعيين البداية هنا'))),
               ),
               OutlinedButton.icon(
                 onPressed: _markTrimEnd,
                 icon: const Icon(Icons.flag_rounded, size: 17),
-                label: const Text('تعيين النهاية هنا'),
+                label: Text(cutawanText(context, 'تعيين النهاية هنا'))),
               ),
             ],
           ),
@@ -1077,8 +1079,7 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
               });
             },
           ),
-          Text(
-            'يمكن ضبط كل تلاشي حتى 1.5 ثانية، ويُحفظ مع إعدادات هذا المقطع فقط.',
+          Text(cutawanText(context, 'يمكن ضبط كل تلاشي حتى 1.5 ثانية، ويُحفظ مع إعدادات هذا المقطع فقط.')),
             style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
           ),
         ],
@@ -1102,7 +1103,7 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('نسبة الإخراج', style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w800)),
+          Text(cutawanText(context, 'نسبة الإخراج')), style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w800)),
           const SizedBox(height: 8),
           Wrap(
             spacing: 7,
@@ -1116,7 +1117,7 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
             )).toList(growable: false),
           ),
           const SizedBox(height: 14),
-          Text('طريقة التأطير', style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w800)),
+          Text(cutawanText(context, 'طريقة التأطير')), style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w800)),
           const SizedBox(height: 8),
           Wrap(
             spacing: 7,
@@ -1285,8 +1286,8 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
         children: [
           SwitchListTile.adaptive(
             contentPadding: EdgeInsets.zero,
-            title: const Text('إظهار الترجمة في التصدير'),
-            subtitle: const Text('يتم توليد الترجمة من توقيتات Whisper المحفوظة.'),
+            title: Text(cutawanText(context, 'إظهار الترجمة في التصدير'))),
+            subtitle: Text(cutawanText(context, 'يتم توليد الترجمة من توقيتات Whisper المحفوظة.'))),
             value: _draftPreferences.captionsEnabled,
             onChanged: (value) => _updatePreferences(
               _draftPreferences.copyWith(captionsEnabled: value),
@@ -1294,7 +1295,7 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
           ),
           if (_draftPreferences.captionsEnabled) ...[
             const SizedBox(height: 8),
-            Text('أنماط النص', style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w800)),
+            Text(cutawanText(context, 'أنماط النص')), style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w800)),
             const SizedBox(height: 8),
             Wrap(
               spacing: 7,
@@ -1333,7 +1334,7 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
               },
             ),
             const SizedBox(height: 14),
-            Text('لون النص', style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w800)),
+            Text(cutawanText(context, 'لون النص')), style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w800)),
             const SizedBox(height: 8),
             _buildColorSwatches(
               selected: style.textColor,
@@ -1342,7 +1343,7 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
               ),
             ),
             const SizedBox(height: 12),
-            Text('لون الكلمة النشطة', style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w800)),
+            Text(cutawanText(context, 'لون الكلمة النشطة')), style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w800)),
             const SizedBox(height: 8),
             _buildColorSwatches(
               selected: style.highlightColor,
@@ -1396,8 +1397,7 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
             if (_transcript == null || !_transcript!.wordTimingReliable)
               Padding(
                 padding: const EdgeInsets.only(top: 6),
-                child: Text(
-                  'لا توجد توقيتات كلمات موثوقة لهذا المشروع؛ لن تُنشأ ترجمة متزامنة حتى يكتمل التفريغ المحلي.',
+                child: Text(cutawanText(context, 'لا توجد توقيتات كلمات موثوقة لهذا المشروع؛ لن تُنشأ ترجمة متزامنة حتى يكتمل التفريغ المحلي.')),
                   style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.error),
                 ),
               ),
@@ -1425,7 +1425,7 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
     final scheme = theme.colorScheme;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('محرر المقطع'),
+        title: Text(cutawanText(context, 'محرر المقطع'))),
         actions: [
           IconButton(
             tooltip: 'حفظ التعديلات',
@@ -1456,8 +1456,7 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    'تحرير المقطع المحدد',
+                                  Text(cutawanText(context, 'تحرير المقطع المحدد')),
                                     style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
                                   ),
                                   const SizedBox(height: 3),
@@ -1521,8 +1520,7 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
                           label: Text(_saving ? 'جارٍ حفظ التعديلات…' : 'حفظ والعودة إلى المراجعة'),
                         ),
                         const SizedBox(height: 10),
-                        Text(
-                          'الإعدادات النصية ونسبة الإخراج مشتركة على مستوى المشروع، أما القص ونقطة التركيز فمحفوظان لهذا المقطع وحده.',
+                        Text(cutawanText(context, 'الإعدادات النصية ونسبة الإخراج مشتركة على مستوى المشروع، أما القص ونقطة التركيز فمحفوظان لهذا المقطع وحده.')),
                           textAlign: TextAlign.center,
                           style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
                         ),
@@ -1550,8 +1548,7 @@ class _PlaybackError extends StatelessWidget {
           children: [
             Icon(Icons.video_file_outlined, size: 38, color: scheme.error),
             const SizedBox(height: 12),
-            const Text(
-              'تعذّر فتح معاينة الفيديو',
+            Text(cutawanText(context, 'تعذّر فتح معاينة الفيديو')),
               style: TextStyle(fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 8),

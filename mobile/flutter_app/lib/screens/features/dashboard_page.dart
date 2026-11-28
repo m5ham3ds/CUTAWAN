@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+import '../../l10n/app_strings.dart';
+
 import '../../domain/project_contract.dart';
 
 class DashboardPage extends StatelessWidget {
@@ -62,8 +64,7 @@ class DashboardPage extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            'مساحة عملك',
+                          Text(cutawanText(context, 'مساحة عملك')),
                             style: Theme.of(context).textTheme.labelLarge
                                 ?.copyWith(
                               color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -71,8 +72,7 @@ class DashboardPage extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 4),
-                          Text(
-                            'مرحباً بك في CUTAWAN',
+                          Text(cutawanText(context, 'مرحباً بك في CUTAWAN')),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             style: Theme.of(context)
@@ -178,7 +178,7 @@ class DashboardPage extends StatelessWidget {
                     ),
                     TextButton(
                       onPressed: onOpenJobs,
-                      child: const Text('عرض الكل'),
+                      child: Text(cutawanText(context, 'عرض الكل'))),
                     ),
                   ],
                 ),
@@ -318,14 +318,12 @@ class _DashboardHero extends StatelessWidget {
         children: [
           Icon(Icons.movie_filter_rounded, size: 28, color: scheme.onSurfaceVariant),
           const SizedBox(height: 12),
-          Text(
-            'حوّل الفيديو إلى قصة قصيرة متماسكة.',
+          Text(cutawanText(context, 'حوّل الفيديو إلى قصة قصيرة متماسكة.')),
             style: theme.textTheme.titleLarge
                 ?.copyWith(fontWeight: FontWeight.w900),
           ),
           const SizedBox(height: 7),
-          Text(
-            'استورد ملفك، ثم راجع التفريغ واللحظات المقترحة وعدّل المقاطع قبل التصدير.',
+          Text(cutawanText(context, 'استورد ملفك، ثم راجع التفريغ واللحظات المقترحة وعدّل المقاطع قبل التصدير.')),
             style: theme.textTheme.bodyMedium?.copyWith(
               color: scheme.onSurfaceVariant,
               height: 1.4,
@@ -468,10 +466,9 @@ class _DashboardEmptyState extends StatelessWidget {
               color: scheme.onSurfaceVariant,
             ),
             const SizedBox(height: 8),
-            const Text('لا توجد مشاريع محفوظة بعد'),
+            Text(cutawanText(context, 'لا توجد مشاريع محفوظة بعد'))),
             const SizedBox(height: 4),
-            Text(
-              'سيظهر سجل الفيديوهات هنا بعد استيراد أول مشروع.',
+            Text(cutawanText(context, 'سيظهر سجل الفيديوهات هنا بعد استيراد أول مشروع.')),
               textAlign: TextAlign.center,
               style: theme.textTheme.bodySmall
                   ?.copyWith(color: scheme.onSurfaceVariant),

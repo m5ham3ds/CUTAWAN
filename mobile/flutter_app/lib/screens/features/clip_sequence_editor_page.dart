@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../l10n/app_strings.dart';
+
 import '../../domain/clip_candidate.dart';
 import '../../domain/clip_sequence.dart';
 import '../../domain/clip_preferences.dart';
@@ -169,7 +171,7 @@ class _ClipSequenceEditorPageState extends State<ClipSequenceEditorPage> {
     return showDialog<ClipCandidate>(
       context: context,
       builder: (dialogContext) => SimpleDialog(
-        title: const Text('اختر مقطعاً من النتائج المحفوظة'),
+        title: Text(cutawanText(context, 'اختر مقطعاً من النتائج المحفوظة'))),
         children: [
           for (final candidate in widget.candidateSet.candidates)
             SimpleDialogOption(
@@ -542,8 +544,7 @@ class _ClipSequenceEditorPageState extends State<ClipSequenceEditorPage> {
             if (trackClips.isEmpty)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8),
-                child: Text(
-                  'لا توجد مقاطع في هذا المسار بعد.',
+                child: Text(cutawanText(context, 'لا توجد مقاطع في هذا المسار بعد.')),
                   style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
                 ),
               )
@@ -623,19 +624,19 @@ class _ClipSequenceEditorPageState extends State<ClipSequenceEditorPage> {
                   itemBuilder: (context) => const [
                     PopupMenuItem<int>(
                       value: 0,
-                      child: Text('بدون انتقال'),
+                      child: Text(cutawanText(context, 'بدون انتقال'))),
                     ),
                     PopupMenuItem<int>(
                       value: 500,
-                      child: Text('تعتيم 500 ms'),
+                      child: Text(cutawanText(context, 'تعتيم 500 ms'))),
                     ),
                     PopupMenuItem<int>(
                       value: 800,
-                      child: Text('تعتيم 800 ms'),
+                      child: Text(cutawanText(context, 'تعتيم 800 ms'))),
                     ),
                     PopupMenuItem<int>(
                       value: 1200,
-                      child: Text('تعتيم 1200 ms'),
+                      child: Text(cutawanText(context, 'تعتيم 1200 ms'))),
                     ),
                   ],
                   icon: const Icon(Icons.swap_horiz_rounded),
@@ -684,7 +685,7 @@ class _ClipSequenceEditorPageState extends State<ClipSequenceEditorPage> {
         );
     return Scaffold(
       appBar: AppBar(
-        title: const Text('تسلسل المقاطع والمسارات'),
+        title: Text(cutawanText(context, 'تسلسل المقاطع والمسارات'))),
         actions: [
           IconButton(
             key: const ValueKey('sequence-save-button'),
@@ -716,7 +717,7 @@ class _ClipSequenceEditorPageState extends State<ClipSequenceEditorPage> {
                         OutlinedButton.icon(
                           onPressed: _loadSequence,
                           icon: const Icon(Icons.refresh_rounded),
-                          label: const Text('إعادة المحاولة'),
+                          label: Text(cutawanText(context, 'إعادة المحاولة'))),
                         ),
                       ],
                     ),
@@ -730,8 +731,7 @@ class _ClipSequenceEditorPageState extends State<ClipSequenceEditorPage> {
                       style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
                     ),
                     const SizedBox(height: 6),
-                    Text(
-                      'رتّب المقاطع على المسارات ثم صدّرها كفيديو واحد عبر Media3. يمكن إضافة تعتيم بصري إلى الأسود بين مقطعين متجاورين.',
+                    Text(cutawanText(context, 'رتّب المقاطع على المسارات ثم صدّرها كفيديو واحد عبر Media3. يمكن إضافة تعتيم بصري إلى الأسود بين مقطعين متجاورين.')),
                       style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant, height: 1.4),
                     ),
                     const SizedBox(height: 14),
@@ -747,16 +747,14 @@ class _ClipSequenceEditorPageState extends State<ClipSequenceEditorPage> {
                           Icon(Icons.info_outline_rounded),
                           SizedBox(width: 8),
                           Expanded(
-                            child: Text(
-                              'انتقال التعتيم يعمل بصرياً بين المقاطع المتجاورة، ولا يغيّر مدة التسلسل. الصوت يبقى بقطع مباشر؛ لا تدعم Media3 حالياً Crossfade للصوت أو الصورة، ولا تتوفر معاينة متزامنة متعددة المسارات.',
+                            child: Text(cutawanText(context, 'انتقال التعتيم يعمل بصرياً بين المقاطع المتجاورة، ولا يغيّر مدة التسلسل. الصوت يبقى بقطع مباشر؛ لا تدعم Media3 حالياً Crossfade للصوت أو الصورة، ولا تتوفر معاينة متزامنة متعددة المسارات.')),
                             ),
                           ),
                         ],
                       ),
                     ),
                     const SizedBox(height: 16),
-                    Text(
-                      'إضافة مسار',
+                    Text(cutawanText(context, 'إضافة مسار')),
                       style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
                     ),
                     const SizedBox(height: 8),
@@ -768,19 +766,19 @@ class _ClipSequenceEditorPageState extends State<ClipSequenceEditorPage> {
                           key: const ValueKey('sequence-add-track-video'),
                           onPressed: _saving ? null : () => _addTrack(ClipSequenceTrackType.video),
                           icon: const Icon(Icons.movie_outlined),
-                          label: const Text('فيديو'),
+                          label: Text(cutawanText(context, 'فيديو'))),
                         ),
                         OutlinedButton.icon(
                           key: const ValueKey('sequence-add-track-audio'),
                           onPressed: _saving ? null : () => _addTrack(ClipSequenceTrackType.audio),
                           icon: const Icon(Icons.graphic_eq_rounded),
-                          label: const Text('صوت'),
+                          label: Text(cutawanText(context, 'صوت'))),
                         ),
                         OutlinedButton.icon(
                           key: const ValueKey('sequence-add-track-overlay'),
                           onPressed: _saving ? null : () => _addTrack(ClipSequenceTrackType.overlay),
                           icon: const Icon(Icons.layers_outlined),
-                          label: const Text('طبقة'),
+                          label: Text(cutawanText(context, 'طبقة'))),
                         ),
                       ],
                     ),
@@ -834,7 +832,7 @@ class _ClipSequenceEditorPageState extends State<ClipSequenceEditorPage> {
                           key: const ValueKey('sequence-cancel-export-button'),
                           onPressed: () => setState(() => _cancelExportRequested = true),
                           icon: const Icon(Icons.stop_circle_outlined),
-                          label: const Text('إلغاء التصدير'),
+                          label: Text(cutawanText(context, 'إلغاء التصدير'))),
                         ),
                       ),
                     ],
