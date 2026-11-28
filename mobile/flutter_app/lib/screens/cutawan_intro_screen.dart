@@ -79,7 +79,7 @@ class _CutawanIntroScreenState extends State<CutawanIntroScreen> {
                   width: 180,
                   height: 180,
                   fit: BoxFit.contain,
-                  errorBuilder: (_, __, ___) => const Text(
+                  errorBuilder: (_, _, _) => const Text(
                     'CUTAWAN',
                     style: TextStyle(
                       color: Colors.white,
