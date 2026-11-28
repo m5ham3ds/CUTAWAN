@@ -85,6 +85,10 @@ void main() {
         tester.view.devicePixelRatio = 1;
         await tester.pumpWidget(
           MaterialApp(
+        locale: const Locale('ar'),
+        supportedLocales: const [Locale('ar'), Locale('en')],
+            locale: const Locale('ar'),
+            supportedLocales: const [Locale('ar'), Locale('en')],
             theme: item.theme,
             home: MediaQuery(
               data: MediaQueryData(
@@ -124,6 +128,8 @@ void main() {
     addTearDown(store.dispose);
     await tester.pumpWidget(
       MaterialApp(
+        locale: const Locale('ar'),
+        supportedLocales: const [Locale('ar'), Locale('en')],
         theme: CutawanTheme.light(),
         home: SettingsPage(
           store: store,
@@ -162,6 +168,8 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+        locale: const Locale('ar'),
+        supportedLocales: const [Locale('ar'), Locale('en')],
           theme: CutawanTheme.light(),
           darkTheme: CutawanTheme.dark(),
           home: SettingsPage(
@@ -193,4 +201,50 @@ void main() {
     },
   );
 
-}
+
+  testWidgets('language choices persist and accent colour requires confirmation', (tester) async {
+    final store = AppPreferencesStore.inMemory();
+    addTearDown(store.dispose);
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('ar'),
+        supportedLocales: const [Locale('ar'), Locale('en')],
+        theme: CutawanTheme.light(),
+        darkTheme: CutawanTheme.dark(),
+        home: SettingsPage(
+          store: store,
+          onDiagnostics: () {},
+          onModels: () {},
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final english = find.byKey(const ValueKey('settings-language-english'));
+    await _scrollSettingsUntilFound(tester, english, distance: 240);
+    await tester.tap(english);
+    await tester.pumpAndSettle();
+    expect(store.preferences.value.language, AppLanguage.english);
+
+    await store.update(
+      store.preferences.value.copyWith(language: AppLanguage.arabic),
+    );
+    await tester.pumpAndSettle();
+
+    final blue = find.byKey(const ValueKey('settings-accent-blue'));
+    await _scrollSettingsUntilFound(tester, blue, distance: 320);
+    await tester.tap(blue);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('settings-accent-confirm')), findsOneWidget);
+    expect(store.preferences.value.accentColor, AppAccentColor.red);
+
+    await tester.tap(find.text('إلغاء'));
+    await tester.pumpAndSettle();
+    expect(store.preferences.value.accentColor, AppAccentColor.red);
+
+    await tester.tap(blue);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('settings-accent-confirm')));
+    await tester.pumpAndSettle();
+    expect(store.preferences.value.accentColor, AppAccentColor.blue);
+  });

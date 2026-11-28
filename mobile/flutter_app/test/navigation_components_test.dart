@@ -47,6 +47,8 @@ Widget _navigationHarness({
   required ValueChanged<int> onSelected,
 }) {
   return MaterialApp(
+            locale: const Locale('ar'),
+            supportedLocales: const [Locale('ar'), Locale('en')],
     home: Scaffold(
       bottomNavigationBar: CutawanNavigationBar(
         selectedIndex: selectedIndex,
@@ -102,6 +104,8 @@ void main() {
         for (final direction in [TextDirection.rtl, TextDirection.ltr]) {
           await tester.pumpWidget(
             MaterialApp(
+            locale: const Locale('ar'),
+            supportedLocales: const [Locale('ar'), Locale('en')],
               theme: CutawanTheme.light(),
               darkTheme: CutawanTheme.dark(),
               themeMode: brightness == Brightness.dark
@@ -156,6 +160,8 @@ void main() {
       var settingsTaps = 0;
       await tester.pumpWidget(
         MaterialApp(
+            locale: const Locale('ar'),
+            supportedLocales: const [Locale('ar'), Locale('en')],
           theme: CutawanTheme.light(),
           home: Scaffold(
             body: Directionality(
@@ -195,6 +201,8 @@ void main() {
       var settingsTaps = 0;
       await tester.pumpWidget(
         MaterialApp(
+            locale: const Locale('ar'),
+            supportedLocales: const [Locale('ar'), Locale('en')],
           theme: CutawanTheme.light(),
           home: MediaQuery(
             data: const MediaQueryData(
@@ -253,6 +261,8 @@ void main() {
       var selected = -1;
       await tester.pumpWidget(
         MaterialApp(
+            locale: const Locale('ar'),
+            supportedLocales: const [Locale('ar'), Locale('en')],
           home: Scaffold(
             bottomNavigationBar: CutawanNavigationBar(
               selectedIndex: 4,
@@ -284,6 +294,8 @@ void main() {
       const insets = EdgeInsets.fromLTRB(24, 10, 24, 24);
       await tester.pumpWidget(
         MaterialApp(
+            locale: const Locale('ar'),
+            supportedLocales: const [Locale('ar'), Locale('en')],
           theme: CutawanTheme.dark(),
           home: MediaQuery(
             data: const MediaQueryData(
@@ -339,4 +351,30 @@ void main() {
     },
   );
 
-}
+
+  testWidgets('side drawer shows app sections and routes the selected destination', (tester) async {
+    var selectedIndex = -1;
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('ar'),
+        supportedLocales: const [Locale('ar'), Locale('en')],
+        home: Scaffold(
+          drawer: CutawanNavigationDrawer(
+            selectedIndex: 0,
+            destinations: _destinations,
+            onSelect: (index) => selectedIndex = index,
+            onSettings: () {},
+            onDiagnostics: () {},
+            onModels: () {},
+          ),
+        ),
+      ),
+    );
+    tester.state<ScaffoldState>(find.byType(Scaffold)).openDrawer();
+    await tester.pumpAndSettle();
+    expect(find.text('CUTAWAN'), findsOneWidget);
+    expect(find.text('الإعدادات'), findsOneWidget);
+    await tester.tap(find.text('المهام').last);
+    await tester.pumpAndSettle();
+    expect(selectedIndex, 2);
+  });
