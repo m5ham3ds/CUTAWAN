@@ -195,6 +195,13 @@ void main() {
         .where((chip) => chip.selected);
     expect(selectedStyles, hasLength(1));
 
+    final motionTab = find.byKey(
+      const ValueKey('caption-editor-tab-motion'),
+    );
+    await tester.ensureVisible(motionTab);
+    await tester.pumpAndSettle();
+    await tester.tap(motionTab);
+    await tester.pumpAndSettle();
     await tester.ensureVisible(
       find.byKey(const ValueKey('caption-animation-karaoke_fill')),
     );

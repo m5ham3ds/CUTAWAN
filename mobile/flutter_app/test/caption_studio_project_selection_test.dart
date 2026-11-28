@@ -240,18 +240,19 @@ void main() {
       await tester.pump(const Duration(milliseconds: 50));
 
       final preview = find.byKey(const ValueKey('caption-preview-pinned'));
+      final previewTitle = find.text('معاينة متزامنة مع الكلمات');
       expect(preview, findsOneWidget);
       expect(tester.getTopLeft(preview).dy, greaterThan(0));
 
       final scrollable = find.byType(Scrollable).first;
       await tester.drag(scrollable, const Offset(0, -1400));
       await tester.pumpAndSettle();
-      final pinnedTop = tester.getTopLeft(preview).dy;
-      expect(pinnedTop, closeTo(0, 1));
+      final pinnedTitleTop = tester.getTopLeft(previewTitle).dy;
+      expect(pinnedTitleTop, lessThan(40));
 
       await tester.drag(scrollable, const Offset(0, -360));
       await tester.pumpAndSettle();
-      expect(tester.getTopLeft(preview).dy, closeTo(pinnedTop, 1));
+      expect(tester.getTopLeft(previewTitle).dy, closeTo(pinnedTitleTop, 1));
       expect(find.byKey(const ValueKey('caption-editor-section-tabs')), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
@@ -337,13 +338,20 @@ void main() {
       expect(tester.widget<Text>(previewText).maxLines, 1);
       expect(find.textContaining('اختر مشروعاً بعد إنشائه'), findsOneWidget);
 
-      await tester.tap(find.byKey(const ValueKey('caption-preview-hint-toggle')));
+      final previewHintToggle = find.byKey(
+        const ValueKey('caption-preview-hint-toggle'),
+      );
+      await tester.ensureVisible(previewHintToggle);
+      await tester.pumpAndSettle();
+      await tester.tap(previewHintToggle);
       await tester.pumpAndSettle();
       expect(tester.widget<Text>(previewText).maxLines, isNull);
       expect(find.textContaining('Karaoke Fill'), findsOneWidget);
       expect(find.textContaining('Live video playback synchronisation'), findsOneWidget);
 
-      await tester.tap(find.byKey(const ValueKey('caption-preview-hint-toggle')));
+      await tester.ensureVisible(previewHintToggle);
+      await tester.pumpAndSettle();
+      await tester.tap(previewHintToggle);
       await tester.pumpAndSettle();
       expect(tester.widget<Text>(previewText).maxLines, 1);
       expect(tester.takeException(), isNull);

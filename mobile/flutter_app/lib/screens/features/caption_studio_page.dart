@@ -134,7 +134,7 @@ class _CaptionStudioPageState extends State<CaptionStudioPage>
       _previewGroups.isEmpty ? null : _previewGroups[_previewGroupIndex];
 
   double get _previewHeaderExtent =>
-      410 +
+      426 +
       (_previewGroups.isNotEmpty ? 48 : 0) +
       (_previewHintExpanded ? 100 : 0) +
       (_error != null ? 70 : 0);
@@ -833,7 +833,6 @@ class _CaptionStudioPageState extends State<CaptionStudioPage>
     final segments = <ButtonSegment<_CaptionStudioEditorTab>>[
       ButtonSegment(
         value: _CaptionStudioEditorTab.styles,
-        icon: const Icon(Icons.palette_outlined),
         label: const Text(
           'الأنماط البصرية',
           key: ValueKey('caption-editor-tab-styles'),
@@ -844,7 +843,6 @@ class _CaptionStudioPageState extends State<CaptionStudioPage>
       ),
       ButtonSegment(
         value: _CaptionStudioEditorTab.motion,
-        icon: const Icon(Icons.motion_photos_on_outlined),
         label: const Text(
           'الحركة ومعاينة الدخول',
           key: ValueKey('caption-editor-tab-motion'),
@@ -855,7 +853,6 @@ class _CaptionStudioPageState extends State<CaptionStudioPage>
       ),
       ButtonSegment(
         value: _CaptionStudioEditorTab.typography,
-        icon: const Icon(Icons.text_fields_rounded),
         label: const Text(
           'الخط والتنسيق',
           key: ValueKey('caption-editor-tab-typography'),
@@ -887,17 +884,11 @@ class _CaptionStudioPageState extends State<CaptionStudioPage>
   }
 
   Widget _buildActiveEditorSection(BuildContext context) {
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 160),
-      child: KeyedSubtree(
-        key: ValueKey(_activeEditorTab),
-        child: switch (_activeEditorTab) {
-          _CaptionStudioEditorTab.styles => _buildStyleGallery(context),
-          _CaptionStudioEditorTab.motion => _buildMotionGallery(context),
-          _CaptionStudioEditorTab.typography => _buildTypographyControls(context),
-        },
-      ),
-    );
+    return switch (_activeEditorTab) {
+      _CaptionStudioEditorTab.styles => _buildStyleGallery(context),
+      _CaptionStudioEditorTab.motion => _buildMotionGallery(context),
+      _CaptionStudioEditorTab.typography => _buildTypographyControls(context),
+    };
   }
 
   Widget _buildColorField({
@@ -1100,7 +1091,7 @@ class _CaptionStudioPageState extends State<CaptionStudioPage>
             child: KeyedSubtree(
               key: const ValueKey('caption-preview-pinned'),
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+                padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
                 child: CutawanPanel(
                   padding: const EdgeInsets.all(14),
                   child: _buildPreview(context),
