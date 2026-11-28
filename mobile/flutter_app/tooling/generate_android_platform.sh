@@ -13,6 +13,153 @@ fi
 # Let the installed Flutter SDK own its Gradle/Kotlin project template.
 flutter create --platforms=android --org com.m5ham3ds --project-name cutawan_mobile .
 
+# Remove the generated still-logo flash from Android's native launch screen.
+# The Flutter first frame is deferred until the intro video is initialized.
+python3 - <<'PY'
+from pathlib import Path
+import re
+import shutil
+
+res = Path("android/app/src/main/res")
+logo = Path("assets/cutawan_logo.jpg")
+if not logo.is_file():
+    raise SystemExit("The uploaded CUTAWAN logo asset is missing.")
+
+# Use the exact uploaded logo as the Android launcher icon on API 26+.
+launcher_logo_dir = res / "drawable-nodpi"
+launcher_logo_dir.mkdir(parents=True, exist_ok=True)
+shutil.copyfile(logo, launcher_logo_dir / "cutawan_logo.jpg")
+
+values = res / "values"
+values.mkdir(parents=True, exist_ok=True)
+(values / "cutawan_icon_colors.xml").write_text(
+    '<?xml version="1.0" encoding="utf-8"?>\n'
+    '<resources>\n'
+    '    <color name="cutawan_icon_background">#101113</color>\n'
+    '</resources>\n'
+)
+
+adaptive_dir = res / "mipmap-anydpi-v26"
+adaptive_dir.mkdir(parents=True, exist_ok=True)
+adaptive_icon = (
+    '<?xml version="1.0" encoding="utf-8"?>\n'
+    '<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">\n'
+    '    <background android:drawable="@color/cutawan_icon_background" />\n'
+    '    <foreground android:drawable="@drawable/cutawan_logo" />\n'
+    '</adaptive-icon>\n'
+)
+for name in ("ic_launcher.xml", "ic_launcher_round.xml"):
+    (adaptive_dir / name).write_text(adaptive_icon)
+
+# Older Android versions use the same plain dark launch background.
+blank_background = (
+    '<?xml version="1.0" encoding="utf-8"?>\n'
+    '<layer-list xmlns:android="http://schemas.android.com/apk/res/android">\n'
+    '    <item><color android:color="#101113" /></item>\n'
+    '</layer-list>\n'
+)
+launch_files = list(res.glob("drawable*/launch_background.xml"))
+if not launch_files:
+    launch_files = [res / "drawable" / "launch_background.xml"]
+for path in launch_files:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(blank_background)
+
+# Android 12+ requires an animated-icon drawable. A transparent vector
+# prevents the old launcher artwork from appearing before the video.
+(res / "drawable").mkdir(parents=True, exist_ok=True)
+(res / "drawable" / "cutawan_splash_transparent.xml").write_text(
+    '<?xml version="1.0" encoding="utf-8"?>\n'
+    '<vector xmlns:android="http://schemas.android.com/apk/res/android"\n'
+    '    android:width="288dp"\n'
+    '    android:height="288dp"\n'
+    '    android:viewportWidth="288"\n'
+    '    android:viewportHeight="288"\n'
+    '    android:alpha="0">\n'
+    '    <path android:fillColor="#FFFFFFFF" android:pathData="M0,0h288v288h-288z" />\n'
+    '</vector>\n'
+)
+
+def patch_launch_theme(source: str) -> str:
+    match = re.search(
+        r'(<style\\s+name="LaunchTheme"[^>]*>)(.*?)(</style>)',
+        source,
+        flags=re.S,
+    )
+    if not match:
+        raise SystemExit("Could not find LaunchTheme in generated Android styles.xml.")
+    body = match.group(2)
+    body = re.sub(
+        r'\\s*<item\\s+name="android:windowSplashScreen(?:Background|AnimatedIcon|IconBackgroundColor)">.*?</item>',
+        "",
+        body,
+        flags=re.S,
+    )
+    body = re.sub(
+        r'\\s*<item\\s+name="android:windowBackground">.*?</item>',
+        "",
+        body,
+        flags=re.S,
+    )
+    body = (
+        '\\n        <item name="android:windowBackground">@drawable/launch_background</item>'
+        '\\n        <item name="android:windowSplashScreenBackground">#101113</item>'
+        '\\n        <item name="android:windowSplashScreenAnimatedIcon">@drawable/cutawan_splash_transparent</item>'
+    ) + body
+    source = source[:match.start()] + match.group(1) + body + match.group(3) + source[match.end():]
+
+    normal = re.search(
+        r'(<style\\s+name="NormalTheme"[^>]*>)(.*?)(</style>)',
+        source,
+        flags=re.S,
+    )
+    if normal:
+        normal_body = re.sub(
+            r'<item\\s+name="android:windowBackground">.*?</item>',
+            '<item name="android:windowBackground">@drawable/launch_background</item>',
+            normal.group(2),
+            flags=re.S,
+        )
+        if 'name="android:windowBackground"' not in normal_body:
+            normal_body += '\\n        <item name="android:windowBackground">@drawable/launch_background</item>\\n'
+        source = source[:normal.start()] + normal.group(1) + normal_body + normal.group(3) + source[normal.end():]
+    return source
+
+base_day = res / "values" / "styles.xml"
+if not base_day.is_file():
+    raise SystemExit("Generated Android values/styles.xml is missing.")
+base_night = res / "values-night" / "styles.xml"
+day_source = patch_launch_theme(base_day.read_text())
+night_source = patch_launch_theme(
+    base_night.read_text() if base_night.is_file() else base_day.read_text()
+)
+
+for folder, source in (
+    ("values", day_source),
+    ("values-night", night_source),
+    ("values-v31", day_source),
+    ("values-night-v31", night_source),
+):
+    destination = res / folder / "styles.xml"
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    destination.write_text(source)
+
+# Fail closed if any generated startup resource still points at Flutter's
+# default image, or if an Android 12 theme is missing the transparent icon.
+for folder in ("values-v31", "values-night-v31"):
+    source = (res / folder / "styles.xml").read_text()
+    if "@drawable/cutawan_splash_transparent" not in source:
+        raise SystemExit(f"{folder}/styles.xml does not use the blank splash icon.")
+    if "android:windowSplashScreenBackground" not in source:
+        raise SystemExit(f"{folder}/styles.xml is missing the Android 12 splash background.")
+
+for path in launch_files:
+    if "@mipmap" in path.read_text() or "launch_image" in path.read_text():
+        raise SystemExit(f"Old static artwork remains in {path}")
+
+print("Verified: blank Android launch screen, transparent Android 12 splash icon, and new adaptive launcher icon.")
+PY
+
 MAIN_ACTIVITY_DIR="android/app/src/main/kotlin/com/m5ham3ds/cutawan_mobile"
 mkdir -p "$MAIN_ACTIVITY_DIR"
 install -m 0644 "$SCRIPT_DIR/android/MainActivity.kt" "$MAIN_ACTIVITY_DIR/MainActivity.kt"
