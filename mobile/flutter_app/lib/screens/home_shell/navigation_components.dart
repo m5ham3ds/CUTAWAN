@@ -254,8 +254,13 @@ class CutawanNavigationDrawer extends StatelessWidget {
       backgroundColor: scheme.surface,
       elevation: 0,
       child: SafeArea(
-        child: Column(
-          children: [
+        child: LayoutBuilder(
+          builder: (context, constraints) => SingleChildScrollView(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: IntrinsicHeight(
+                child: Column(
+                  children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(18, 16, 18, 20),
               child: Container(
@@ -355,7 +360,11 @@ class CutawanNavigationDrawer extends StatelessWidget {
                 ],
               ),
             ),
-          ],
+                  ],
+                ),
+              ),
+            ),
+          ),
         ),
       ),
     );
