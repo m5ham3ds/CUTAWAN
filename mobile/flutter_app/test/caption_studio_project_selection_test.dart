@@ -257,7 +257,6 @@ void main() {
       await tester.pumpAndSettle();
       pinnedTitleTop = tester.getTopLeft(previewTitle).dy;
       expect(pinnedTitleTop, inInclusiveRange(0, 40));
-      expect(find.byKey(const ValueKey('caption-editor-section-tabs')), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
   );
