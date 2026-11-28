@@ -88,7 +88,9 @@ Future<void> openCreatePage(WidgetTester tester) async {
 }
 
 void main() {
-  TestWidgetsFlutterBinding.ensureInitialized();
+  final binding = TestWidgetsFlutterBinding.ensureInitialized();
+  binding.platformDispatcher.localeTestValue = const Locale('ar');
+  binding.platformDispatcher.localesTestValue = const <Locale>[Locale('ar')];
 
   const mediaChannel = MethodChannel('com.cutawan.mobile/media');
 

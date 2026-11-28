@@ -22,8 +22,11 @@ Future<void> _scrollSettingsUntilFound(
   final viewport = tester.getRect(list);
 
   for (var attempt = 0; attempt < maxSwipes; attempt++) {
-    if (tester.any(target) && tester.getRect(target).overlaps(viewport)) {
-      return;
+    if (tester.any(target)) {
+      final rect = tester.getRect(target);
+      if (viewport.contains(rect.topLeft) && viewport.contains(rect.bottomRight)) {
+        return;
+      }
     }
 
     final nextOffset = (position.pixels + distance)
@@ -39,10 +42,12 @@ Future<void> _scrollSettingsUntilFound(
     findsOneWidget,
     reason: 'Settings list did not build the target within $maxSwipes scroll steps.',
   );
+  final targetRect = tester.getRect(target);
   expect(
-    tester.getRect(target).overlaps(viewport),
+    viewport.contains(targetRect.topLeft) &&
+        viewport.contains(targetRect.bottomRight),
     isTrue,
-    reason: 'Settings target was built but remained outside the visible list viewport.',
+    reason: 'Settings target was not fully visible inside the list viewport.',
   );
 }
 
@@ -252,7 +257,14 @@ void main() {
 
     final blue = find.byKey(const ValueKey('settings-accent-blue'));
     await _scrollSettingsUntilFound(tester, blue, distance: 320);
-    await tester.tap(blue);
+    expect(store.preferences.value.accentColor, AppAccentColor.red);
+    final blueInkWell = find.descendant(
+      of: blue,
+      matching: find.byType(InkWell),
+    );
+    await tester.ensureVisible(blueInkWell);
+    await tester.pumpAndSettle();
+    await tester.tap(blueInkWell);
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('settings-accent-confirm')), findsOneWidget);
     expect(store.preferences.value.accentColor, AppAccentColor.red);
@@ -261,7 +273,9 @@ void main() {
     await tester.pumpAndSettle();
     expect(store.preferences.value.accentColor, AppAccentColor.red);
 
-    await tester.tap(blue);
+    await tester.ensureVisible(blueInkWell);
+    await tester.pumpAndSettle();
+    await tester.tap(blueInkWell);
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('settings-accent-confirm')));
     await tester.pumpAndSettle();

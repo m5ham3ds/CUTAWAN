@@ -12,6 +12,9 @@ void configureCaptionStudioViewport(WidgetTester tester) {
 }
 
 void main() {
+  final binding = TestWidgetsFlutterBinding.ensureInitialized();
+  binding.platformDispatcher.localeTestValue = const Locale('ar');
+  binding.platformDispatcher.localesTestValue = const <Locale>[Locale('ar')];
   testWidgets('Cutawan design system exposes consistent Material 3 light and dark themes', (tester) async {
     await tester.pumpWidget(MaterialApp(
       theme: CutawanTheme.light(),

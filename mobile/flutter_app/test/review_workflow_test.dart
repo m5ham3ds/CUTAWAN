@@ -74,7 +74,9 @@ class _ReviewMemoryRepository extends LocalProjectRepository {
 }
 
 void main() {
-  TestWidgetsFlutterBinding.ensureInitialized();
+  final binding = TestWidgetsFlutterBinding.ensureInitialized();
+  binding.platformDispatcher.localeTestValue = const Locale('ar');
+  binding.platformDispatcher.localesTestValue = const <Locale>[Locale('ar')];
 
   testWidgets(
     'validated export gallery opens, shares and deletes only the selected CUTAWAN video',
