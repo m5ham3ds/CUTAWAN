@@ -18,12 +18,10 @@ class CutawanTopBar extends StatelessWidget {
   const CutawanTopBar({
     super.key,
     required this.onRefresh,
-    required this.onSettings,
     this.onMenu,
   });
 
   final Future<void> Function() onRefresh;
-  final VoidCallback onSettings;
   final VoidCallback? onMenu;
 
   @override
@@ -44,12 +42,6 @@ class CutawanTopBar extends StatelessWidget {
               onPressed: onMenu,
               icon: const Icon(Icons.menu_rounded),
             ),
-          Icon(
-            Icons.auto_awesome_rounded,
-            color: theme.colorScheme.primary,
-            size: compact ? 24 : 28,
-          ),
-          const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -81,13 +73,11 @@ class CutawanTopBar extends StatelessWidget {
               onPressed: () => onRefresh(),
               icon: const Icon(Icons.refresh_rounded),
             ),
-          IconButton(
-            tooltip: cutawanText(context, 'الإعدادات'),
-            onPressed: () {
-              HapticFeedback.selectionClick();
-              onSettings();
-            },
-            icon: const Icon(Icons.settings_outlined),
+          Icon(
+            Icons.auto_awesome_rounded,
+            key: const ValueKey('cutawan-topbar-logo'),
+            color: theme.colorScheme.primary,
+            size: compact ? 24 : 28,
           ),
         ],
       ),
@@ -340,6 +330,7 @@ class CutawanNavigationDrawer extends StatelessWidget {
               onTap: () => _closeAndRun(context, onModels),
             ),
             _CutawanDrawerItem(
+              key: const ValueKey('cutawan-drawer-settings'),
               icon: Icons.settings_outlined,
               label: cutawanText(context, 'الإعدادات'),
               onTap: () => _closeAndRun(context, onSettings),
@@ -373,6 +364,7 @@ class CutawanNavigationDrawer extends StatelessWidget {
 
 class _CutawanDrawerItem extends StatelessWidget {
   const _CutawanDrawerItem({
+    super.key,
     required this.icon,
     required this.label,
     required this.onTap,

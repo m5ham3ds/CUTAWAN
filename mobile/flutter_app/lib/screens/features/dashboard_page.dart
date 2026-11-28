@@ -11,9 +11,9 @@ class DashboardPage extends StatelessWidget {
     required this.onCreate,
     required this.onOpenJobs,
     required this.onOpenReview,
-    required this.onOpenSettings,
     required this.onOpenProject,
     required this.storageUsageBytes,
+    this.bottomContentInset = 30,
     super.key,
   });
 
@@ -21,9 +21,9 @@ class DashboardPage extends StatelessWidget {
   final VoidCallback onCreate;
   final VoidCallback onOpenJobs;
   final VoidCallback onOpenReview;
-  final VoidCallback onOpenSettings;
   final ValueChanged<CutawanProject> onOpenProject;
   final Future<int> Function() storageUsageBytes;
+  final double bottomContentInset;
 
   @override
   Widget build(BuildContext context) {
@@ -54,7 +54,7 @@ class DashboardPage extends StatelessWidget {
                 horizontalPadding,
                 16,
                 horizontalPadding,
-                30,
+                bottomContentInset,
               ),
               children: [
                 Row(
@@ -82,13 +82,6 @@ class DashboardPage extends StatelessWidget {
                           ),
                         ],
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    IconButton(
-                      key: const ValueKey('dashboard-settings'),
-                      tooltip: 'الإعدادات',
-                      onPressed: onOpenSettings,
-                      icon: const Icon(Icons.settings_outlined),
                     ),
                   ],
                 ),
@@ -456,6 +449,7 @@ class _DashboardEmptyState extends StatelessWidget {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     return Card(
+      key: const ValueKey('dashboard-empty-state'),
       child: Padding(
         padding: const EdgeInsets.all(18),
         child: Column(

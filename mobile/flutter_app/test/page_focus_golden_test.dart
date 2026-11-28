@@ -167,7 +167,6 @@ void main() {
                   onCreate: () {},
                   onOpenJobs: () {},
                   onOpenReview: () {},
-                  onOpenSettings: () {},
                   onOpenProject: (_) {},
                   storageUsageBytes: () async => 2 * 1024 * 1024,
                 ),
@@ -180,7 +179,7 @@ void main() {
       await _expectFocusedGolden(
         tester,
         fileName: 'focus-dashboard-${variant.name}',
-        target: find.byTooltip('الإعدادات'),
+        target: find.byKey(const ValueKey('dashboard-create-project')),
       );
       await tester.pumpWidget(const SizedBox.shrink());
     }

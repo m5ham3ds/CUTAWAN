@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:cutawan_mobile/app.dart';
+import 'package:cutawan_mobile/screens/home_shell/navigation_components.dart';
 import 'package:cutawan_mobile/theme/cutawan_theme.dart';
 
 void configureCaptionStudioViewport(WidgetTester tester) {
@@ -58,6 +59,41 @@ void main() {
     expect(find.text('مرحباً بك في CUTAWAN'), findsOneWidget);
   });
 
+  testWidgets('dashboard replaces both settings shortcuts with the CUTAWAN logo', (tester) async {
+    await tester.pumpWidget(const CutawanApp());
+
+    expect(find.byKey(const ValueKey('dashboard-settings')), findsNothing);
+    expect(find.byTooltip('الإعدادات'), findsNothing);
+    expect(find.byKey(const ValueKey('cutawan-topbar-logo')), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('cutawan-open-drawer')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('cutawan-drawer-settings')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('dashboard recent-projects end state can scroll above the bottom navigation', (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(const CutawanApp());
+    await tester.pumpAndSettle();
+
+    final list = find.byKey(const ValueKey('cutawan-dashboard-list'));
+    expect(list, findsOneWidget);
+    await tester.drag(list, const Offset(0, -2400));
+    await tester.pumpAndSettle();
+
+    final emptyState = find.byKey(const ValueKey('dashboard-empty-state'));
+    expect(emptyState, findsOneWidget);
+    final emptyStateRect = tester.getRect(emptyState);
+    final navigationRect = tester.getRect(find.byType(CutawanNavigationBar));
+    expect(emptyStateRect.bottom, lessThanOrEqualTo(navigationRect.top));
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('dashboard create action opens the real import page', (tester) async {
     await tester.pumpWidget(const CutawanApp());
     expect(find.text('مرحباً بك في CUTAWAN'), findsOneWidget);
@@ -73,7 +109,9 @@ void main() {
     expect(find.byTooltip('مركز النماذج'), findsNothing);
     expect(find.text('مركز النماذج'), findsNothing);
 
-    await tester.tap(find.byKey(const ValueKey('dashboard-settings')));
+    await tester.tap(find.byKey(const ValueKey('cutawan-open-drawer')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('cutawan-drawer-settings')));
     await tester.pumpAndSettle();
     expect(find.text('إعدادات CUTAWAN'), findsOneWidget);
     expect(find.text('تشخيص الجهاز'), findsOneWidget);
@@ -95,7 +133,9 @@ void main() {
       expect(find.byTooltip('تشخيص الجهاز'), findsNothing);
       expect(find.byTooltip('مركز النماذج'), findsNothing);
 
-      await tester.tap(find.byKey(const ValueKey('dashboard-settings')));
+      await tester.tap(find.byKey(const ValueKey('cutawan-open-drawer')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('cutawan-drawer-settings')));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 350));
 

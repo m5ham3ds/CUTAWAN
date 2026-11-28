@@ -163,9 +163,9 @@ class _HomeShellState extends State<HomeShell> with SingleTickerProviderStateMix
           onCreate: () => _selectDestination(1),
           onOpenJobs: () => _selectDestination(2),
           onOpenReview: () => _selectDestination(3),
-          onOpenSettings: _openSettings,
           onOpenProject: _openProjectInReview,
           storageUsageBytes: _readStorageUsage,
+          bottomContentInset: CutawanNavigationBar.height + MediaQuery.of(context).padding.bottom + 30,
         ),
       ),
       TickerMode(
@@ -214,7 +214,6 @@ class _HomeShellState extends State<HomeShell> with SingleTickerProviderStateMix
           CutawanTopBar(
             onMenu: () => _scaffoldKey.currentState?.openDrawer(),
             onRefresh: _reloadProjects,
-            onSettings: _openSettings,
           ),
           Expanded(child: AnimatedSwitcher(
             duration: _reduceMotion ? Duration.zero : const Duration(milliseconds: 280),
