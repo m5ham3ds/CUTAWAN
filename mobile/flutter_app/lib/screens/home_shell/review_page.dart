@@ -1298,8 +1298,11 @@ class _ReviewPageState extends State<ReviewPage> {
                           ],
                         ),
                         const SizedBox(height: 6),
-                        Text(cutawanText(context, '${formatCutawanDuration(candidate.startMs)} – ${formatCutawanDuration(candidate.endMs)} · ${candidate.durationMs ~/ 1000} ثانية')
-                          '${candidate.modelAnnotated ? ' · تعليق النموذج' : ''}',
+                        Text(
+                          cutawanText(
+                            context,
+                            '${formatCutawanDuration(candidate.startMs)} – ${formatCutawanDuration(candidate.endMs)} · ${candidate.durationMs ~/ 1000} ثانية${candidate.modelAnnotated ? ' · تعليق النموذج' : ''}',
+                          ),
                           style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
                         ),
                         if (candidate.explanations.isNotEmpty) ...[
