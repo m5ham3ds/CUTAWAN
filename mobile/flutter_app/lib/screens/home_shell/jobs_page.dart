@@ -181,7 +181,7 @@ class _JobsPageState extends State<JobsPage> {
     } catch (error) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(cutawanText(context, 'تعذّر إيقاف المهمة: $error')))),
+          SnackBar(content: Text(cutawanText(context, 'تعذّر إيقاف المهمة: $error'))),
         );
       }
     } finally {
@@ -198,7 +198,7 @@ class _JobsPageState extends State<JobsPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: Text(cutawanText(context, 'حذف المشروع'))),
+        title: Text(cutawanText(context, 'حذف المشروع')),
         content: Text(
           isDownloadedFile
               ? 'سيُحذف المشروع ونسخة الفيديو التي نزّلها Cutawan من مساحة التطبيق. لا يمكن التراجع عن ذلك.'
@@ -207,11 +207,11 @@ class _JobsPageState extends State<JobsPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
-            child: Text(cutawanText(context, 'إلغاء'))),
+            child: Text(cutawanText(context, 'إلغاء')),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(dialogContext, true),
-            child: Text(cutawanText(context, 'حذف'))),
+            child: Text(cutawanText(context, 'حذف')),
           ),
         ],
       ),
@@ -235,13 +235,13 @@ class _JobsPageState extends State<JobsPage> {
       await widget.onProjectsChanged();
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text(cutawanText(context, 'تم حذف سجل المشروع من الجهاز.')))),
+          const SnackBar(content: Text(cutawanText(context, 'تم حذف سجل المشروع من الجهاز.'))),
         );
       }
     } catch (error) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(cutawanText(context, 'تعذّر حذف المشروع: $error')))),
+          SnackBar(content: Text(cutawanText(context, 'تعذّر حذف المشروع: $error'))),
         );
       }
     } finally {
@@ -349,7 +349,7 @@ class _JobsPageState extends State<JobsPage> {
             ),
             child: Icon(Icons.storage_outlined, color: theme.colorScheme.onSurfaceVariant),
           ),
-          title: Text(cutawanText(context, 'مساحة تنزيلات Cutawan'))),
+          title: Text(cutawanText(context, 'مساحة تنزيلات Cutawan')),
           subtitle: Text(
             snapshot.hasData
                 ? formatCutawanBytes(snapshot.data!)
@@ -604,13 +604,13 @@ class _JobsPageState extends State<JobsPage> {
               icon: Icons.grid_view_rounded,
             ),
             const SizedBox(height: 10),
-            Text(cutawanText(context, 'متابعة المعالجة')),
+            Text(cutawanText(context, 'متابعة المعالجة'),
               style: theme.textTheme.headlineLarge?.copyWith(
                 fontWeight: FontWeight.w900,
               ),
             ),
             const SizedBox(height: 6),
-            Text(cutawanText(context, 'راقب كل مشروع، وافهم المرحلة الحالية، ثم افتح المراجعة للبدء أو الاستئناف.')),
+            Text(cutawanText(context, 'راقب كل مشروع، وافهم المرحلة الحالية، ثم افتح المراجعة للبدء أو الاستئناف.'),
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
@@ -646,7 +646,7 @@ class _JobsPageState extends State<JobsPage> {
             Row(
               children: [
                 Expanded(
-                  child: Text(cutawanText(context, 'المشاريع ${visible.length} من ${items.length}')),
+                  child: Text(cutawanText(context, 'المشاريع ${visible.length} من ${items.length}'),
                     style: theme.textTheme.labelLarge?.copyWith(
                       fontWeight: FontWeight.w800,
                     ),
@@ -655,7 +655,7 @@ class _JobsPageState extends State<JobsPage> {
                 TextButton.icon(
                   onPressed: _refresh,
                   icon: const Icon(Icons.refresh_rounded, size: 17),
-                  label: Text(cutawanText(context, 'تحديث'))),
+                  label: Text(cutawanText(context, 'تحديث')),
                 ),
               ],
             ),
@@ -674,7 +674,7 @@ class _JobsPageState extends State<JobsPage> {
                   children: [
                     const Icon(Icons.search_off_rounded, size: 30),
                     const SizedBox(height: 8),
-                    Text(cutawanText(context, 'لا توجد مشاريع تطابق عوامل التصفية الحالية.')),
+                    Text(cutawanText(context, 'لا توجد مشاريع تطابق عوامل التصفية الحالية.'),
                       textAlign: TextAlign.center,
                     ),
                     TextButton(
@@ -682,7 +682,7 @@ class _JobsPageState extends State<JobsPage> {
                         _searchController.clear();
                         setState(() => _filter = _JobsFilter.all);
                       },
-                      child: Text(cutawanText(context, 'مسح البحث والتصفية'))),
+                      child: Text(cutawanText(context, 'مسح البحث والتصفية')),
                     ),
                   ],
                 ),

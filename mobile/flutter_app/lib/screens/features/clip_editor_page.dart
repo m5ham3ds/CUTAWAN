@@ -164,7 +164,7 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
             Row(
               children: [
                 Expanded(
-                  child: Text(cutawanText(context, 'تعذّر استخراج الإطارات: $_filmstripError')),
+                  child: Text(cutawanText(context, 'تعذّر استخراج الإطارات: $_filmstripError'),
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.error,
                     ),
@@ -181,7 +181,7 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
             OutlinedButton.icon(
               onPressed: _loadFilmstripFrames,
               icon: const Icon(Icons.refresh_rounded),
-              label: Text(cutawanText(context, 'استخراج الإطارات'))),
+              label: Text(cutawanText(context, 'استخراج الإطارات')),
             )
           else
             SizedBox(
@@ -518,7 +518,7 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
     } else {
       if (updated.length >= 120) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text(cutawanText(context, 'وصلت إلى الحد الأقصى وهو 120 إطار تركيز.')))),
+          const SnackBar(content: Text(cutawanText(context, 'وصلت إلى الحد الأقصى وهو 120 إطار تركيز.'))),
         );
         return;
       }
@@ -741,7 +741,7 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
         _endMs > duration ||
         _endMs - _startMs < 500) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text(cutawanText(context, 'نطاق القص غير صالح.')))),
+        const SnackBar(content: Text(cutawanText(context, 'نطاق القص غير صالح.'))),
       );
       return;
     }
@@ -764,7 +764,7 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
     final preferencesError = preferences.validate();
     if (preferencesError != null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(cutawanText(context, 'إعدادات التصدير غير صالحة: $preferencesError')))),
+        SnackBar(content: Text(cutawanText(context, 'إعدادات التصدير غير صالحة: $preferencesError'))),
       );
       return;
     }
@@ -793,14 +793,14 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text(cutawanText(context, 'حُفظت تعديلات المقطع والتأطير والترجمة. أعد تشغيل المعالجة لتحديث ملف التصدير.'))),
+          content: Text(cutawanText(context, 'حُفظت تعديلات المقطع والتأطير والترجمة. أعد تشغيل المعالجة لتحديث ملف التصدير.')),
         ),
       );
       Navigator.of(context).pop();
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(cutawanText(context, 'تعذّر حفظ تعديلات المقطع: $error')))),
+          SnackBar(content: Text(cutawanText(context, 'تعذّر حفظ تعديلات المقطع: $error'))),
         );
       }
     } finally {
@@ -999,8 +999,8 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(cutawanText(context, 'البداية  ${_formatTime(_startMs)}')), style: theme.textTheme.labelMedium),
-              Text(cutawanText(context, 'النهاية  ${_formatTime(_endMs)}')), style: theme.textTheme.labelMedium),
+              Text(cutawanText(context, 'البداية  ${_formatTime(_startMs)}'), style: theme.textTheme.labelMedium),
+              Text(cutawanText(context, 'النهاية  ${_formatTime(_endMs)}'), style: theme.textTheme.labelMedium),
             ],
           ),
           const SizedBox(height: 10),
@@ -1011,17 +1011,17 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
               OutlinedButton.icon(
                 onPressed: _markTrimStart,
                 icon: const Icon(Icons.flag_outlined, size: 17),
-                label: Text(cutawanText(context, 'تعيين البداية هنا'))),
+                label: Text(cutawanText(context, 'تعيين البداية هنا')),
               ),
               OutlinedButton.icon(
                 onPressed: _markTrimEnd,
                 icon: const Icon(Icons.flag_rounded, size: 17),
-                label: Text(cutawanText(context, 'تعيين النهاية هنا'))),
+                label: Text(cutawanText(context, 'تعيين النهاية هنا')),
               ),
             ],
           ),
           const SizedBox(height: 8),
-          Text(cutawanText(context, 'مدة المقطع الناتجة: ${_formatTime(_endMs - _startMs)}')),
+          Text(cutawanText(context, 'مدة المقطع الناتجة: ${_formatTime(_endMs - _startMs)}'),
             style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w800),
           ),
         ],
@@ -1042,7 +1042,7 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(cutawanText(context, 'تلاشي الدخول · ${durationLabel(_fadeInMs)}')),
+          Text(cutawanText(context, 'تلاشي الدخول · ${durationLabel(_fadeInMs)}'),
               style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w800)),
           Slider(
             value: _fadeInMs.toDouble(),
@@ -1060,7 +1060,7 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
             },
           ),
           const SizedBox(height: 4),
-          Text(cutawanText(context, 'تلاشي الخروج · ${durationLabel(_fadeOutMs)}')),
+          Text(cutawanText(context, 'تلاشي الخروج · ${durationLabel(_fadeOutMs)}'),
               style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w800)),
           Slider(
             value: _fadeOutMs.toDouble(),
@@ -1077,7 +1077,7 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
               });
             },
           ),
-          Text(cutawanText(context, 'يمكن ضبط كل تلاشي حتى 1.5 ثانية، ويُحفظ مع إعدادات هذا المقطع فقط.')),
+          Text(cutawanText(context, 'يمكن ضبط كل تلاشي حتى 1.5 ثانية، ويُحفظ مع إعدادات هذا المقطع فقط.'),
             style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
           ),
         ],
@@ -1101,7 +1101,7 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(cutawanText(context, 'نسبة الإخراج')), style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w800)),
+          Text(cutawanText(context, 'نسبة الإخراج'), style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w800)),
           const SizedBox(height: 8),
           Wrap(
             spacing: 7,
@@ -1115,7 +1115,7 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
             )).toList(growable: false),
           ),
           const SizedBox(height: 14),
-          Text(cutawanText(context, 'طريقة التأطير')), style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w800)),
+          Text(cutawanText(context, 'طريقة التأطير'), style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w800)),
           const SizedBox(height: 8),
           Wrap(
             spacing: 7,
@@ -1135,7 +1135,7 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(cutawanText(context, 'مركز القص الأفقي · ${(currentFocus.dx * 100).round()}%')),
+                    Text(cutawanText(context, 'مركز القص الأفقي · ${(currentFocus.dx * 100).round()}%'),
                     ),
                     Slider(
                       value: currentFocus.dx,
@@ -1145,7 +1145,7 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
                       onChanged: (value) =>
                           _upsertFocusKeyframeAtPlayhead(focusX: value),
                     ),
-                    Text(cutawanText(context, 'مركز القص العمودي · ${(currentFocus.dy * 100).round()}%')),
+                    Text(cutawanText(context, 'مركز القص العمودي · ${(currentFocus.dy * 100).round()}%'),
                     ),
                     Slider(
                       value: currentFocus.dy,
@@ -1159,12 +1159,12 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
                     FilledButton.tonalIcon(
                       onPressed: _addFocusKeyframeAtPlayhead,
                       icon: const Icon(Icons.add_rounded),
-                      label: Text(cutawanText(context, 'إضافة إطار تركيز عند ${_formatTime(sourceTimeMs)}')),
+                      label: Text(cutawanText(context, 'إضافة إطار تركيز عند ${_formatTime(sourceTimeMs)}'),
                       ),
                     ),
                     if (_focusKeyframes.isNotEmpty) ...[
                       const SizedBox(height: 8),
-                      Text(cutawanText(context, 'إطارات التركيز · ${_focusKeyframes.length}/120')),
+                      Text(cutawanText(context, 'إطارات التركيز · ${_focusKeyframes.length}/120'),
                         style: theme.textTheme.labelLarge?.copyWith(
                           fontWeight: FontWeight.w800,
                         ),
@@ -1280,8 +1280,8 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
         children: [
           SwitchListTile.adaptive(
             contentPadding: EdgeInsets.zero,
-            title: Text(cutawanText(context, 'إظهار الترجمة في التصدير'))),
-            subtitle: Text(cutawanText(context, 'يتم توليد الترجمة من توقيتات Whisper المحفوظة.'))),
+            title: Text(cutawanText(context, 'إظهار الترجمة في التصدير')),
+            subtitle: Text(cutawanText(context, 'يتم توليد الترجمة من توقيتات Whisper المحفوظة.')),
             value: _draftPreferences.captionsEnabled,
             onChanged: (value) => _updatePreferences(
               _draftPreferences.copyWith(captionsEnabled: value),
@@ -1289,7 +1289,7 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
           ),
           if (_draftPreferences.captionsEnabled) ...[
             const SizedBox(height: 8),
-            Text(cutawanText(context, 'أنماط النص')), style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w800)),
+            Text(cutawanText(context, 'أنماط النص'), style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w800)),
             const SizedBox(height: 8),
             Wrap(
               spacing: 7,
@@ -1328,7 +1328,7 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
               },
             ),
             const SizedBox(height: 14),
-            Text(cutawanText(context, 'لون النص')), style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w800)),
+            Text(cutawanText(context, 'لون النص'), style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w800)),
             const SizedBox(height: 8),
             _buildColorSwatches(
               selected: style.textColor,
@@ -1337,7 +1337,7 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
               ),
             ),
             const SizedBox(height: 12),
-            Text(cutawanText(context, 'لون الكلمة النشطة')), style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w800)),
+            Text(cutawanText(context, 'لون الكلمة النشطة'), style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w800)),
             const SizedBox(height: 8),
             _buildColorSwatches(
               selected: style.highlightColor,
@@ -1346,7 +1346,7 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
               ),
             ),
             const SizedBox(height: 14),
-            Text(cutawanText(context, 'حجم النص · ${(fontScale * 100).toStringAsFixed(1)}%'))),
+            Text(cutawanText(context, 'حجم النص · ${(fontScale * 100).toStringAsFixed(1)}%')),
             Slider(
               value: fontScale.clamp(0.03, 0.075).toDouble(),
               min: 0.03,
@@ -1356,7 +1356,7 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
                 _draftPreferences.copyWith(captionFontScale: value),
               ),
             ),
-            Text(cutawanText(context, 'موضع الترجمة · ${(position * 100).round()}% من ارتفاع الإطار'))),
+            Text(cutawanText(context, 'موضع الترجمة · ${(position * 100).round()}% من ارتفاع الإطار')),
             Slider(
               value: position.clamp(0.55, 0.92).toDouble(),
               min: 0.55,
@@ -1367,7 +1367,7 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
               ),
             ),
             const SizedBox(height: 8),
-            Text(cutawanText(context, 'مزامنة التوقيت · ${_draftPreferences.captionTimingOffsetMs > 0 ? '))+' : ''}${_draftPreferences.captionTimingOffsetMs} ms',
+            Text(cutawanText(context, 'مزامنة التوقيت · ${_draftPreferences.captionTimingOffsetMs > 0 ? ')+' : ''}${_draftPreferences.captionTimingOffsetMs} ms',
               style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w800),
             ),
             Slider(
@@ -1390,7 +1390,7 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
             if (_transcript == null || !_transcript!.wordTimingReliable)
               Padding(
                 padding: const EdgeInsets.only(top: 6),
-                child: Text(cutawanText(context, 'لا توجد توقيتات كلمات موثوقة لهذا المشروع؛ لن تُنشأ ترجمة متزامنة حتى يكتمل التفريغ المحلي.')),
+                child: Text(cutawanText(context, 'لا توجد توقيتات كلمات موثوقة لهذا المشروع؛ لن تُنشأ ترجمة متزامنة حتى يكتمل التفريغ المحلي.'),
                   style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.error),
                 ),
               ),
@@ -1418,7 +1418,7 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
     final scheme = theme.colorScheme;
     return Scaffold(
       appBar: AppBar(
-        title: Text(cutawanText(context, 'محرر المقطع'))),
+        title: Text(cutawanText(context, 'محرر المقطع')),
         actions: [
           IconButton(
             tooltip: 'حفظ التعديلات',
@@ -1449,7 +1449,7 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(cutawanText(context, 'تحرير المقطع المحدد')),
+                                  Text(cutawanText(context, 'تحرير المقطع المحدد'),
                                     style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
                                   ),
                                   const SizedBox(height: 3),
@@ -1476,7 +1476,7 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
                           ],
                         ),
                         const SizedBox(height: 2),
-                        Text(cutawanText(context, 'معرّف المقطع: ${widget.candidate.id}')),
+                        Text(cutawanText(context, 'معرّف المقطع: ${widget.candidate.id}'),
                           style: theme.textTheme.labelSmall?.copyWith(color: scheme.onSurfaceVariant),
                         ),
                         _buildPreview(context, value),
@@ -1512,7 +1512,7 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
                           label: Text(_saving ? 'جارٍ حفظ التعديلات…' : 'حفظ والعودة إلى المراجعة'),
                         ),
                         const SizedBox(height: 10),
-                        Text(cutawanText(context, 'الإعدادات النصية ونسبة الإخراج مشتركة على مستوى المشروع، أما القص ونقطة التركيز فمحفوظان لهذا المقطع وحده.')),
+                        Text(cutawanText(context, 'الإعدادات النصية ونسبة الإخراج مشتركة على مستوى المشروع، أما القص ونقطة التركيز فمحفوظان لهذا المقطع وحده.'),
                           textAlign: TextAlign.center,
                           style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
                         ),
@@ -1540,7 +1540,7 @@ class _PlaybackError extends StatelessWidget {
           children: [
             Icon(Icons.video_file_outlined, size: 38, color: scheme.error),
             const SizedBox(height: 12),
-            Text(cutawanText(context, 'تعذّر فتح معاينة الفيديو')),
+            Text(cutawanText(context, 'تعذّر فتح معاينة الفيديو'),
               style: TextStyle(fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 8),

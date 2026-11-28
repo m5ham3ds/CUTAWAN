@@ -291,9 +291,9 @@ class _CreatePageState extends State<CreatePage> {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       const CutawanEyebrow('01 / مصدر الفيديو', icon: Icons.video_file_outlined),
       const SizedBox(height: 8),
-      Text(cutawanText(context, 'أضف الفيديو الأصلي')), style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900)),
+      Text(cutawanText(context, 'أضف الفيديو الأصلي'), style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900)),
       const SizedBox(height: 6),
-      Text(cutawanText(context, 'ابدأ بملف واحد. بعد فحصه سننتقل إلى إعداد عدد المقاطع ومدتها ونسبة الإخراج.')),
+      Text(cutawanText(context, 'ابدأ بملف واحد. بعد فحصه سننتقل إلى إعداد عدد المقاطع ومدتها ونسبة الإخراج.'),
         style: theme.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant, height: 1.5)),
       const SizedBox(height: 16),
       CutawanPanel(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -315,13 +315,13 @@ class _CreatePageState extends State<CreatePage> {
             key: const ValueKey('create-download-direct'),
             onPressed: _busy ? null : _downloadVideo,
             icon: const Icon(Icons.download_rounded),
-            label: Text(cutawanText(context, 'تنزيل الرابط'))),
+            label: Text(cutawanText(context, 'تنزيل الرابط')),
           );
           final pick = OutlinedButton.icon(
             key: const ValueKey('create-pick-local'),
             onPressed: _busy ? null : _selectVideo,
             icon: const Icon(Icons.folder_open_rounded),
-            label: Text(cutawanText(context, 'اختيار فيديو'))),
+            label: Text(cutawanText(context, 'اختيار فيديو')),
           );
           if (constraints.maxWidth < 390) {
             return Column(crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -339,21 +339,21 @@ class _CreatePageState extends State<CreatePage> {
             style: theme.textTheme.bodySmall),
           Align(alignment: AlignmentDirectional.centerEnd,
             child: TextButton.icon(onPressed: _cancelDownload,
-              icon: const Icon(Icons.close_rounded), label: Text(cutawanText(context, 'إلغاء التنزيل'))))),
+              icon: const Icon(Icons.close_rounded), label: Text(cutawanText(context, 'إلغاء التنزيل')))),
         ],
         if (_busy && _downloadProgress == null) ...[
           const SizedBox(height: 12),
           const LinearProgressIndicator(),
           const SizedBox(height: 7),
-          Text(cutawanText(context, 'جارٍ اختيار الفيديو وفحص بياناته…')), style: theme.textTheme.bodySmall),
+          Text(cutawanText(context, 'جارٍ اختيار الفيديو وفحص بياناته…'), style: theme.textTheme.bodySmall),
         ],
         const SizedBox(height: 10),
-        Text(cutawanText(context, 'المصادر المتاحة: ملفات الجهاز وروابط HTTP/HTTPS المباشرة لملفات الفيديو. روابط YouTube وTwitch وVimeo والمنصات التي تتطلب تجاوز قيود الوصول غير مدعومة حاليًا.')),
+        Text(cutawanText(context, 'المصادر المتاحة: ملفات الجهاز وروابط HTTP/HTTPS المباشرة لملفات الفيديو. روابط YouTube وTwitch وVimeo والمنصات التي تتطلب تجاوز قيود الوصول غير مدعومة حاليًا.'),
           style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant, height: 1.45)),
       ])),
       if (_source != null) ...[
         const SizedBox(height: 16),
-        Text(cutawanText(context, 'المصدر المختار')), style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800)),
+        Text(cutawanText(context, 'المصدر المختار'), style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800)),
         const SizedBox(height: 8),
         _sourceCard(),
         const SizedBox(height: 14),
@@ -361,7 +361,7 @@ class _CreatePageState extends State<CreatePage> {
           key: const ValueKey('create-step-continue'),
           onPressed: _busy ? null : () => setState(() => _step = 1),
           icon: const Icon(Icons.arrow_forward_rounded),
-          label: Text(cutawanText(context, 'متابعة إلى إعدادات المقاطع'))),
+          label: Text(cutawanText(context, 'متابعة إلى إعدادات المقاطع')),
         )),
       ],
     ]);
@@ -373,15 +373,15 @@ class _CreatePageState extends State<CreatePage> {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       const CutawanEyebrow('02 / إعداد المشروع', icon: Icons.tune_rounded),
       const SizedBox(height: 8),
-      Text(cutawanText(context, 'اضبط المقاطع قبل الإنشاء')), style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900)),
+      Text(cutawanText(context, 'اضبط المقاطع قبل الإنشاء'), style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900)),
       const SizedBox(height: 6),
-      Text(cutawanText(context, 'راجع الإعدادات قبل إنشاء المشروع. سيحتفظ المشروع بها لاستخدامها في مسار المعالجة.')),
+      Text(cutawanText(context, 'راجع الإعدادات قبل إنشاء المشروع. سيحتفظ المشروع بها لاستخدامها في مسار المعالجة.'),
         style: theme.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant, height: 1.5)),
       const SizedBox(height: 16),
       _sourceCard(change: true),
       const SizedBox(height: 14),
       CutawanPanel(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(cutawanText(context, 'عدد المقاطع المطلوبة')), style: theme.textTheme.titleSmall),
+        Text(cutawanText(context, 'عدد المقاطع المطلوبة'), style: theme.textTheme.titleSmall),
         const SizedBox(height: 10),
         Wrap(spacing: 8, runSpacing: 8, children: [5, 10, 15, 20].map((count) => ChoiceChip(
           key: ValueKey('create-clip-count-$count'),
@@ -390,7 +390,7 @@ class _CreatePageState extends State<CreatePage> {
           onSelected: _busy ? null : (_) => setState(() => _clipCount = count),
         )).toList()),
         const SizedBox(height: 18),
-        Text(cutawanText(context, 'المدة المستهدفة')), style: theme.textTheme.titleSmall),
+        Text(cutawanText(context, 'المدة المستهدفة'), style: theme.textTheme.titleSmall),
         const SizedBox(height: 8),
         DropdownButtonFormField<ClipDurationMode>(
           key: const ValueKey('create-duration-mode'),
@@ -437,7 +437,7 @@ class _CreatePageState extends State<CreatePage> {
       ])),
       const SizedBox(height: 12),
       CutawanPanel(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(cutawanText(context, 'نسبة أبعاد الفيديو')), style: theme.textTheme.titleSmall),
+        Text(cutawanText(context, 'نسبة أبعاد الفيديو'), style: theme.textTheme.titleSmall),
         const SizedBox(height: 10),
         Wrap(spacing: 8, runSpacing: 8, children: ClipAspectRatio.values.map((ratio) {
           final label = switch (ratio) {
@@ -454,7 +454,7 @@ class _CreatePageState extends State<CreatePage> {
           );
         }).toList()),
         const SizedBox(height: 18),
-        Text(cutawanText(context, 'جودة الإخراج')), style: theme.textTheme.titleSmall),
+        Text(cutawanText(context, 'جودة الإخراج'), style: theme.textTheme.titleSmall),
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
           key: const ValueKey('create-export-resolution'),
@@ -479,13 +479,13 @@ class _CreatePageState extends State<CreatePage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(cutawanText(context, 'إنشاء الترجمة النصية')),
+                  Text(cutawanText(context, 'إنشاء الترجمة النصية'),
                     style: theme.textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.w800,
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Text(cutawanText(context, 'تفريغ الكلام وتوليد توقيت الكلمات وتركيب الترجمة على المقاطع.')),
+                  Text(cutawanText(context, 'تفريغ الكلام وتوليد توقيت الكلمات وتركيب الترجمة على المقاطع.'),
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: scheme.onSurfaceVariant,
                     ),
@@ -502,7 +502,7 @@ class _CreatePageState extends State<CreatePage> {
         ),
         if (_captions) ...[
           const Divider(height: 20),
-          Text(cutawanText(context, 'نمط الترجمة')), style: theme.textTheme.titleSmall),
+          Text(cutawanText(context, 'نمط الترجمة'), style: theme.textTheme.titleSmall),
           const SizedBox(height: 8),
           DropdownButtonFormField<String>(
             key: const ValueKey('create-caption-style'),
@@ -516,7 +516,7 @@ class _CreatePageState extends State<CreatePage> {
             },
           ),
           const SizedBox(height: 14),
-          Text(cutawanText(context, 'حركة الكلمات')), style: theme.textTheme.titleSmall),
+          Text(cutawanText(context, 'حركة الكلمات'), style: theme.textTheme.titleSmall),
           const SizedBox(height: 8),
           DropdownButtonFormField<String>(
             key: const ValueKey('create-caption-animation'),
@@ -535,15 +535,15 @@ class _CreatePageState extends State<CreatePage> {
         Icon(Icons.center_focus_strong_rounded, color: scheme.onSurfaceVariant),
         const SizedBox(width: 12),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(cutawanText(context, 'تحليل التأطير التلقائي')), style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800)),
+          Text(cutawanText(context, 'تحليل التأطير التلقائي'), style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800)),
           const SizedBox(height: 4),
-          Text(cutawanText(context, 'يحلل CUTAWAN الإطارات ويضع خطة للتأطير عند توفر دليل بصري كافٍ. تعمل هذه الخطوة تلقائيًا حاليًا، ولا تعني التعرّف المؤكد على المتحدث النشط.')),
+          Text(cutawanText(context, 'يحلل CUTAWAN الإطارات ويضع خطة للتأطير عند توفر دليل بصري كافٍ. تعمل هذه الخطوة تلقائيًا حاليًا، ولا تعني التعرّف المؤكد على المتحدث النشط.'),
             style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant, height: 1.45)),
         ])),
       ])),
       const SizedBox(height: 14),
       CutawanPanel(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(cutawanText(context, 'ملخص المشروع')), style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w900)),
+        Text(cutawanText(context, 'ملخص المشروع'), style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w900)),
         const SizedBox(height: 10),
         CutawanSummaryLine(label: 'عدد المقاطع', value: '$_clipCount'),
         CutawanSummaryLine(label: 'المدة', value: _durationLabel),
@@ -561,7 +561,7 @@ class _CreatePageState extends State<CreatePage> {
           key: const ValueKey('create-step-back'),
           onPressed: _busy ? null : () => setState(() => _step = 0),
           icon: const Icon(Icons.arrow_back_rounded),
-          label: Text(cutawanText(context, 'العودة للفيديو'))),
+          label: Text(cutawanText(context, 'العودة للفيديو')),
         )),
         const SizedBox(width: 10),
         Expanded(child: FilledButton.icon(
@@ -574,7 +574,7 @@ class _CreatePageState extends State<CreatePage> {
         )),
       ]),
       const SizedBox(height: 6),
-      Text(cutawanText(context, 'بعد الحفظ ستنتقل إلى المراجعة لتشغيل التحليل ومتابعة المقاطع والتصدير.')),
+      Text(cutawanText(context, 'بعد الحفظ ستنتقل إلى المراجعة لتشغيل التحليل ومتابعة المقاطع والتصدير.'),
         textAlign: TextAlign.center,
         style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
     ]);
@@ -625,9 +625,9 @@ class _CreatePageState extends State<CreatePage> {
             ),
             const SizedBox(width: 12),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(cutawanText(context, 'مشروع فيديو جديد')), style: theme.textTheme.labelLarge?.copyWith(color: scheme.onSurfaceVariant, fontWeight: FontWeight.w800)),
+              Text(cutawanText(context, 'مشروع فيديو جديد'), style: theme.textTheme.labelLarge?.copyWith(color: scheme.onSurfaceVariant, fontWeight: FontWeight.w800)),
               const SizedBox(height: 3),
-              Text(cutawanText(context, 'من المصدر إلى مقاطع تستحق المشاهدة.')), style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900)),
+              Text(cutawanText(context, 'من المصدر إلى مقاطع تستحق المشاهدة.'), style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900)),
             ])),
           ]),
           const SizedBox(height: 16),

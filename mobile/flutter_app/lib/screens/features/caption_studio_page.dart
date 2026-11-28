@@ -427,7 +427,7 @@ class _CaptionStudioPageState extends State<CaptionStudioPage>
     if (projectId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text(cutawanText(context, 'أنشئ مشروعاً أو اختر مشروعاً أولاً لحفظ الإعدادات.'))),
+          content: Text(cutawanText(context, 'أنشئ مشروعاً أو اختر مشروعاً أولاً لحفظ الإعدادات.')),
         ),
       );
       return;
@@ -568,13 +568,13 @@ class _CaptionStudioPageState extends State<CaptionStudioPage>
           if (_loading)
             const LinearProgressIndicator(minHeight: 2),
           if (selected != null && _previewWords.isNotEmpty)
-            Text(cutawanText(context, 'تم تحميل ${_previewWords.length} كلمة مؤقتة من التفريغ المحفوظ.')),
+            Text(cutawanText(context, 'تم تحميل ${_previewWords.length} كلمة مؤقتة من التفريغ المحفوظ.'),
               style: theme.textTheme.labelSmall?.copyWith(
                 color: theme.colorScheme.secondary,
               ),
             )
           else if (selected != null)
-            Text(cutawanText(context, 'لا يوجد تفريغ موثوق لهذا المشروع؛ ستُستخدم كلمات تجريبية في المعاينة فقط.')),
+            Text(cutawanText(context, 'لا يوجد تفريغ موثوق لهذا المشروع؛ ستُستخدم كلمات تجريبية في المعاينة فقط.'),
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
@@ -600,7 +600,7 @@ class _CaptionStudioPageState extends State<CaptionStudioPage>
           Row(
             children: [
               Expanded(
-                child: Text(cutawanText(context, 'المجموعة ${_previewGroupIndex + 1} من ${_previewGroups.length} · '))
+                child: Text(cutawanText(context, 'المجموعة ${_previewGroupIndex + 1} من ${_previewGroups.length} · ')
                   '${_formatPreviewTime(_previewGroup!.startMs)}–'
                   '${_formatPreviewTime(_previewGroup!.endMs)}',
                   key: const ValueKey('caption-timed-group-label'),
@@ -614,7 +614,7 @@ class _CaptionStudioPageState extends State<CaptionStudioPage>
                   _previewGroups.length,
                   (index) => DropdownMenuItem<int>(
                     value: index,
-                    child: Text(cutawanText(context, 'مجموعة ${index + 1}'))),
+                    child: Text(cutawanText(context, 'مجموعة ${index + 1}')),
                   ),
                 ),
                 onChanged: _selectPreviewGroup,
@@ -728,7 +728,7 @@ class _CaptionStudioPageState extends State<CaptionStudioPage>
           ],
         ),
         const SizedBox(height: 4),
-        Text(cutawanText(context, 'المعاينة تعرض كلمات التفريغ المحفوظة. مزامنة العرض مع فيديو حي ليست جزءاً من هذه الصفحة.')),
+        Text(cutawanText(context, 'المعاينة تعرض كلمات التفريغ المحفوظة. مزامنة العرض مع فيديو حي ليست جزءاً من هذه الصفحة.'),
           style: theme.textTheme.bodySmall?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
@@ -764,7 +764,7 @@ class _CaptionStudioPageState extends State<CaptionStudioPage>
               .toList(growable: false),
         ),
         const SizedBox(height: 8),
-        Text(cutawanText(context, 'اختيار النمط يحمّل إعداداته الابتدائية، ويمكن تخصيص الخط والألوان والموضع بعد ذلك.')),
+        Text(cutawanText(context, 'اختيار النمط يحمّل إعداداته الابتدائية، ويمكن تخصيص الخط والألوان والموضع بعد ذلك.'),
           style: theme.textTheme.bodySmall?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
@@ -868,20 +868,20 @@ class _CaptionStudioPageState extends State<CaptionStudioPage>
         ),
         SwitchListTile(
           contentPadding: EdgeInsets.zero,
-          title: Text(cutawanText(context, 'نص عريض'))),
+          title: Text(cutawanText(context, 'نص عريض')),
           value: _bold,
           onChanged: (value) => _update(() => _bold = value),
         ),
         SwitchListTile(
           contentPadding: EdgeInsets.zero,
-          title: Text(cutawanText(context, 'أحرف كبيرة للإنجليزية'))),
+          title: Text(cutawanText(context, 'أحرف كبيرة للإنجليزية')),
           value: _uppercase,
           onChanged: (value) => _update(
             () => _uppercase = value,
             rebuildLayout: true,
           ),
         ),
-        Text(cutawanText(context, 'حجم الخط · ${(_fontScale * 100).toStringAsFixed(1)}%')),
+        Text(cutawanText(context, 'حجم الخط · ${(_fontScale * 100).toStringAsFixed(1)}%'),
           style: theme.textTheme.labelLarge,
         ),
         Slider(
@@ -895,7 +895,7 @@ class _CaptionStudioPageState extends State<CaptionStudioPage>
             rebuildLayout: true,
           ),
         ),
-        Text(cutawanText(context, 'موضع النص · ${(_positionY * 100).round()}% من أعلى الإطار')),
+        Text(cutawanText(context, 'موضع النص · ${(_positionY * 100).round()}% من أعلى الإطار'),
           style: theme.textTheme.labelLarge,
         ),
         Slider(
@@ -908,7 +908,7 @@ class _CaptionStudioPageState extends State<CaptionStudioPage>
         ),
         SwitchListTile(
           contentPadding: EdgeInsets.zero,
-          title: Text(cutawanText(context, 'إظهار إطار الأمان'))),
+          title: Text(cutawanText(context, 'إظهار إطار الأمان')),
           value: _showSafeFrame,
           onChanged: (value) => setState(() => _showSafeFrame = value),
         ),
@@ -945,7 +945,7 @@ class _CaptionStudioPageState extends State<CaptionStudioPage>
           icon: Icons.sync_alt_rounded,
         ),
         const SizedBox(height: 8),
-        Text(cutawanText(context, 'إزاحة توقيت الكلمات · $prefix$_timingOffsetMs ms')),
+        Text(cutawanText(context, 'إزاحة توقيت الكلمات · $prefix$_timingOffsetMs ms'),
           key: const ValueKey('caption-timing-offset-label'),
           style: theme.textTheme.labelLarge,
         ),
@@ -960,7 +960,7 @@ class _CaptionStudioPageState extends State<CaptionStudioPage>
             rebuildLayout: true,
           ),
         ),
-        Text(cutawanText(context, 'القيمة تحفظ داخل المشروع وتؤثر في توقيت الكلمات المُصدّرة. المعاينة التجريبية لا تستبدل تشغيل الفيديو.')),
+        Text(cutawanText(context, 'القيمة تحفظ داخل المشروع وتؤثر في توقيت الكلمات المُصدّرة. المعاينة التجريبية لا تستبدل تشغيل الفيديو.'),
           style: theme.textTheme.bodySmall?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
@@ -985,14 +985,14 @@ class _CaptionStudioPageState extends State<CaptionStudioPage>
           icon: Icons.closed_caption_rounded,
         ),
         const SizedBox(height: 12),
-        Text(cutawanText(context, 'مختبر الهوية النصية')),
+        Text(cutawanText(context, 'مختبر الهوية النصية'),
           style: theme.textTheme.headlineLarge?.copyWith(
             fontWeight: FontWeight.w900,
             fontSize: 30,
           ),
         ),
         const SizedBox(height: 7),
-        Text(cutawanText(context, 'اضبط شكل الكلمات وتوقيتها ثم احفظ الإعدادات داخل المشروع الذي تختاره.')),
+        Text(cutawanText(context, 'اضبط شكل الكلمات وتوقيتها ثم احفظ الإعدادات داخل المشروع الذي تختاره.'),
           style: theme.textTheme.bodyMedium?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
@@ -1022,8 +1022,8 @@ class _CaptionStudioPageState extends State<CaptionStudioPage>
         SwitchListTile(
           key: const ValueKey('caption-export-enabled'),
           contentPadding: EdgeInsets.zero,
-          title: Text(cutawanText(context, 'إظهار الترجمة في تصدير الفيديو'))),
-          subtitle: Text(cutawanText(context, 'عند الإيقاف تبقى إعدادات النمط محفوظة دون حرق الكلمات داخل MP4.'))),
+          title: Text(cutawanText(context, 'إظهار الترجمة في تصدير الفيديو')),
+          subtitle: Text(cutawanText(context, 'عند الإيقاف تبقى إعدادات النمط محفوظة دون حرق الكلمات داخل MP4.')),
           value: _captionsEnabled,
           onChanged: (value) => _update(() => _captionsEnabled = value),
         ),
@@ -1033,7 +1033,7 @@ class _CaptionStudioPageState extends State<CaptionStudioPage>
         SwitchListTile(
           key: const ValueKey('caption-direction-switch'),
           contentPadding: EdgeInsets.zero,
-          title: Text(cutawanText(context, 'اتجاه معاينة النص'))),
+          title: Text(cutawanText(context, 'اتجاه معاينة النص')),
           subtitle: Text(_rtl ? 'العربية · من اليمين إلى اليسار' : 'English · left to right'),
           value: _rtl,
           onChanged: (value) => setState(() => _rtl = value),
@@ -1064,7 +1064,7 @@ class _CaptionStudioPageState extends State<CaptionStudioPage>
           ),
         ),
         const SizedBox(height: 8),
-        Text(cutawanText(context, 'Preset: ${style.id} · معاينة الحركة: ${motion.id} · تصدير MP4: $_exportAnimationId')),
+        Text(cutawanText(context, 'Preset: ${style.id} · معاينة الحركة: ${motion.id} · تصدير MP4: $_exportAnimationId'),
           textAlign: TextAlign.center,
           style: theme.textTheme.labelSmall?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,

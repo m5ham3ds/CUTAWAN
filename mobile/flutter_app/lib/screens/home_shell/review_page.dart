@@ -145,7 +145,7 @@ class _ReviewPageState extends State<ReviewPage> {
     } catch (error) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(cutawanText(context, 'تعذّر تنفيذ العملية: $error')))),
+          SnackBar(content: Text(cutawanText(context, 'تعذّر تنفيذ العملية: $error'))),
         );
       }
     } finally {
@@ -198,7 +198,7 @@ class _ReviewPageState extends State<ReviewPage> {
     } catch (error) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(cutawanText(context, 'تعذّر تنظيف النسخ السابقة: $error')))),
+          SnackBar(content: Text(cutawanText(context, 'تعذّر تنظيف النسخ السابقة: $error'))),
         );
       }
     } finally {
@@ -217,17 +217,17 @@ class _ReviewPageState extends State<ReviewPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: Text(cutawanText(context, 'حذف الفيديو المصدّر؟'))),
-        content: Text(cutawanText(context, 'سيُحذف ملف MP4 من مساحة مخرجات CUTAWAN على الجهاز، كما سيُزال سجلّه من المشروع. لا يمكن التراجع عن هذا الإجراء.')),
+        title: Text(cutawanText(context, 'حذف الفيديو المصدّر؟')),
+        content: Text(cutawanText(context, 'سيُحذف ملف MP4 من مساحة مخرجات CUTAWAN على الجهاز، كما سيُزال سجلّه من المشروع. لا يمكن التراجع عن هذا الإجراء.'),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: Text(cutawanText(context, 'إلغاء'))),
+            child: Text(cutawanText(context, 'إلغاء')),
           ),
           FilledButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: Text(cutawanText(context, 'حذف الملف'))),
+            child: Text(cutawanText(context, 'حذف الملف')),
           ),
         ],
       ),
@@ -253,13 +253,13 @@ class _ReviewPageState extends State<ReviewPage> {
       await _loadArtifacts(project.id);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text(cutawanText(context, 'تم حذف الفيديو وسجل التصدير.')))),
+          const SnackBar(content: Text(cutawanText(context, 'تم حذف الفيديو وسجل التصدير.'))),
         );
       }
     } catch (error) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(cutawanText(context, 'تعذّر حذف الفيديو: $error')))),
+          SnackBar(content: Text(cutawanText(context, 'تعذّر حذف الفيديو: $error'))),
         );
       }
     } finally {
@@ -354,7 +354,7 @@ class _ReviewPageState extends State<ReviewPage> {
                               share: false,
                             ),
                     icon: const Icon(Icons.play_circle_outline_rounded),
-                    label: Text(cutawanText(context, 'فتح الفيديو'))),
+                    label: Text(cutawanText(context, 'فتح الفيديو')),
                   ),
                   OutlinedButton.icon(
                     key: ValueKey('share-export-$clipId'),
@@ -367,7 +367,7 @@ class _ReviewPageState extends State<ReviewPage> {
                               share: true,
                             ),
                     icon: const Icon(Icons.share_outlined),
-                    label: Text(cutawanText(context, 'مشاركة'))),
+                    label: Text(cutawanText(context, 'مشاركة')),
                   ),
                   IconButton(
                     key: ValueKey('delete-export-$clipId'),
@@ -383,7 +383,7 @@ class _ReviewPageState extends State<ReviewPage> {
                           ? null
                           : () => _cleanupSupersededExports(context, project, export),
                       icon: const Icon(Icons.cleaning_services_outlined),
-                      label: Text(cutawanText(context, 'تنظيف النسخ السابقة'))),
+                      label: Text(cutawanText(context, 'تنظيف النسخ السابقة')),
                     ),
                 ],
               ),
@@ -396,7 +396,7 @@ class _ReviewPageState extends State<ReviewPage> {
                       ? null
                       : () => _cleanupSupersededExports(context, project, export),
                   icon: const Icon(Icons.cleaning_services_outlined),
-                  label: Text(cutawanText(context, 'تنظيف النسخ السابقة'))),
+                  label: Text(cutawanText(context, 'تنظيف النسخ السابقة')),
                 ),
               ),
           ],
@@ -434,7 +434,7 @@ class _ReviewPageState extends State<ReviewPage> {
     } catch (error) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(cutawanText(context, 'فشل فحص مصدر الفيديو: $error')))),
+          SnackBar(content: Text(cutawanText(context, 'فشل فحص مصدر الفيديو: $error'))),
         );
       }
     }
@@ -778,17 +778,17 @@ class _ReviewPageState extends State<ReviewPage> {
       final confirmed = await showDialog<bool>(
         context: context,
         builder: (dialogContext) => AlertDialog(
-          title: Text(cutawanText(context, 'إعادة تصدير المقطع؟'))),
-          content: Text(cutawanText(context, 'سيُنشأ ملف جديد ويُتحقق من فك ترميزه بالكامل. ستبقى النسخة الحالية متاحة حتى ينجح البديل؛ وأي نسخة قديمة يتعذر حذفها ستبقى ظاهرة للتنظيف.')),
+          title: Text(cutawanText(context, 'إعادة تصدير المقطع؟')),
+          content: Text(cutawanText(context, 'سيُنشأ ملف جديد ويُتحقق من فك ترميزه بالكامل. ستبقى النسخة الحالية متاحة حتى ينجح البديل؛ وأي نسخة قديمة يتعذر حذفها ستبقى ظاهرة للتنظيف.'),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: Text(cutawanText(context, 'إلغاء'))),
+              child: Text(cutawanText(context, 'إلغاء')),
             ),
             FilledButton(
               onPressed: () => Navigator.of(dialogContext).pop(true),
-              child: Text(cutawanText(context, 'إعادة التصدير'))),
+              child: Text(cutawanText(context, 'إعادة التصدير')),
             ),
           ],
         ),
@@ -1009,7 +1009,7 @@ class _ReviewPageState extends State<ReviewPage> {
                       key: ValueKey<String>('review-verify-${project.id}'),
                       onPressed: canStart ? () => _verifySource(context, project) : null,
                       icon: const Icon(Icons.verified_outlined),
-                      label: Text(cutawanText(context, 'فحص توفر الفيديو'))),
+                      label: Text(cutawanText(context, 'فحص توفر الفيديو')),
                     ),
                   ),
                 ],
@@ -1124,8 +1124,8 @@ class _ReviewPageState extends State<ReviewPage> {
               child: ExpansionTile(
                 key: ValueKey<String>('review-manual-tools-${project.id}'),
                 leading: const Icon(Icons.tune_rounded),
-                title: Text(cutawanText(context, 'أدوات المراحل اليدوية'))),
-                subtitle: Text(cutawanText(context, 'إعادة تنفيذ خطوة محددة عند الحاجة'))),
+                title: Text(cutawanText(context, 'أدوات المراحل اليدوية')),
+                subtitle: Text(cutawanText(context, 'إعادة تنفيذ خطوة محددة عند الحاجة')),
                 childrenPadding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
                 children: [
                   Wrap(
@@ -1135,25 +1135,25 @@ class _ReviewPageState extends State<ReviewPage> {
                       FilledButton.tonalIcon(
                         onPressed: canStart ? () => _transcribe(project) : null,
                         icon: const Icon(Icons.graphic_eq_rounded),
-                        label: Text(cutawanText(context, 'إعادة التفريغ'))),
+                        label: Text(cutawanText(context, 'إعادة التفريغ')),
                       ),
                       FilledButton.tonalIcon(
                         onPressed: canStart ? () => _analyzeFraming(project) : null,
                         icon: const Icon(Icons.center_focus_strong_rounded),
-                        label: Text(cutawanText(context, 'إعادة تحليل التأطير'))),
+                        label: Text(cutawanText(context, 'إعادة تحليل التأطير')),
                       ),
                       FilledButton.tonalIcon(
                         onPressed: !canStart || transcript == null || !transcript.wordTimingReliable
                             ? null
                             : () => _discover(project),
                         icon: const Icon(Icons.auto_awesome_rounded),
-                        label: Text(cutawanText(context, 'إعادة اكتشاف المقاطع'))),
+                        label: Text(cutawanText(context, 'إعادة اكتشاف المقاطع')),
                       ),
                     ],
                   ),
                   if (transcript == null || !transcript.wordTimingReliable) ...[
                     const SizedBox(height: 8),
-                    Text(cutawanText(context, 'اكتشاف المقاطع متاح بعد وجود تفريغ بتوقيت كلمات موثوق.')),
+                    Text(cutawanText(context, 'اكتشاف المقاطع متاح بعد وجود تفريغ بتوقيت كلمات موثوق.'),
                         style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
                   ],
                 ],
@@ -1175,7 +1175,7 @@ class _ReviewPageState extends State<ReviewPage> {
                 childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                 children: [
                   if (transcript == null)
-                    Text(cutawanText(context, 'سيظهر النص هنا بعد إتمام التفريغ الصوتي.')))
+                    Text(cutawanText(context, 'سيظهر النص هنا بعد إتمام التفريغ الصوتي.'))
                   else ...[
                     Align(
                       alignment: AlignmentDirectional.centerStart,
@@ -1202,7 +1202,7 @@ class _ReviewPageState extends State<ReviewPage> {
               child: ExpansionTile(
                 key: ValueKey<String>('review-framing-${project.id}'),
                 leading: const Icon(Icons.center_focus_strong_rounded),
-                title: Text(cutawanText(context, 'خطة التأطير'))),
+                title: Text(cutawanText(context, 'خطة التأطير')),
                 subtitle: Text(
                   reframePlan == null
                       ? 'لم يتم تحليل الإطارات بعد'
@@ -1211,7 +1211,7 @@ class _ReviewPageState extends State<ReviewPage> {
                 childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                 children: [
                   if (reframePlan == null)
-                    Text(cutawanText(context, 'سيظهر ملخص التأطير هنا بعد التحليل.')))
+                    Text(cutawanText(context, 'سيظهر ملخص التأطير هنا بعد التحليل.'))
                   else ...[
                     Text(
                       reframePlan.focusTrack == null
@@ -1219,7 +1219,7 @@ class _ReviewPageState extends State<ReviewPage> {
                           : 'مسار وجه أمامي · ثقة ${(reframePlan.focusTrack!.averageConfidence * 100).round()}% · تغطية ${(reframePlan.focusTrack!.coverage * 100).round()}% · ${reframePlan.focusTrack!.keyframes.length} نقطة تركيز',
                     ),
                     const SizedBox(height: 6),
-                    Text(cutawanText(context, 'التحليل البصري يتتبع موضع الوجه الأمامي فقط؛ لا يثبت هوية المتحدث النشط من الصوت والصورة.')),
+                    Text(cutawanText(context, 'التحليل البصري يتتبع موضع الوجه الأمامي فقط؛ لا يثبت هوية المتحدث النشط من الصوت والصورة.'),
                       style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
                     ),
                   ],
@@ -1232,7 +1232,7 @@ class _ReviewPageState extends State<ReviewPage> {
             Row(
               children: [
                 Expanded(
-                  child: Text(cutawanText(context, 'المقاطع المكتشفة')),
+                  child: Text(cutawanText(context, 'المقاطع المكتشفة'),
                       style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900)),
                 ),
                 if (candidateSet != null)
@@ -1253,23 +1253,23 @@ class _ReviewPageState extends State<ReviewPage> {
                       ? () => _openSequenceEditor(project, candidateSet)
                       : null,
                   icon: const Icon(Icons.view_timeline_rounded),
-                  label: Text(cutawanText(context, 'تحرير تسلسل المقاطع والمسارات'))),
+                  label: Text(cutawanText(context, 'تحرير تسلسل المقاطع والمسارات')),
                 ),
               ),
               const SizedBox(height: 4),
             ],
             if (candidateSet == null)
               CutawanPanel(
-                child: Text(cutawanText(context, 'ستظهر المقاطع هنا بعد اكتمال التفريغ واكتشاف اللحظات المناسبة.')),
+                child: Text(cutawanText(context, 'ستظهر المقاطع هنا بعد اكتمال التفريغ واكتشاف اللحظات المناسبة.'),
                     style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
               )
             else if (candidateSet.candidates.isEmpty)
               CutawanPanel(
-                child: Text(cutawanText(context, 'لم يعثر التحليل على مقاطع مكتملة ضمن المدة المحددة. لم تتم إضافة مقاطع وهمية.')),
+                child: Text(cutawanText(context, 'لم يعثر التحليل على مقاطع مكتملة ضمن المدة المحددة. لم تتم إضافة مقاطع وهمية.'),
                     style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
               )
             else ...[
-              Text(cutawanText(context, 'المحرك: ${candidateSet.rankingEngine}')),
+              Text(cutawanText(context, 'المحرك: ${candidateSet.rankingEngine}'),
                   style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
               for (final candidate in candidateSet.candidates)
                 Card(
@@ -1298,7 +1298,7 @@ class _ReviewPageState extends State<ReviewPage> {
                           ],
                         ),
                         const SizedBox(height: 6),
-                        Text(cutawanText(context, '${formatCutawanDuration(candidate.startMs)} – ${formatCutawanDuration(candidate.endMs)} · ${candidate.durationMs ~/ 1000} ثانية'))
+                        Text(cutawanText(context, '${formatCutawanDuration(candidate.startMs)} – ${formatCutawanDuration(candidate.endMs)} · ${candidate.durationMs ~/ 1000} ثانية')
                           '${candidate.modelAnnotated ? ' · تعليق النموذج' : ''}',
                           style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
                         ),
@@ -1318,7 +1318,7 @@ class _ReviewPageState extends State<ReviewPage> {
                                   ? null
                                   : () => _openClipEditor(context, project, candidateSet, candidate),
                               icon: const Icon(Icons.tune_rounded),
-                              label: Text(cutawanText(context, 'فتح المحرر'))),
+                              label: Text(cutawanText(context, 'فتح المحرر')),
                             ),
                             OutlinedButton.icon(
                               key: ValueKey<String>('render-clip-${candidate.id}'),
@@ -1342,11 +1342,11 @@ class _ReviewPageState extends State<ReviewPage> {
             const SizedBox(height: 18),
             const CutawanEyebrow('ملفات الإخراج', icon: Icons.video_file_rounded),
             const SizedBox(height: 8),
-            Text(cutawanText(context, 'الفيديوهات المصدّرة')),
+            Text(cutawanText(context, 'الفيديوهات المصدّرة'),
                 style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900)),
             if (exports.isEmpty)
               CutawanPanel(
-                child: Text(cutawanText(context, 'ستظهر هنا ملفات MP4 التي اجتازت فحص التحقق الكامل بعد التصدير.')),
+                child: Text(cutawanText(context, 'ستظهر هنا ملفات MP4 التي اجتازت فحص التحقق الكامل بعد التصدير.'),
                     style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
               )
             else
@@ -1388,10 +1388,10 @@ class _ReviewPageState extends State<ReviewPage> {
           children: [
             const CutawanEyebrow('مساحة العمل / المراجعة', icon: Icons.movie_filter_rounded),
             const SizedBox(height: 8),
-            Text(cutawanText(context, 'راجع النتائج قبل إخراجها')),
+            Text(cutawanText(context, 'راجع النتائج قبل إخراجها'),
                 style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900)),
             const SizedBox(height: 6),
-            Text(cutawanText(context, 'تابع تقدم التحليل، افحص المقاطع المكتشفة، ثم افتح المحرر عند الحاجة.')),
+            Text(cutawanText(context, 'تابع تقدم التحليل، افحص المقاطع المكتشفة، ثم افتح المحرر عند الحاجة.'),
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: scheme.onSurfaceVariant,
                 height: 1.45,

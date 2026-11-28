@@ -87,12 +87,12 @@ class _DeviceAcceptancePageState extends State<DeviceAcceptancePage> {
       );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text(cutawanText(context, 'نُسخ تقرير الجهاز')))),
+        const SnackBar(content: Text(cutawanText(context, 'نُسخ تقرير الجهاز'))),
       );
     } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(cutawanText(context, 'تعذّر نسخ التقرير: $error')))),
+        SnackBar(content: Text(cutawanText(context, 'تعذّر نسخ التقرير: $error'))),
       );
     }
   }
@@ -138,7 +138,7 @@ class _DeviceAcceptancePageState extends State<DeviceAcceptancePage> {
     final report = _report;
     return Scaffold(
       appBar: AppBar(
-        title: Text(cutawanText(context, 'تشخيص الجهاز'))),
+        title: Text(cutawanText(context, 'تشخيص الجهاز')),
         actions: [
           IconButton(
             tooltip: 'إعادة الفحص',
@@ -173,7 +173,7 @@ class _DeviceAcceptancePageState extends State<DeviceAcceptancePage> {
               FilledButton.icon(
                 onPressed: _copyReport,
                 icon: const Icon(Icons.copy_all_rounded),
-                label: Text(cutawanText(context, 'نسخ التقرير'))),
+                label: Text(cutawanText(context, 'نسخ التقرير')),
               ),
             ],
           ],
@@ -197,7 +197,7 @@ class _DeviceAcceptancePageState extends State<DeviceAcceptancePage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(cutawanText(context, 'تعذّر جمع بيانات الجهاز')),
+                  Text(cutawanText(context, 'تعذّر جمع بيانات الجهاز'),
                     style: TextStyle(
                       color: scheme.onErrorContainer,
                       fontWeight: FontWeight.w800,
@@ -214,7 +214,7 @@ class _DeviceAcceptancePageState extends State<DeviceAcceptancePage> {
                     child: TextButton.icon(
                       onPressed: _loading ? null : _refresh,
                       icon: const Icon(Icons.refresh_rounded),
-                      label: Text(cutawanText(context, 'إعادة المحاولة'))),
+                      label: Text(cutawanText(context, 'إعادة المحاولة')),
                     ),
                   ),
                 ],

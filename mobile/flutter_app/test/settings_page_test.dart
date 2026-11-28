@@ -248,3 +248,4 @@ void main() {
     await tester.pumpAndSettle();
     expect(store.preferences.value.accentColor, AppAccentColor.blue);
   });
+}

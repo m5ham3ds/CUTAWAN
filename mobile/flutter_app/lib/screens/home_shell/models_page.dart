@@ -463,7 +463,7 @@ class _ModelsPageState extends State<ModelsPage> {
     final theme = Theme.of(context);
     final provider = AiProviderCatalog.byId(_provider);
     return Scaffold(
-      appBar: AppBar(title: Text(cutawanText(context, 'مركز النماذج'))), centerTitle: false),
+      appBar: AppBar(title: Text(cutawanText(context, 'مركز النماذج')), centerTitle: false),
       body: LayoutBuilder(
         builder: (context, constraints) {
           final horizontalPadding =
@@ -479,7 +479,7 @@ class _ModelsPageState extends State<ModelsPage> {
                   30,
                 ),
                 children: [
-                  Text(cutawanText(context, 'النماذج المحلية')),
+                  Text(cutawanText(context, 'النماذج المحلية'),
                     style: theme.textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.w900,
                     ),
@@ -528,7 +528,7 @@ class _ModelsPageState extends State<ModelsPage> {
             const LinearProgressIndicator(),
           ],
           const Divider(height: 36),
-          Text(cutawanText(context, 'طريقة المعالجة')),
+          Text(cutawanText(context, 'طريقة المعالجة'),
             style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
           ),
           const SizedBox(height: 8),
@@ -537,12 +537,12 @@ class _ModelsPageState extends State<ModelsPage> {
               ButtonSegment(
                 value: 'local',
                 icon: Icon(Icons.phone_android),
-                label: Text(cutawanText(context, 'محلي'))),
+                label: Text(cutawanText(context, 'محلي')),
               ),
               ButtonSegment(
                 value: 'remote',
                 icon: Icon(Icons.cloud_outlined),
-                label: Text(cutawanText(context, 'سحابي'))),
+                label: Text(cutawanText(context, 'سحابي')),
               ),
             ],
             selected: {_executionMode},
@@ -557,12 +557,12 @@ class _ModelsPageState extends State<ModelsPage> {
             onChanged: _remoteBusy
                 ? null
                 : (value) => _setCloudConsent(value ?? false),
-            title: Text(cutawanText(context, 'السماح بإرسال نص التفريغ إلى مزوّد خارجي'))),
-            subtitle: Text(cutawanText(context, 'يُرسل نص التفريغ فقط، دون ملف الفيديو أو مفتاح API.')),
+            title: Text(cutawanText(context, 'السماح بإرسال نص التفريغ إلى مزوّد خارجي')),
+            subtitle: Text(cutawanText(context, 'يُرسل نص التفريغ فقط، دون ملف الفيديو أو مفتاح API.'),
             ),
           ),
           const Divider(height: 36),
-          Text(cutawanText(context, 'المزوّد الخارجي')),
+          Text(cutawanText(context, 'المزوّد الخارجي'),
             style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
           ),
           const SizedBox(height: 14),
@@ -616,19 +616,19 @@ class _ModelsPageState extends State<ModelsPage> {
               FilledButton.tonalIcon(
                 onPressed: _remoteBusy ? null : _saveRemoteSettings,
                 icon: const Icon(Icons.lock_outline),
-                label: Text(cutawanText(context, 'حفظ'))),
+                label: Text(cutawanText(context, 'حفظ')),
               ),
               if (_keySaved) ...[
                 TextButton.icon(
                   onPressed: _remoteBusy ? null : _removeRemoteKey,
                   icon: const Icon(Icons.delete_outline),
-                  label: Text(cutawanText(context, 'حذف المفتاح'))),
+                  label: Text(cutawanText(context, 'حذف المفتاح')),
                 ),
               ],
               OutlinedButton.icon(
                 onPressed: _remoteBusy ? null : _loadRemoteModels,
                 icon: const Icon(Icons.sync),
-                label: Text(cutawanText(context, 'جلب النماذج'))),
+                label: Text(cutawanText(context, 'جلب النماذج')),
               ),
             ],
           ),
@@ -666,7 +666,7 @@ class _ModelsPageState extends State<ModelsPage> {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Icon(Icons.wifi_tethering),
-              label: Text(cutawanText(context, 'اختبار الاتصال'))),
+              label: Text(cutawanText(context, 'اختبار الاتصال')),
             ),
           ],
           const SizedBox(height: 14),
@@ -674,7 +674,7 @@ class _ModelsPageState extends State<ModelsPage> {
           TextButton.icon(
             onPressed: _busy || _remoteBusy ? null : _refreshModels,
             icon: const Icon(Icons.refresh),
-            label: Text(cutawanText(context, 'تحديث حالة النماذج'))),
+            label: Text(cutawanText(context, 'تحديث حالة النماذج')),
           ),
                 ],
               ),
@@ -768,7 +768,7 @@ class _ModelsPageState extends State<ModelsPage> {
                 TextButton.icon(
                   onPressed: _busy ? null : onRemove,
                   icon: const Icon(Icons.delete_outline),
-                  label: Text(cutawanText(context, 'إزالة'))),
+                  label: Text(cutawanText(context, 'إزالة')),
                 ),
               ],
             ]),

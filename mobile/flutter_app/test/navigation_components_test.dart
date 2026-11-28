@@ -378,3 +378,4 @@ void main() {
     await tester.pumpAndSettle();
     expect(selectedIndex, 2);
   });
+}
