@@ -687,7 +687,7 @@ class _ClipSequenceEditorPageState extends State<ClipSequenceEditorPage> {
             tooltip: 'حفظ التسلسل',
             onPressed: _loading || _saving || _exporting || !_dirty ? null : _saveSequence,
             icon: _saving
-                ? const SizedBox(
+                ? SizedBox(
                     width: 20,
                     height: 20,
                     child: CircularProgressIndicator(strokeWidth: 2),
