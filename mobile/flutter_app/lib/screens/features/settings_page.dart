@@ -271,7 +271,7 @@ class _SettingsPageState extends State<SettingsPage> {
                           for (final accent in AppAccentColor.values)
                             _AccentChoice(
                               key: ValueKey(
-                                'settings-accent-' + accent.name,
+                                'settings-accent-${accent.name}',
                               ),
                               color: CutawanTheme.colorFor(accent),
                               label: _accentName(context, accent),

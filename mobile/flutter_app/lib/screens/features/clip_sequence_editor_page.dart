@@ -805,7 +805,7 @@ class _ClipSequenceEditorPageState extends State<ClipSequenceEditorPage> {
                           ? null
                           : _exportSequence,
                       icon: _exporting
-                          ? const SizedBox(
+                          ? SizedBox(
                               width: 18,
                               height: 18,
                               child: CircularProgressIndicator(strokeWidth: 2),
