@@ -253,7 +253,7 @@ class _ReviewPageState extends State<ReviewPage> {
       await _loadArtifacts(project.id);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text(cutawanText(context, 'تم حذف الفيديو وسجل التصدير.'))),
+          SnackBar(content: Text(cutawanText(context, 'تم حذف الفيديو وسجل التصدير.'))),
         );
       }
     } catch (error) {

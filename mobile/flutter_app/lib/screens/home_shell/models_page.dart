@@ -533,7 +533,7 @@ class _ModelsPageState extends State<ModelsPage> {
           ),
           const SizedBox(height: 8),
           SegmentedButton<String>(
-            segments: const [
+            segments: [
               ButtonSegment(
                 value: 'local',
                 icon: Icon(Icons.phone_android),

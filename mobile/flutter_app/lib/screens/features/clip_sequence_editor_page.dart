@@ -616,7 +616,7 @@ class _ClipSequenceEditorPageState extends State<ClipSequenceEditorPage> {
                   initialValue: item.transitionAfter?.durationMs ?? 0,
                   onSelected: (durationMs) =>
                       _setTransition(item.id, durationMs),
-                  itemBuilder: (context) => const [
+                  itemBuilder: (context) => [
                     PopupMenuItem<int>(
                       value: 0,
                       child: Text(cutawanText(context, 'بدون انتقال')),

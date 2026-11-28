@@ -235,7 +235,7 @@ class _JobsPageState extends State<JobsPage> {
       await widget.onProjectsChanged();
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text(cutawanText(context, 'تم حذف سجل المشروع من الجهاز.'))),
+          SnackBar(content: Text(cutawanText(context, 'تم حذف سجل المشروع من الجهاز.'))),
         );
       }
     } catch (error) {

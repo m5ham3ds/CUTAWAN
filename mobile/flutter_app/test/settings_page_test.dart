@@ -85,8 +85,6 @@ void main() {
         tester.view.devicePixelRatio = 1;
         await tester.pumpWidget(
           MaterialApp(
-        locale: const Locale('ar'),
-        supportedLocales: const [Locale('ar'), Locale('en')],
             locale: const Locale('ar'),
             supportedLocales: const [Locale('ar'), Locale('en')],
             theme: item.theme,

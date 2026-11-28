@@ -426,7 +426,7 @@ class _CaptionStudioPageState extends State<CaptionStudioPage>
     final projectId = _selectedProjectId;
     if (projectId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text(cutawanText(context, 'أنشئ مشروعاً أو اختر مشروعاً أولاً لحفظ الإعدادات.')),
         ),
       );

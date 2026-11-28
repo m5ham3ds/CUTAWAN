@@ -61,6 +61,11 @@ class _SettingsPageState extends State<SettingsPage> {
     if (accent == preferences.accentColor) return;
 
     final color = CutawanTheme.colorFor(accent);
+    final translatedQuestion = cutawanText(context, 'هل تريد تطبيق اللون');
+    final translatedAccent = _accentName(context, accent);
+    final questionMark =
+        Localizations.localeOf(context).languageCode == 'ar' ? '؟' : '?';
+    final prompt = '$translatedQuestion $translatedAccent$questionMark';
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -80,14 +85,7 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: Text(
-                cutawanText(dialogContext, 'هل تريد تطبيق اللون') +
-                    ' ' +
-                    _accentName(dialogContext, accent) +
-                    (Localizations.localeOf(dialogContext).languageCode == 'ar'
-                        ? '؟'
-                        : '?'),
-              ),
+              child: Text(prompt),
             ),
           ],
         ),

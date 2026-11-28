@@ -518,7 +518,7 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
     } else {
       if (updated.length >= 120) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text(cutawanText(context, 'وصلت إلى الحد الأقصى وهو 120 إطار تركيز.'))),
+          SnackBar(content: Text(cutawanText(context, 'وصلت إلى الحد الأقصى وهو 120 إطار تركيز.'))),
         );
         return;
       }
@@ -741,7 +741,7 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
         _endMs > duration ||
         _endMs - _startMs < 500) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text(cutawanText(context, 'نطاق القص غير صالح.'))),
+        SnackBar(content: Text(cutawanText(context, 'نطاق القص غير صالح.'))),
       );
       return;
     }
@@ -792,7 +792,7 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
       await widget.onSaved();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text(cutawanText(context, 'حُفظت تعديلات المقطع والتأطير والترجمة. أعد تشغيل المعالجة لتحديث ملف التصدير.')),
         ),
       );

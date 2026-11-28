@@ -87,7 +87,7 @@ class _DeviceAcceptancePageState extends State<DeviceAcceptancePage> {
       );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text(cutawanText(context, 'نُسخ تقرير الجهاز'))),
+        SnackBar(content: Text(cutawanText(context, 'نُسخ تقرير الجهاز'))),
       );
     } catch (error) {
       if (!mounted) return;
