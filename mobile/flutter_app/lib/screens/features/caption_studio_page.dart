@@ -568,8 +568,7 @@ class _CaptionStudioPageState extends State<CaptionStudioPage>
           if (_loading)
             const LinearProgressIndicator(minHeight: 2),
           if (selected != null && _previewWords.isNotEmpty)
-            Text(
-              'تم تحميل ${_previewWords.length} كلمة مؤقتة من التفريغ المحفوظ.',
+            Text(cutawanText(context, 'تم تحميل ${_previewWords.length} كلمة مؤقتة من التفريغ المحفوظ.')),
               style: theme.textTheme.labelSmall?.copyWith(
                 color: theme.colorScheme.secondary,
               ),
@@ -601,8 +600,7 @@ class _CaptionStudioPageState extends State<CaptionStudioPage>
           Row(
             children: [
               Expanded(
-                child: Text(
-                  'المجموعة ${_previewGroupIndex + 1} من ${_previewGroups.length} · '
+                child: Text(cutawanText(context, 'المجموعة ${_previewGroupIndex + 1} من ${_previewGroups.length} · '))
                   '${_formatPreviewTime(_previewGroup!.startMs)}–'
                   '${_formatPreviewTime(_previewGroup!.endMs)}',
                   key: const ValueKey('caption-timed-group-label'),
@@ -616,7 +614,7 @@ class _CaptionStudioPageState extends State<CaptionStudioPage>
                   _previewGroups.length,
                   (index) => DropdownMenuItem<int>(
                     value: index,
-                    child: Text('مجموعة ${index + 1}'),
+                    child: Text(cutawanText(context, 'مجموعة ${index + 1}'))),
                   ),
                 ),
                 onChanged: _selectPreviewGroup,
@@ -883,8 +881,7 @@ class _CaptionStudioPageState extends State<CaptionStudioPage>
             rebuildLayout: true,
           ),
         ),
-        Text(
-          'حجم الخط · ${(_fontScale * 100).toStringAsFixed(1)}%',
+        Text(cutawanText(context, 'حجم الخط · ${(_fontScale * 100).toStringAsFixed(1)}%')),
           style: theme.textTheme.labelLarge,
         ),
         Slider(
@@ -898,8 +895,7 @@ class _CaptionStudioPageState extends State<CaptionStudioPage>
             rebuildLayout: true,
           ),
         ),
-        Text(
-          'موضع النص · ${(_positionY * 100).round()}% من أعلى الإطار',
+        Text(cutawanText(context, 'موضع النص · ${(_positionY * 100).round()}% من أعلى الإطار')),
           style: theme.textTheme.labelLarge,
         ),
         Slider(
@@ -949,8 +945,7 @@ class _CaptionStudioPageState extends State<CaptionStudioPage>
           icon: Icons.sync_alt_rounded,
         ),
         const SizedBox(height: 8),
-        Text(
-          'إزاحة توقيت الكلمات · $prefix$_timingOffsetMs ms',
+        Text(cutawanText(context, 'إزاحة توقيت الكلمات · $prefix$_timingOffsetMs ms')),
           key: const ValueKey('caption-timing-offset-label'),
           style: theme.textTheme.labelLarge,
         ),
@@ -1069,8 +1064,7 @@ class _CaptionStudioPageState extends State<CaptionStudioPage>
           ),
         ),
         const SizedBox(height: 8),
-        Text(
-          'Preset: ${style.id} · معاينة الحركة: ${motion.id} · تصدير MP4: $_exportAnimationId',
+        Text(cutawanText(context, 'Preset: ${style.id} · معاينة الحركة: ${motion.id} · تصدير MP4: $_exportAnimationId')),
           textAlign: TextAlign.center,
           style: theme.textTheme.labelSmall?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,

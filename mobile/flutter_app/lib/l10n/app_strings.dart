@@ -410,6 +410,36 @@ const Map<String, String> _dynamicPrefixes = {
   'تعذّر حفظ تعديلات المقطع: ': 'Could not save clip edits: ',
   'فشل اختبار النموذج: ': 'Model test failed: ',
   'فشل اكتشاف المقاطع: ': 'Clip detection failed: ',
+  'تعذّر تنظيف النسخ السابقة: ': 'Could not clean previous exports: ',
+  'فشل فحص مصدر الفيديو: ': 'Video source check failed: ',
+  'المحرك: ': 'Engine: ',
+  'تعذّر استخراج الإطارات: ': 'Could not extract frames: ',
+  'إعدادات التصدير غير صالحة: ': 'Export settings are invalid: ',
+  'البداية  ': 'Start  ',
+  'النهاية  ': 'End  ',
+  'مدة المقطع الناتجة: ': 'Resulting clip duration: ',
+  'تلاشي الدخول · ': 'Fade in · ',
+  'تلاشي الخروج · ': 'Fade out · ',
+  'مركز القص الأفقي · ': 'Horizontal crop center · ',
+  'مركز القص العمودي · ': 'Vertical crop center · ',
+  'إضافة إطار تركيز عند ': 'Add focus keyframe at ',
+  'إطارات التركيز · ': 'Focus keyframes · ',
+  'حجم النص · ': 'Text size · ',
+  'موضع الترجمة · ': 'Caption position · ',
+  'مزامنة التوقيت · ': 'Timing offset · ',
+  'تم تحميل ': 'Loaded ',
+  'المجموعة ': 'Preview group ',
+  'مجموعة ': 'Group ',
+  'حجم الخط · ': 'Font size · ',
+  'موضع النص · ': 'Text position · ',
+  'إزاحة توقيت الكلمات · ': 'Word timing offset · ',
+  'معرّف المقطع: ': 'Clip ID: ',
+  'المسارات ': 'Tracks ',
+  'مقطع · المسار رقم ': 'clip · track ',
+  'المصدر ': 'Source ',
+  'التسلسل ': 'timeline ',
+  'المدة ': 'Duration ',
+  'انتقال تعتيم إلى المقطع التالي · ': 'Fade to black before next clip · ',
 };
 
 String cutawanText(BuildContext context, String arabic) {
@@ -421,5 +451,21 @@ String cutawanText(BuildContext context, String arabic) {
       return entry.value + arabic.substring(entry.key.length);
     }
   }
-  return arabic;
+  var translated = arabic;
+  const inlineEnglish = <String, String>{
+    ' ثانية': ' sec',
+    ' ثوانٍ': ' sec',
+    'مقطع': 'clip',
+    'مقاطع': 'clips',
+    'المسار رقم': 'track',
+    'المسارات': 'tracks',
+    'المصدر': 'Source',
+    'التسلسل': 'Timeline',
+    'معاينة الحركة': 'motion preview',
+    'تصدير MP4': 'MP4 export',
+  };
+  for (final entry in inlineEnglish.entries) {
+    translated = translated.replaceAll(entry.key, entry.value);
+  }
+  return translated;
 }

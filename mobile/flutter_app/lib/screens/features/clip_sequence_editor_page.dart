@@ -185,8 +185,7 @@ class _ClipSequenceEditorPageState extends State<ClipSequenceEditorPage> {
                     style: const TextStyle(fontWeight: FontWeight.w800),
                   ),
                   const SizedBox(height: 3),
-                  Text(
-                    '${_formatTime(candidate.startMs)} – ${_formatTime(candidate.endMs)} · ${candidate.durationMs ~/ 1000} ثانية',
+                  Text(cutawanText(context, '${_formatTime(candidate.startMs)} – ${_formatTime(candidate.endMs)} · ${candidate.durationMs ~/ 1000} ثانية')),
                     style: Theme.of(dialogContext).textTheme.bodySmall,
                   ),
                 ],
@@ -525,8 +524,7 @@ class _ClipSequenceEditorPageState extends State<ClipSequenceEditorPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(track.name, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w900)),
-                      Text(
-                        '${trackClips.length} مقطع · المسار رقم ${track.order + 1}',
+                      Text(cutawanText(context, '${trackClips.length} مقطع · المسار رقم ${track.order + 1}')),
                         style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
                       ),
                     ],
@@ -594,19 +592,16 @@ class _ClipSequenceEditorPageState extends State<ClipSequenceEditorPage> {
             style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 4),
-          Text(
-            'المصدر ${_formatTime(item.sourceStartMs)}–${_formatTime(item.sourceEndMs)}  ·  التسلسل ${_formatTime(item.timelineStartMs)}–${_formatTime(item.timelineEndMs)}',
+          Text(cutawanText(context, 'المصدر ${_formatTime(item.sourceStartMs)}–${_formatTime(item.sourceEndMs)}  ·  التسلسل ${_formatTime(item.timelineStartMs)}–${_formatTime(item.timelineEndMs)}')),
             style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
           ),
           const SizedBox(height: 3),
-          Text(
-            'المدة ${item.durationMs ~/ 1000} ثانية',
+          Text(cutawanText(context, 'المدة ${item.durationMs ~/ 1000} ثانية')),
             style: theme.textTheme.labelSmall?.copyWith(color: scheme.onSurfaceVariant),
           ),
           if (item.transitionAfter != null) ...[
             const SizedBox(height: 4),
-            Text(
-              'انتقال تعتيم إلى المقطع التالي · ${item.transitionAfter!.durationMs} ms',
+            Text(cutawanText(context, 'انتقال تعتيم إلى المقطع التالي · ${item.transitionAfter!.durationMs} ms')),
               style: theme.textTheme.labelSmall?.copyWith(color: scheme.onSurfaceVariant),
             ),
           ],
@@ -786,13 +781,11 @@ class _ClipSequenceEditorPageState extends State<ClipSequenceEditorPage> {
                     Row(
                       children: [
                         Expanded(
-                          child: Text(
-                            'المسارات ${sequence!.tracks.length}/${ClipSequence.maxTracks}',
+                          child: Text(cutawanText(context, 'المسارات ${sequence!.tracks.length}/${ClipSequence.maxTracks}')),
                             style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w800),
                           ),
                         ),
-                        Text(
-                          '${sequence.clips.length} مقطع',
+                        Text(cutawanText(context, '${sequence.clips.length} مقطع')),
                           style: theme.textTheme.labelLarge?.copyWith(color: scheme.onSurfaceVariant),
                         ),
                       ],

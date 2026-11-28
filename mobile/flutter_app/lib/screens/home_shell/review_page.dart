@@ -145,7 +145,7 @@ class _ReviewPageState extends State<ReviewPage> {
     } catch (error) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('تعذّر تنفيذ العملية: $error')),
+          SnackBar(content: Text(cutawanText(context, 'تعذّر تنفيذ العملية: $error')))),
         );
       }
     } finally {
@@ -198,7 +198,7 @@ class _ReviewPageState extends State<ReviewPage> {
     } catch (error) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('تعذّر تنظيف النسخ السابقة: $error')),
+          SnackBar(content: Text(cutawanText(context, 'تعذّر تنظيف النسخ السابقة: $error')))),
         );
       }
     } finally {
@@ -259,7 +259,7 @@ class _ReviewPageState extends State<ReviewPage> {
     } catch (error) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('تعذّر حذف الفيديو: $error')),
+          SnackBar(content: Text(cutawanText(context, 'تعذّر حذف الفيديو: $error')))),
         );
       }
     } finally {
@@ -434,7 +434,7 @@ class _ReviewPageState extends State<ReviewPage> {
     } catch (error) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('فشل فحص مصدر الفيديو: $error')),
+          SnackBar(content: Text(cutawanText(context, 'فشل فحص مصدر الفيديو: $error')))),
         );
       }
     }
@@ -1269,7 +1269,7 @@ class _ReviewPageState extends State<ReviewPage> {
                     style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
               )
             else ...[
-              Text('المحرك: ${candidateSet.rankingEngine}',
+              Text(cutawanText(context, 'المحرك: ${candidateSet.rankingEngine}')),
                   style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
               for (final candidate in candidateSet.candidates)
                 Card(
@@ -1298,8 +1298,7 @@ class _ReviewPageState extends State<ReviewPage> {
                           ],
                         ),
                         const SizedBox(height: 6),
-                        Text(
-                          '${formatCutawanDuration(candidate.startMs)} – ${formatCutawanDuration(candidate.endMs)} · ${candidate.durationMs ~/ 1000} ثانية'
+                        Text(cutawanText(context, '${formatCutawanDuration(candidate.startMs)} – ${formatCutawanDuration(candidate.endMs)} · ${candidate.durationMs ~/ 1000} ثانية'))
                           '${candidate.modelAnnotated ? ' · تعليق النموذج' : ''}',
                           style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
                         ),

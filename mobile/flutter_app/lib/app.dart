@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'domain/app_preferences.dart';
-import 'l10n/app_strings.dart';
 import 'screens/home_shell.dart';
 import 'services/app_preferences_store.dart';
 import 'services/local_project_repository.dart';

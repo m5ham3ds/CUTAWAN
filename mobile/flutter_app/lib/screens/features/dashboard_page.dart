@@ -275,7 +275,7 @@ class _DashboardStorageCardState extends State<_DashboardStorageCard> {
               backgroundColor: scheme.onSurface.withValues(alpha: 0.08),
               child: Icon(Icons.storage_outlined, color: scheme.onSurfaceVariant),
             ),
-            title: const Text('مساحة تنزيلات CUTAWAN'),
+            title: Text(cutawanText(context, 'مساحة تنزيلات CUTAWAN'))),
             subtitle: Text(description),
             trailing: IconButton(
               key: const ValueKey('dashboard-refresh-storage'),
@@ -336,7 +336,7 @@ class _DashboardHero extends StatelessWidget {
               key: const ValueKey('dashboard-create-project'),
               onPressed: onCreate,
               icon: const Icon(Icons.add_rounded),
-              label: const Text('إنشاء مشروع جديد'),
+              label: Text(cutawanText(context, 'إنشاء مشروع جديد'))),
             ),
           ),
         ],

@@ -92,7 +92,7 @@ class _DeviceAcceptancePageState extends State<DeviceAcceptancePage> {
     } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('تعذّر نسخ التقرير: $error')),
+        SnackBar(content: Text(cutawanText(context, 'تعذّر نسخ التقرير: $error')))),
       );
     }
   }
@@ -138,7 +138,7 @@ class _DeviceAcceptancePageState extends State<DeviceAcceptancePage> {
     final report = _report;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('تشخيص الجهاز'),
+        title: Text(cutawanText(context, 'تشخيص الجهاز'))),
         actions: [
           IconButton(
             tooltip: 'إعادة الفحص',

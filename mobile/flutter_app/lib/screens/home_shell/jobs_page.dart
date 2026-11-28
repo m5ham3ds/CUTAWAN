@@ -181,7 +181,7 @@ class _JobsPageState extends State<JobsPage> {
     } catch (error) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('تعذّر إيقاف المهمة: $error')),
+          SnackBar(content: Text(cutawanText(context, 'تعذّر إيقاف المهمة: $error')))),
         );
       }
     } finally {
@@ -241,7 +241,7 @@ class _JobsPageState extends State<JobsPage> {
     } catch (error) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('تعذّر حذف المشروع: $error')),
+          SnackBar(content: Text(cutawanText(context, 'تعذّر حذف المشروع: $error')))),
         );
       }
     } finally {
@@ -646,8 +646,7 @@ class _JobsPageState extends State<JobsPage> {
             Row(
               children: [
                 Expanded(
-                  child: Text(
-                    'المشاريع ${visible.length} من ${items.length}',
+                  child: Text(cutawanText(context, 'المشاريع ${visible.length} من ${items.length}')),
                     style: theme.textTheme.labelLarge?.copyWith(
                       fontWeight: FontWeight.w800,
                     ),
