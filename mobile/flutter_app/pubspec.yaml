@@ -29,6 +29,8 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
+    - assets/cutawan_logo.jpg
+    - assets/cutawan_intro.mp4
     - assets/testdata/clip-preview-grid.png
     - assets/testdata/clip-preview-grid.mp4
     - assets/testdata/clip-preview-grid-portrait.png
