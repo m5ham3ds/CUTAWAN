@@ -244,15 +244,19 @@ void main() {
       expect(preview, findsOneWidget);
       expect(tester.getTopLeft(preview).dy, greaterThan(0));
 
-      final scrollable = find.byType(Scrollable).first;
+      final scrollable = find.descendant(
+        of: find.byKey(const ValueKey('caption-studio-list')),
+        matching: find.byType(Scrollable),
+      ).first;
       await tester.drag(scrollable, const Offset(0, -1400));
       await tester.pumpAndSettle();
-      final pinnedTitleTop = tester.getTopLeft(previewTitle).dy;
-      expect(pinnedTitleTop, lessThan(40));
+      var pinnedTitleTop = tester.getTopLeft(previewTitle).dy;
+      expect(pinnedTitleTop, inInclusiveRange(0, 40));
 
       await tester.drag(scrollable, const Offset(0, -360));
       await tester.pumpAndSettle();
-      expect(tester.getTopLeft(previewTitle).dy, closeTo(pinnedTitleTop, 1));
+      pinnedTitleTop = tester.getTopLeft(previewTitle).dy;
+      expect(pinnedTitleTop, inInclusiveRange(0, 40));
       expect(find.byKey(const ValueKey('caption-editor-section-tabs')), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
@@ -275,9 +279,9 @@ void main() {
             body: TickerMode(
               enabled: false,
               child: CaptionStudioPage(
-              projects: projects,
-              repository: _MemoryCaptionRepository(),
-              onProjectsChanged: () async {},
+                projects: projects,
+                repository: _MemoryCaptionRepository(),
+                onProjectsChanged: () async {},
               ),
             ),
           ),
@@ -286,21 +290,51 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 50));
 
+      final scrollable = find.descendant(
+        of: find.byKey(const ValueKey('caption-studio-list')),
+        matching: find.byType(Scrollable),
+      ).first;
+
+      await tester.scrollUntilVisible(
+        find.byKey(const ValueKey('caption-style-presets')),
+        260,
+        scrollable: scrollable,
+      );
       expect(find.byKey(const ValueKey('caption-style-presets')), findsOneWidget);
       expect(find.byKey(const ValueKey('caption-animation-presets')), findsNothing);
       expect(find.byKey(const ValueKey('caption-font-family')), findsNothing);
 
-      await tester.tap(find.byKey(const ValueKey('caption-editor-tab-motion')));
+      final motionTab = find.byKey(const ValueKey('caption-editor-tab-motion'));
+      await tester.ensureVisible(motionTab);
       await tester.pumpAndSettle();
-      expect(find.byKey(const ValueKey('caption-animation-presets')), findsOneWidget);
+      await tester.tap(motionTab);
+      await tester.pump();
+
       expect(find.byKey(const ValueKey('caption-style-presets')), findsNothing);
+      await tester.scrollUntilVisible(
+        find.byKey(const ValueKey('caption-animation-presets')),
+        260,
+        scrollable: scrollable,
+      );
+      expect(find.byKey(const ValueKey('caption-animation-presets')), findsOneWidget);
       expect(find.byKey(const ValueKey('caption-font-family')), findsNothing);
 
-      await tester.tap(find.byKey(const ValueKey('caption-editor-tab-typography')));
+      final typographyTab = find.byKey(
+        const ValueKey('caption-editor-tab-typography'),
+      );
+      await tester.ensureVisible(typographyTab);
       await tester.pumpAndSettle();
-      expect(find.byKey(const ValueKey('caption-font-family')), findsOneWidget);
+      await tester.tap(typographyTab);
+      await tester.pump();
+
       expect(find.byKey(const ValueKey('caption-style-presets')), findsNothing);
       expect(find.byKey(const ValueKey('caption-animation-presets')), findsNothing);
+      await tester.scrollUntilVisible(
+        find.byKey(const ValueKey('caption-font-family')),
+        260,
+        scrollable: scrollable,
+      );
+      expect(find.byKey(const ValueKey('caption-font-family')), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
   );

@@ -155,7 +155,12 @@ void main() {
 
   testWidgets('caption studio exposes 12 presets, RTL preview and separate animation controls', (tester) async {
     configureCaptionStudioViewport(tester);
-    await tester.pumpWidget(const CutawanApp());
+    await tester.pumpWidget(
+      const TickerMode(
+        enabled: false,
+        child: CutawanApp(),
+      ),
+    );
 
     await tester.tap(find.text('الاستوديو'));
     await tester.pump();
@@ -201,9 +206,11 @@ void main() {
     await tester.ensureVisible(motionTab);
     await tester.pumpAndSettle();
     await tester.tap(motionTab);
-    await tester.pumpAndSettle();
-    await tester.ensureVisible(
+    await tester.pump();
+    await tester.scrollUntilVisible(
       find.byKey(const ValueKey('caption-animation-karaoke_fill')),
+      260,
+      scrollable: find.byType(Scrollable).first,
     );
     await tester.tap(
       find.byKey(const ValueKey('caption-animation-karaoke_fill')),
