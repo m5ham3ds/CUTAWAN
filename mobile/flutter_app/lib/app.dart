@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'domain/app_preferences.dart';
+import 'screens/cutawan_intro_screen.dart';
 import 'screens/home_shell.dart';
 import 'services/app_preferences_store.dart';
 import 'services/local_project_repository.dart';
@@ -92,12 +93,37 @@ class _CutawanAppState extends State<CutawanApp> {
               child: child ?? const SizedBox.shrink(),
             );
           },
-          home: HomeShell(
-            repository: widget.repository,
-            storageUsageBytes: widget.storageUsageBytes,
-            settingsStore: _settingsStore,
+          home: _CutawanLaunchGate(
+            child: HomeShell(
+              repository: widget.repository,
+              storageUsageBytes: widget.storageUsageBytes,
+              settingsStore: _settingsStore,
+            ),
           ),
         );
+      },
+    );
+  }
+}
+
+class _CutawanLaunchGate extends StatefulWidget {
+  const _CutawanLaunchGate({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_CutawanLaunchGate> createState() => _CutawanLaunchGateState();
+}
+
+class _CutawanLaunchGateState extends State<_CutawanLaunchGate> {
+  bool _introFinished = false;
+
+  @override
+  Widget build(BuildContext context) {
+    if (_introFinished) return widget.child;
+    return CutawanIntroScreen(
+      onFinished: () {
+        if (mounted) setState(() => _introFinished = true);
       },
     );
   }
