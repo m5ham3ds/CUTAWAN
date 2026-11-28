@@ -1,10 +1,18 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:video_player/video_player.dart';
 
-/// Plays the supplied CUTAWAN brand intro once, then hands off to the app.
+/// Plays the prepared CUTAWAN brand animation full-screen, then opens home.
 class CutawanIntroScreen extends StatefulWidget {
-  const CutawanIntroScreen({super.key, required this.onFinished});
+  const CutawanIntroScreen({
+    super.key,
+    required this.controller,
+    required this.onFinished,
+  });
 
+  final VideoPlayerController controller;
   final VoidCallback onFinished;
 
   @override
@@ -12,27 +20,24 @@ class CutawanIntroScreen extends StatefulWidget {
 }
 
 class _CutawanIntroScreenState extends State<CutawanIntroScreen> {
-  late final VideoPlayerController _controller;
-  bool _ready = false;
   bool _finished = false;
+
+  VideoPlayerController get _controller => widget.controller;
 
   @override
   void initState() {
     super.initState();
-    _controller = VideoPlayerController.asset('assets/cutawan_intro.mp4');
     _controller.addListener(_handlePlayback);
-    _initialize();
+    unawaited(
+      SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky),
+    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _startPlayback();
+    });
   }
 
-  Future<void> _initialize() async {
+  Future<void> _startPlayback() async {
     try {
-      await _controller.initialize();
-      if (!mounted) return;
-      await _controller.setLooping(false);
-      // Keep the uploaded MP4 untouched while honoring the silent intro request.
-      await _controller.setVolume(0);
-      if (!mounted) return;
-      setState(() => _ready = true);
       await _controller.play();
     } catch (_) {
       _finish();
@@ -40,9 +45,11 @@ class _CutawanIntroScreenState extends State<CutawanIntroScreen> {
   }
 
   void _handlePlayback() {
-    if (!_controller.value.isInitialized ||
-        _controller.value.isPlaying ||
-        _controller.value.position < _controller.value.duration) {
+    final value = _controller.value;
+    if (!value.isInitialized ||
+        value.isPlaying ||
+        value.duration <= Duration.zero ||
+        value.position < value.duration) {
       return;
     }
     _finish();
@@ -57,39 +64,32 @@ class _CutawanIntroScreenState extends State<CutawanIntroScreen> {
   @override
   void dispose() {
     _controller.removeListener(_handlePlayback);
-    _controller.dispose();
+    unawaited(_controller.dispose());
+    unawaited(
+      SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge),
+    );
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: _finish,
-      child: Scaffold(
-        backgroundColor: const Color(0xFF101113),
-        body: Center(
-          child: _ready && _controller.value.isInitialized
-              ? AspectRatio(
-                  aspectRatio: _controller.value.aspectRatio,
-                  child: VideoPlayer(_controller),
-                )
-              : Image.asset(
-                  'assets/cutawan_logo.jpg',
-                  width: 180,
-                  height: 180,
-                  fit: BoxFit.contain,
-                  errorBuilder: (_, _, _) => const Text(
-                    'CUTAWAN',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 30,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 2,
-                    ),
+    final size = _controller.value.size;
+    return Scaffold(
+      backgroundColor: const Color(0xFF101113),
+      body: SizedBox.expand(
+        child: size.width <= 0 || size.height <= 0
+            ? const ColoredBox(color: Color(0xFF101113))
+            : ClipRect(
+                child: FittedBox(
+                  fit: BoxFit.cover,
+                  alignment: Alignment.center,
+                  child: SizedBox(
+                    width: size.width,
+                    height: size.height,
+                    child: VideoPlayer(_controller),
                   ),
                 ),
-        ),
+              ),
       ),
     );
   }
