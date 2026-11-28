@@ -51,6 +51,12 @@ class _CaptionStudioPageState extends State<CaptionStudioPage>
   bool _captionsEnabled = true;
   bool _rtl = true;
   bool _showSafeFrame = false;
+  _CaptionStudioEditorTab _activeEditorTab = _CaptionStudioEditorTab.styles;
+  bool _previewHintExpanded = false;
+  bool _styleHintExpanded = false;
+  bool _motionHintExpanded = false;
+  bool _timingHintExpanded = false;
+  bool _exportHintExpanded = false;
   bool _loading = false;
   bool _dirty = false;
   String? _error;
@@ -126,6 +132,12 @@ class _CaptionStudioPageState extends State<CaptionStudioPage>
 
   CaptionWordGroup? get _previewGroup =>
       _previewGroups.isEmpty ? null : _previewGroups[_previewGroupIndex];
+
+  double get _previewHeaderExtent =>
+      410 +
+      (_previewGroups.isNotEmpty ? 48 : 0) +
+      (_previewHintExpanded ? 100 : 0) +
+      (_error != null ? 70 : 0);
 
   String get _previewText {
     final group = _previewGroup;
@@ -588,6 +600,18 @@ class _CaptionStudioPageState extends State<CaptionStudioPage>
     final theme = Theme.of(context);
     final style = _preset;
     final preview = _previewText;
+    final previewNotice = _previewGroups.isNotEmpty
+        ? 'تستخدم المعاينة كلمات التفريغ المحفوظة.'
+        : _selectedProject == null
+            ? 'معاينة تجريبية · اختر مشروعاً بعد إنشائه لعرض الكلمات المحفوظة.'
+            : 'معاينة تجريبية · أنشئ تفريغاً موثوقاً لهذا المشروع لعرض توقيت كلماته.';
+    final previewGuidance = [
+      previewNotice,
+      _animationExports
+          ? 'هذه الحركة مدعومة في معاينة الاستوديو وتصدير MP4.'
+          : 'هذه الحركة للمعاينة فقط؛ تصدير MP4 يدعم حالياً Static وKaraoke Fill.',
+      'The preview uses saved transcript words. Live video playback synchronisation is not part of this page.',
+    ].join('\\n');
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -595,8 +619,8 @@ class _CaptionStudioPageState extends State<CaptionStudioPage>
           'معاينة متزامنة مع الكلمات',
           icon: Icons.play_circle_outline_rounded,
         ),
-        const SizedBox(height: 10),
-        if (_previewGroups.isNotEmpty)
+        if (_previewGroups.isNotEmpty) ...[
+          const SizedBox(height: 8),
           Row(
             children: [
               Expanded(
@@ -607,6 +631,8 @@ class _CaptionStudioPageState extends State<CaptionStudioPage>
                   ),
                   key: const ValueKey('caption-timed-group-label'),
                   style: theme.textTheme.bodySmall,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
               DropdownButton<int>(
@@ -622,15 +648,8 @@ class _CaptionStudioPageState extends State<CaptionStudioPage>
                 onChanged: _selectPreviewGroup,
               ),
             ],
-          )
-        else
-          Text(
-            _selectedProject == null
-                ? 'معاينة تجريبية · اختر مشروعاً بعد إنشائه لعرض الكلمات المحفوظة.'
-                : 'معاينة تجريبية · أنشئ تفريغاً موثوقاً لهذا المشروع لعرض توقيت كلماته.',
-            key: const ValueKey('caption-sample-preview-notice'),
-            style: theme.textTheme.bodySmall,
           ),
+        ],
         const SizedBox(height: 8),
         AnimatedBuilder(
           animation: _animation,
@@ -707,36 +726,17 @@ class _CaptionStudioPageState extends State<CaptionStudioPage>
             );
           },
         ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                _animationExports
-                    ? 'هذه الحركة مدعومة في معاينة الاستوديو وتصدير MP4.'
-                    : 'هذه الحركة للمعاينة فقط؛ تصدير MP4 يدعم حالياً Static وKaraoke Fill.',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: _animationExports
-                      ? theme.colorScheme.secondary
-                      : theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ),
-            if (!_animationExports)
-              const Icon(
-                Icons.info_outline_rounded,
-                size: 18,
-              ),
-          ],
-        ),
-        const SizedBox(height: 4),
-        Text(cutawanText(context, 'المعاينة تعرض كلمات التفريغ المحفوظة. مزامنة العرض مع فيديو حي ليست جزءاً من هذه الصفحة.'),
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
+        const SizedBox(height: 6),
+        _ExpandableSectionHint(
+          testKey: 'caption-preview-hint',
+          text: previewGuidance,
+          expanded: _previewHintExpanded,
+          onExpandedChanged: (value) {
+            setState(() => _previewHintExpanded = value);
+          },
         ),
         if (_error != null) ...[
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           CutawanStatusNote(text: _error!),
         ],
       ],
@@ -744,7 +744,6 @@ class _CaptionStudioPageState extends State<CaptionStudioPage>
   }
 
   Widget _buildStyleGallery(BuildContext context) {
-    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -766,10 +765,13 @@ class _CaptionStudioPageState extends State<CaptionStudioPage>
               .toList(growable: false),
         ),
         const SizedBox(height: 8),
-        Text(cutawanText(context, 'اختيار النمط يحمّل إعداداته الابتدائية، ويمكن تخصيص الخط والألوان والموضع بعد ذلك.'),
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
+        _ExpandableSectionHint(
+          testKey: 'caption-style-hint',
+          text: 'اختيار النمط يحمّل إعداداته الابتدائية، ويمكن تخصيص الخط والألوان والموضع بعد ذلك.',
+          expanded: _styleHintExpanded,
+          onExpandedChanged: (value) {
+            setState(() => _styleHintExpanded = value);
+          },
         ),
       ],
     );
@@ -805,29 +807,96 @@ class _CaptionStudioPageState extends State<CaptionStudioPage>
         ),
         const SizedBox(height: 8),
         CutawanPanel(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(
-                _animationExports
-                    ? Icons.check_circle_outline_rounded
-                    : Icons.visibility_outlined,
-                color: _animationExports
-                    ? theme.colorScheme.secondary
-                    : theme.colorScheme.onSurfaceVariant,
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  '${_motion.name}: ${_motion.description}\n'
-                  '${_animationExports ? 'متاح في ملف MP4.' : 'مثال بصري فقط؛ سيحفظ تأثير التصدير على Static.'}',
-                  style: theme.textTheme.bodySmall,
-                ),
-              ),
-            ],
+          padding: const EdgeInsets.all(10),
+          child: _ExpandableSectionHint(
+            testKey: 'caption-motion-hint',
+            leadingIcon: _animationExports
+                ? Icons.check_circle_outline_rounded
+                : Icons.visibility_outlined,
+            leadingColor: _animationExports
+                ? theme.colorScheme.secondary
+                : theme.colorScheme.onSurfaceVariant,
+            text: '${_motion.name}: ${_motion.description}\\n'
+                '${_animationExports ? 'متاح في ملف MP4.' : 'مثال بصري فقط؛ سيحفظ تأثير التصدير على Static.'}',
+            expanded: _motionHintExpanded,
+            onExpandedChanged: (value) {
+              setState(() => _motionHintExpanded = value);
+            },
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildEditorSectionTabs(BuildContext context) {
+    final theme = Theme.of(context);
+    final segments = <ButtonSegment<_CaptionStudioEditorTab>>[
+      ButtonSegment(
+        value: _CaptionStudioEditorTab.styles,
+        icon: const Icon(Icons.palette_outlined),
+        label: const Text(
+          'الأنماط البصرية',
+          key: ValueKey('caption-editor-tab-styles'),
+          textAlign: TextAlign.center,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ),
+      ButtonSegment(
+        value: _CaptionStudioEditorTab.motion,
+        icon: const Icon(Icons.motion_photos_on_outlined),
+        label: const Text(
+          'الحركة ومعاينة الدخول',
+          key: ValueKey('caption-editor-tab-motion'),
+          textAlign: TextAlign.center,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ),
+      ButtonSegment(
+        value: _CaptionStudioEditorTab.typography,
+        icon: const Icon(Icons.text_fields_rounded),
+        label: const Text(
+          'الخط والتنسيق',
+          key: ValueKey('caption-editor-tab-typography'),
+          textAlign: TextAlign.center,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ),
+    ];
+    return SegmentedButton<_CaptionStudioEditorTab>(
+      key: const ValueKey('caption-editor-section-tabs'),
+      segments: segments,
+      selected: {_activeEditorTab},
+      showSelectedIcon: false,
+      style: ButtonStyle(
+        visualDensity: VisualDensity.compact,
+        padding: const WidgetStatePropertyAll(
+          EdgeInsets.symmetric(horizontal: 5, vertical: 9),
+        ),
+        textStyle: WidgetStatePropertyAll(
+          theme.textTheme.labelSmall?.copyWith(fontSize: 10.5),
+        ),
+      ),
+      onSelectionChanged: (selection) {
+        if (selection.isEmpty) return;
+        setState(() => _activeEditorTab = selection.first);
+      },
+    );
+  }
+
+  Widget _buildActiveEditorSection(BuildContext context) {
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 160),
+      child: KeyedSubtree(
+        key: ValueKey(_activeEditorTab),
+        child: switch (_activeEditorTab) {
+          _CaptionStudioEditorTab.styles => _buildStyleGallery(context),
+          _CaptionStudioEditorTab.motion => _buildMotionGallery(context),
+          _CaptionStudioEditorTab.typography => _buildTypographyControls(context),
+        },
+      ),
     );
   }
 
@@ -962,10 +1031,13 @@ class _CaptionStudioPageState extends State<CaptionStudioPage>
             rebuildLayout: true,
           ),
         ),
-        Text(cutawanText(context, 'القيمة تحفظ داخل المشروع وتؤثر في توقيت الكلمات المُصدّرة. المعاينة التجريبية لا تستبدل تشغيل الفيديو.'),
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
+        _ExpandableSectionHint(
+          testKey: 'caption-timing-hint',
+          text: 'القيمة تحفظ داخل المشروع وتؤثر في توقيت الكلمات المُصدّرة. المعاينة التجريبية لا تستبدل تشغيل الفيديو.',
+          expanded: _timingHintExpanded,
+          onExpandedChanged: (value) {
+            setState(() => _timingHintExpanded = value);
+          },
         ),
       ],
     );
@@ -976,100 +1048,140 @@ class _CaptionStudioPageState extends State<CaptionStudioPage>
     final theme = Theme.of(context);
     final projects = widget.projects.value;
     final selected = _selectedProject;
-    final style = _preset;
-    final motion = _motion;
-    return ListView(
+
+    return CustomScrollView(
       key: const ValueKey('caption-studio-list'),
-      padding: const EdgeInsets.fromLTRB(16, 20, 16, 120),
-      children: [
-        const CutawanEyebrow(
-          'CAPTION STUDIO',
-          icon: Icons.closed_caption_rounded,
-        ),
-        const SizedBox(height: 12),
-        Text(cutawanText(context, 'مختبر الهوية النصية'),
-          style: theme.textTheme.headlineLarge?.copyWith(
-            fontWeight: FontWeight.w900,
-            fontSize: 30,
-          ),
-        ),
-        const SizedBox(height: 7),
-        Text(cutawanText(context, 'اضبط شكل الكلمات وتوقيتها ثم احفظ الإعدادات داخل المشروع الذي تختاره.'),
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-        ),
-        const SizedBox(height: 16),
-        _buildProjectSelector(context, projects),
-        if (projects.isEmpty) ...[
-          const SizedBox(height: 12),
-          const CutawanEmptyState(
-            icon: Icons.movie_creation_outlined,
-            title: 'لا توجد مشاريع بعد',
-            description: 'يمكنك استكشاف المعاينة والأنماط الآن، ثم اختيار مشروع لحفظ إعدادات الترجمة داخله.',
-          ),
-        ],
-        const SizedBox(height: 18),
-        CutawanPanel(
-          padding: const EdgeInsets.all(14),
-          child: _buildPreview(context),
-        ),
-        const SizedBox(height: 22),
-        _buildStyleGallery(context),
-        const SizedBox(height: 22),
-        _buildMotionGallery(context),
-        const SizedBox(height: 22),
-        _buildTypographyControls(context),
-        const SizedBox(height: 22),
-        SwitchListTile(
-          key: const ValueKey('caption-export-enabled'),
-          contentPadding: EdgeInsets.zero,
-          title: Text(cutawanText(context, 'إظهار الترجمة في تصدير الفيديو')),
-          subtitle: Text(cutawanText(context, 'عند الإيقاف تبقى إعدادات النمط محفوظة دون حرق الكلمات داخل MP4.')),
-          value: _captionsEnabled,
-          onChanged: (value) => _update(() => _captionsEnabled = value),
-        ),
-        const SizedBox(height: 22),
-        _buildTimingControls(context),
-        const SizedBox(height: 18),
-        SwitchListTile(
-          key: const ValueKey('caption-direction-switch'),
-          contentPadding: EdgeInsets.zero,
-          title: Text(cutawanText(context, 'اتجاه معاينة النص')),
-          subtitle: Text(_rtl ? 'العربية · من اليمين إلى اليسار' : 'English · left to right'),
-          value: _rtl,
-          onChanged: (value) => setState(() => _rtl = value),
-        ),
-        if (_dirty)
-          const CutawanStatusNote(
-            text: 'توجد تعديلات غير محفوظة على المشروع المحدد.',
-          ),
-        const SizedBox(height: 8),
-        FilledButton.icon(
-          key: const ValueKey('caption-studio-save'),
-          onPressed: selected == null ||
-                  _loading ||
-                  _savingProjectId != null
-              ? null
-              : _savePreferences,
-          icon: _savingProjectId == null
-              ? const Icon(Icons.save_outlined)
-              : const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
+      slivers: [
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
+          sliver: SliverList(
+            delegate: SliverChildListDelegate([
+              const CutawanEyebrow(
+                'CAPTION STUDIO',
+                icon: Icons.closed_caption_rounded,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                cutawanText(context, 'مختبر الهوية النصية'),
+                style: theme.textTheme.headlineLarge?.copyWith(
+                  fontWeight: FontWeight.w900,
+                  fontSize: 30,
                 ),
-          label: Text(
-            _savingProjectId == null
-                ? 'حفظ الإعدادات في المشروع المحدد'
-                : 'جارٍ الحفظ…',
+              ),
+              const SizedBox(height: 7),
+              Text(
+                cutawanText(
+                  context,
+                  'اضبط شكل الكلمات وتوقيتها ثم احفظ الإعدادات داخل المشروع الذي تختاره.',
+                ),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 16),
+              _buildProjectSelector(context, projects),
+              if (projects.isEmpty) ...[
+                const SizedBox(height: 12),
+                const CutawanEmptyState(
+                  icon: Icons.movie_creation_outlined,
+                  title: 'لا توجد مشاريع بعد',
+                  description:
+                      'يمكنك استكشاف المعاينة والأنماط الآن، ثم اختيار مشروع لحفظ إعدادات الترجمة داخله.',
+                ),
+              ],
+              const SizedBox(height: 8),
+            ]),
           ),
         ),
-        const SizedBox(height: 8),
-        Text(cutawanText(context, 'Preset: ${style.id} · معاينة الحركة: ${motion.id} · تصدير MP4: $_exportAnimationId'),
-          textAlign: TextAlign.center,
-          style: theme.textTheme.labelSmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
+        SliverPersistentHeader(
+          pinned: true,
+          delegate: _CaptionPreviewHeaderDelegate(
+            extent: _previewHeaderExtent,
+            child: KeyedSubtree(
+              key: const ValueKey('caption-preview-pinned'),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+                child: CutawanPanel(
+                  padding: const EdgeInsets.all(14),
+                  child: _buildPreview(context),
+                ),
+              ),
+            ),
+          ),
+        ),
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 120),
+          sliver: SliverList(
+            delegate: SliverChildListDelegate([
+              _buildEditorSectionTabs(context),
+              const SizedBox(height: 12),
+              _buildActiveEditorSection(context),
+              const SizedBox(height: 22),
+              _buildTimingControls(context),
+              const SizedBox(height: 22),
+              SwitchListTile(
+                key: const ValueKey('caption-export-enabled'),
+                contentPadding: EdgeInsets.zero,
+                title: Text(cutawanText(context, 'إظهار الترجمة في تصدير الفيديو')),
+                value: _captionsEnabled,
+                onChanged: (value) => _update(() => _captionsEnabled = value),
+              ),
+              _ExpandableSectionHint(
+                testKey: 'caption-export-hint',
+                text: 'عند الإيقاف تبقى إعدادات النمط محفوظة دون حرق الكلمات داخل MP4.',
+                expanded: _exportHintExpanded,
+                onExpandedChanged: (value) {
+                  setState(() => _exportHintExpanded = value);
+                },
+              ),
+              const SizedBox(height: 18),
+              SwitchListTile(
+                key: const ValueKey('caption-direction-switch'),
+                contentPadding: EdgeInsets.zero,
+                title: Text(cutawanText(context, 'اتجاه معاينة النص')),
+                subtitle: Text(
+                  _rtl ? 'العربية · من اليمين إلى اليسار' : 'English · left to right',
+                ),
+                value: _rtl,
+                onChanged: (value) => setState(() => _rtl = value),
+              ),
+              if (_dirty)
+                const CutawanStatusNote(
+                  text: 'توجد تعديلات غير محفوظة على المشروع المحدد.',
+                ),
+              const SizedBox(height: 8),
+              FilledButton.icon(
+                key: const ValueKey('caption-studio-save'),
+                onPressed: selected == null ||
+                        _loading ||
+                        _savingProjectId != null
+                    ? null
+                    : _savePreferences,
+                icon: _savingProjectId == null
+                    ? const Icon(Icons.save_outlined)
+                    : const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                label: Text(
+                  _savingProjectId == null
+                      ? 'حفظ الإعدادات في المشروع المحدد'
+                      : 'جارٍ الحفظ…',
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                cutawanText(
+                  context,
+                  'Preset: ${_preset.id} · معاينة الحركة: ${_motion.id} · تصدير MP4: $_exportAnimationId',
+                ),
+                textAlign: TextAlign.center,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ]),
           ),
         ),
       ],
@@ -1141,6 +1253,105 @@ class _CaptionStudioPageState extends State<CaptionStudioPage>
       textAlign: TextAlign.center,
       textDirection: _rtl ? TextDirection.rtl : TextDirection.ltr,
       text: TextSpan(children: spans),
+    );
+  }
+}
+
+enum _CaptionStudioEditorTab { styles, motion, typography }
+
+class _CaptionPreviewHeaderDelegate extends SliverPersistentHeaderDelegate {
+  const _CaptionPreviewHeaderDelegate({
+    required this.extent,
+    required this.child,
+  });
+
+  final double extent;
+  final Widget child;
+
+  @override
+  double get minExtent => extent;
+
+  @override
+  double get maxExtent => extent;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    return Material(
+      color: Theme.of(context).scaffoldBackgroundColor,
+      elevation: overlapsContent ? 2 : 0,
+      child: SizedBox.expand(child: child),
+    );
+  }
+
+  @override
+  bool shouldRebuild(covariant _CaptionPreviewHeaderDelegate oldDelegate) =>
+      oldDelegate.extent != extent || oldDelegate.child != child;
+}
+
+class _ExpandableSectionHint extends StatelessWidget {
+  const _ExpandableSectionHint({
+    required this.testKey,
+    required this.text,
+    required this.expanded,
+    required this.onExpandedChanged,
+    this.leadingIcon,
+    this.leadingColor,
+  });
+
+  final String testKey;
+  final String text;
+  final bool expanded;
+  final ValueChanged<bool> onExpandedChanged;
+  final IconData? leadingIcon;
+  final Color? leadingColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        if (leadingIcon != null) ...[
+          Icon(
+            leadingIcon,
+            size: 18,
+            color: leadingColor ?? theme.colorScheme.onSurfaceVariant,
+          ),
+          const SizedBox(width: 8),
+        ],
+        Expanded(
+          child: AnimatedSize(
+            duration: const Duration(milliseconds: 180),
+            alignment: AlignmentDirectional.topStart,
+            child: Text(
+              text,
+              key: ValueKey('$testKey-text'),
+              maxLines: expanded ? null : 1,
+              overflow: expanded ? TextOverflow.visible : TextOverflow.ellipsis,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 4),
+        IconButton(
+          key: ValueKey('$testKey-toggle'),
+          tooltip: expanded ? 'إخفاء التوضيح' : 'عرض التوضيح',
+          visualDensity: VisualDensity.compact,
+          constraints: const BoxConstraints.tightFor(width: 36, height: 36),
+          padding: EdgeInsets.zero,
+          onPressed: () => onExpandedChanged(!expanded),
+          icon: Icon(
+            expanded ? Icons.close_rounded : Icons.help_outline_rounded,
+            size: 19,
+          ),
+        ),
+      ],
     );
   }
 }

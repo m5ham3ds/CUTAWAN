@@ -111,6 +111,16 @@ void main() {
       );
       expect(selectedNeon.selected, isTrue);
       await tester.scrollUntilVisible(
+        find.byKey(const ValueKey('caption-editor-section-tabs')),
+        320,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.tap(
+        find.byKey(const ValueKey('caption-editor-tab-motion')),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('caption-style-presets')), findsNothing);
+      await tester.scrollUntilVisible(
         find.byKey(const ValueKey('caption-animation-fade')),
         320,
         scrollable: find.byType(Scrollable).first,
@@ -193,6 +203,140 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 50));
       expect(find.text('مختبر الهوية النصية'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'Caption Studio pins the synchronized preview while the editor scrolls',
+    (tester) async {
+      tester.view.physicalSize = const Size(430, 932);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final project = _makeProject(
+        name: 'pinned-preview',
+        preferences: const ClipPreferences(captionStyleId: 'beast'),
+      );
+      final projects = ValueNotifier<List<CutawanProject>>([project]);
+      addTearDown(projects.dispose);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: CaptionStudioPage(
+              projects: projects,
+              repository: _MemoryCaptionRepository(),
+              onProjectsChanged: () async {},
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      final preview = find.byKey(const ValueKey('caption-preview-pinned'));
+      expect(preview, findsOneWidget);
+      expect(tester.getTopLeft(preview).dy, greaterThan(0));
+
+      final scrollable = find.byType(Scrollable).first;
+      await tester.drag(scrollable, const Offset(0, -1400));
+      await tester.pumpAndSettle();
+      final pinnedTop = tester.getTopLeft(preview).dy;
+      expect(pinnedTop, closeTo(0, 1));
+
+      await tester.drag(scrollable, const Offset(0, -360));
+      await tester.pumpAndSettle();
+      expect(tester.getTopLeft(preview).dy, closeTo(pinnedTop, 1));
+      expect(find.byKey(const ValueKey('caption-editor-section-tabs')), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'Caption Studio editor tabs show only the selected control group',
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final projects = ValueNotifier<List<CutawanProject>>([]);
+      addTearDown(projects.dispose);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: CaptionStudioPage(
+              projects: projects,
+              repository: _MemoryCaptionRepository(),
+              onProjectsChanged: () async {},
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      expect(find.byKey(const ValueKey('caption-style-presets')), findsOneWidget);
+      expect(find.byKey(const ValueKey('caption-animation-presets')), findsNothing);
+      expect(find.byKey(const ValueKey('caption-font-family')), findsNothing);
+
+      await tester.tap(find.byKey(const ValueKey('caption-editor-tab-motion')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('caption-animation-presets')), findsOneWidget);
+      expect(find.byKey(const ValueKey('caption-style-presets')), findsNothing);
+      expect(find.byKey(const ValueKey('caption-font-family')), findsNothing);
+
+      await tester.tap(find.byKey(const ValueKey('caption-editor-tab-typography')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('caption-font-family')), findsOneWidget);
+      expect(find.byKey(const ValueKey('caption-style-presets')), findsNothing);
+      expect(find.byKey(const ValueKey('caption-animation-presets')), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'Caption Studio help hints start as one line and expand on demand',
+    (tester) async {
+      tester.view.physicalSize = const Size(430, 932);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final projects = ValueNotifier<List<CutawanProject>>([]);
+      addTearDown(projects.dispose);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: CaptionStudioPage(
+              projects: projects,
+              repository: _MemoryCaptionRepository(),
+              onProjectsChanged: () async {},
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      final previewText = find.byKey(const ValueKey('caption-preview-hint-text'));
+      expect(previewText, findsOneWidget);
+      expect(tester.widget<Text>(previewText).maxLines, 1);
+      expect(find.textContaining('اختر مشروعاً بعد إنشائه'), findsOneWidget);
+
+      await tester.tap(find.byKey(const ValueKey('caption-preview-hint-toggle')));
+      await tester.pumpAndSettle();
+      expect(tester.widget<Text>(previewText).maxLines, isNull);
+      expect(find.textContaining('Karaoke Fill'), findsOneWidget);
+      expect(find.textContaining('Live video playback synchronisation'), findsOneWidget);
+
+      await tester.tap(find.byKey(const ValueKey('caption-preview-hint-toggle')));
+      await tester.pumpAndSettle();
+      expect(tester.widget<Text>(previewText).maxLines, 1);
       expect(tester.takeException(), isNull);
     },
   );
