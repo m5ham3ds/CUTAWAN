@@ -192,8 +192,11 @@ void main() {
 
       final logo = find.byKey(const ValueKey('cutawan-topbar-logo'));
       expect(logo, findsOneWidget);
-      expect(tester.widget<Icon>(logo).icon, Icons.auto_awesome_rounded);
-      expect(tester.widget<Icon>(logo).size, 24);
+      final logoImage = tester.widget<Image>(logo);
+      expect(logoImage.image, isA<AssetImage>());
+      expect((logoImage.image as AssetImage).assetName, 'assets/cutawan_logo.jpg');
+      expect(logoImage.width, 30);
+      expect(logoImage.height, 30);
       expect(find.byTooltip('الإعدادات'), findsNothing);
       expect(find.byTooltip('تشخيص الجهاز'), findsNothing);
       expect(find.byTooltip('مركز النماذج'), findsNothing);
@@ -252,7 +255,10 @@ void main() {
 
       final logo = find.byKey(const ValueKey('cutawan-topbar-logo'));
       expect(logo, findsOneWidget);
-      expect(tester.widget<Icon>(logo).size, 24);
+      final logoImage = tester.widget<Image>(logo);
+      expect(logoImage.image, isA<AssetImage>());
+      expect((logoImage.image as AssetImage).assetName, 'assets/cutawan_logo.jpg');
+      expect(logoImage.width, 30);
       expect(find.byTooltip('الإعدادات'), findsNothing);
       expect(find.byTooltip('تشخيص الجهاز'), findsNothing);
       expect(find.byTooltip('مركز النماذج'), findsNothing);

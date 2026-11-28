@@ -16,11 +16,13 @@ class CutawanApp extends StatefulWidget {
     this.repository,
     this.storageUsageBytes,
     this.settingsStore,
+    this.showIntro = false,
   });
 
   final LocalProjectRepository? repository;
   final Future<int> Function()? storageUsageBytes;
   final AppPreferencesStore? settingsStore;
+  final bool showIntro;
 
   @override
   State<CutawanApp> createState() => _CutawanAppState();
@@ -93,13 +95,19 @@ class _CutawanAppState extends State<CutawanApp> {
               child: child ?? const SizedBox.shrink(),
             );
           },
-          home: _CutawanLaunchGate(
-            child: HomeShell(
-              repository: widget.repository,
-              storageUsageBytes: widget.storageUsageBytes,
-              settingsStore: _settingsStore,
-            ),
-          ),
+          home: widget.showIntro
+              ? _CutawanLaunchGate(
+                  child: HomeShell(
+                    repository: widget.repository,
+                    storageUsageBytes: widget.storageUsageBytes,
+                    settingsStore: _settingsStore,
+                  ),
+                )
+              : HomeShell(
+                  repository: widget.repository,
+                  storageUsageBytes: widget.storageUsageBytes,
+                  settingsStore: _settingsStore,
+                ),
         );
       },
     );

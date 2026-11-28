@@ -26,7 +26,6 @@ class CutawanTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final palette = AppPalette.of(context);
     final compact = MediaQuery.sizeOf(context).width < 390;
     final gutter = AppSpace.gutter(context);
@@ -264,8 +263,13 @@ class CutawanNavigationDrawer extends StatelessWidget {
                 ),
                 child: Row(
                   children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(10),
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: scheme.primary,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                       child: Image.asset(
                         'assets/cutawan_logo.jpg',
                         width: 48,
@@ -307,3 +311,123 @@ class CutawanNavigationDrawer extends StatelessWidget {
                 label: destinations[index].label,
                 selected: selectedIndex == index,
                 onTap: () => _closeAndRun(context, () => onSelect(index)),
+              ),
+            const SizedBox(height: 14),
+            Divider(color: palette.hairline, indent: 18, endIndent: 18),
+            Padding(
+              padding: const EdgeInsetsDirectional.only(start: 20, end: 20, top: 8, bottom: 8),
+              child: Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: Text(
+                  cutawanText(context, 'الأدوات'),
+                  style: AppType.kicker.copyWith(color: palette.mutedText, letterSpacing: 1.1),
+                ),
+              ),
+            ),
+            _CutawanDrawerItem(
+              icon: Icons.monitor_heart_outlined,
+              label: cutawanText(context, 'تشخيص الجهاز'),
+              onTap: () => _closeAndRun(context, onDiagnostics),
+            ),
+            _CutawanDrawerItem(
+              icon: Icons.memory_rounded,
+              label: cutawanText(context, 'مركز النماذج'),
+              onTap: () => _closeAndRun(context, onModels),
+            ),
+            _CutawanDrawerItem(
+              key: const ValueKey('cutawan-drawer-settings'),
+              icon: Icons.settings_outlined,
+              label: cutawanText(context, 'الإعدادات'),
+              onTap: () => _closeAndRun(context, onSettings),
+            ),
+            const Spacer(),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 18),
+              child: Row(
+                children: [
+                  Icon(Icons.shield_outlined, size: 16, color: palette.mutedText),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      cutawanText(context, 'المعالجة المحلية هي الوضع الافتراضي'),
+                      style: AppType.metadata.copyWith(color: palette.mutedText),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CutawanDrawerItem extends StatelessWidget {
+  const _CutawanDrawerItem({
+    super.key,
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.selected = false,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final bool selected;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final palette = AppPalette.of(context);
+    final foreground = selected ? scheme.primary : palette.secondaryText;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+      child: Material(
+        color: selected ? scheme.primary.withValues(alpha: 0.10) : Colors.transparent,
+        borderRadius: BorderRadius.circular(AppRadii.card),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(AppRadii.card),
+          onTap: onTap,
+          child: SizedBox(
+            height: 50,
+            child: Padding(
+              padding: const EdgeInsetsDirectional.only(start: 14, end: 12),
+              child: Row(
+                children: [
+                  Icon(icon, size: 21, color: foreground),
+                  const SizedBox(width: 13),
+                  Expanded(
+                    child: Text(
+                      label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppType.body.copyWith(
+                        color: foreground,
+                        fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                  if (selected)
+                    Container(
+                      width: 4,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        color: scheme.primary,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
