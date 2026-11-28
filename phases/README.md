@@ -42,6 +42,10 @@ The APK is built from source SHA `716408d` and includes the Phase 10 candidate-e
 | [9](09-professional-mobile-ui.md) | Professional UI, editor workflows and responsive/accessibility work | Dashboard/Create/Jobs/Review/Clip Editor/Caption Studio/Settings/Models/Diagnostics workflows, Filmstrip, source-time keyframes, visual fades, sequence composition/dip-to-black and eight-scenario 24/24 parity matrix passed on Android #456 | Physical handset RTL/LTR, large text, landscape, insets, real keyboard focus, editor/export and OEM acceptance; no audio crossfade/full multitrack mix |
 | [10](10-physical-device-acceptance.md) | Physical-device quality, security and performance acceptance | Diagnostics, privacy-filtered versioned field-evidence template, bounded Arabic/English WER/word-timing evaluator and candidate-quality/editorial-selection evaluator implemented; Phase 10 preparation remains active | Human-confirmed handset, hash-locked corpus, human-reviewed transcripts, actual WER/timing results, candidate/crop quality, full decode, sustained PSS/battery/thermal, process/SAF/Keystore/consent evidence and review |
 
+## Cross-cutting Android update-installability gate — 2026-11-28
+
+A separate, artifact-verified release blocker has been recorded in [Android Update Installability and Signing Continuity](PHASE-ANDROID-UPDATE-INSTALLABILITY-AND-SIGNING-2026-11-28.md). Two successful ARM64 debug APK artifacts use the same application ID but have different Android Debug signing-certificate SHA-256 fingerprints; both also carry version code 2. Therefore the current CI APK must not be treated as a safe in-place update to the prior artifact. The report defines the persistent signing, monotonically increasing version-code, and upgrade-over-install evidence required before distributing updates. **This gate is documented but not fixed or accepted by this documentation-only change.**
+
 ## Current interpretation
 
 - Phases 1–7 have their core mobile implementation and automated test coverage. Their remaining hardware, quality, security and provider checks are explicitly listed; a CI pass does not close them.
@@ -71,6 +75,7 @@ The APK is built from source SHA `716408d` and includes the Phase 10 candidate-e
 - [Phase 8 — pipeline and export](08-end-to-end-pipeline-and-export.md)
 - [Phase 9 — professional mobile UI](09-professional-mobile-ui.md)
 - [Phase 10 — physical-device acceptance](10-physical-device-acceptance.md)
+- [Cross-cutting Android update-installability and signing continuity blocker](PHASE-ANDROID-UPDATE-INSTALLABILITY-AND-SIGNING-2026-11-28.md)
 
 ### Detailed acceptance and implementation evidence
 
