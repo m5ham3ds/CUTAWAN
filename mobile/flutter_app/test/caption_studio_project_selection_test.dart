@@ -225,10 +225,13 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: CaptionStudioPage(
+            body: TickerMode(
+              enabled: false,
+              child: CaptionStudioPage(
               projects: projects,
               repository: _MemoryCaptionRepository(),
               onProjectsChanged: () async {},
+              ),
             ),
           ),
         ),
@@ -268,10 +271,13 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: CaptionStudioPage(
+            body: TickerMode(
+              enabled: false,
+              child: CaptionStudioPage(
               projects: projects,
               repository: _MemoryCaptionRepository(),
               onProjectsChanged: () async {},
+              ),
             ),
           ),
         ),
@@ -312,10 +318,13 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: CaptionStudioPage(
+            body: TickerMode(
+              enabled: false,
+              child: CaptionStudioPage(
               projects: projects,
               repository: _MemoryCaptionRepository(),
               onProjectsChanged: () async {},
+              ),
             ),
           ),
         ),

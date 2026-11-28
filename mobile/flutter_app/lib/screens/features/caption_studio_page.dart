@@ -611,7 +611,7 @@ class _CaptionStudioPageState extends State<CaptionStudioPage>
           ? 'هذه الحركة مدعومة في معاينة الاستوديو وتصدير MP4.'
           : 'هذه الحركة للمعاينة فقط؛ تصدير MP4 يدعم حالياً Static وKaraoke Fill.',
       'The preview uses saved transcript words. Live video playback synchronisation is not part of this page.',
-    ].join('\\n');
+    ].join('\n');
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -816,7 +816,7 @@ class _CaptionStudioPageState extends State<CaptionStudioPage>
             leadingColor: _animationExports
                 ? theme.colorScheme.secondary
                 : theme.colorScheme.onSurfaceVariant,
-            text: '${_motion.name}: ${_motion.description}\\n'
+            text: '${_motion.name}: ${_motion.description}\n'
                 '${_animationExports ? 'متاح في ملف MP4.' : 'مثال بصري فقط؛ سيحفظ تأثير التصدير على Static.'}',
             expanded: _motionHintExpanded,
             onExpandedChanged: (value) {
