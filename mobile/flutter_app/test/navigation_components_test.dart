@@ -161,50 +161,45 @@ void main() {
   );
 
   testWidgets(
-    'global top bar keeps only the settings destination',
+    'global top bar uses the CUTAWAN logo instead of a settings action',
     (tester) async {
       tester.view.physicalSize = const Size(320, 640);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
 
-      var settingsTaps = 0;
       await tester.pumpWidget(
         MaterialApp(
-            locale: const Locale('ar'),
-            supportedLocales: const [Locale('ar'), Locale('en')],
-            localizationsDelegates: const [
-              GlobalMaterialLocalizations.delegate,
-              GlobalWidgetsLocalizations.delegate,
-              GlobalCupertinoLocalizations.delegate,
-            ],
+          locale: const Locale('ar'),
+          supportedLocales: const [Locale('ar'), Locale('en')],
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
           theme: CutawanTheme.light(),
           home: Scaffold(
             body: Directionality(
               textDirection: TextDirection.rtl,
               child: Align(
                 alignment: Alignment.topCenter,
-                child: CutawanTopBar(
-                  onRefresh: () async {},
-                  onSettings: () => settingsTaps++,
-                ),
+                child: CutawanTopBar(onRefresh: () async {}),
               ),
             ),
           ),
         ),
       );
 
-      expect(find.byTooltip('الإعدادات'), findsOneWidget);
-      expect(tester.getSize(find.byTooltip('الإعدادات')), const Size(48, 48));
+      final logo = find.byKey(const ValueKey('cutawan-topbar-logo'));
+      expect(logo, findsOneWidget);
+      expect(tester.widget<Icon>(logo).icon, Icons.auto_awesome_rounded);
+      expect(tester.widget<Icon>(logo).size, 24);
+      expect(find.byTooltip('الإعدادات'), findsNothing);
       expect(find.byTooltip('تشخيص الجهاز'), findsNothing);
       expect(find.byTooltip('مركز النماذج'), findsNothing);
-
-      await tester.tap(find.byTooltip('الإعدادات'));
-      expect(settingsTaps, 1);
       expect(tester.takeException(), isNull);
     },
   );
-
 
   testWidgets(
     'navigation and top bar remain usable with 200 percent text at 320dp',
@@ -214,7 +209,6 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
 
-      var settingsTaps = 0;
       await tester.pumpWidget(
         MaterialApp(
             locale: const Locale('ar'),
@@ -238,7 +232,6 @@ void main() {
                     children: [
                       CutawanTopBar(
                         onRefresh: () async {},
-                        onSettings: () => settingsTaps++,
                       ),
                       const Expanded(child: SizedBox.expand()),
                     ],
@@ -257,16 +250,14 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(
-        tester.getSize(find.byTooltip('الإعدادات')),
-        const Size(48, 48),
-      );
+      final logo = find.byKey(const ValueKey('cutawan-topbar-logo'));
+      expect(logo, findsOneWidget);
+      expect(tester.widget<Icon>(logo).size, 24);
+      expect(find.byTooltip('الإعدادات'), findsNothing);
       expect(find.byTooltip('تشخيص الجهاز'), findsNothing);
       expect(find.byTooltip('مركز النماذج'), findsNothing);
       expect(find.bySemanticsLabel(RegExp('Dashboard')), findsOneWidget);
       expect(find.bySemanticsLabel(RegExp('Captions')), findsOneWidget);
-      await tester.tap(find.byTooltip('الإعدادات'));
-      expect(settingsTaps, 1);
       expect(tester.takeException(), isNull);
     },
   );
@@ -342,7 +333,6 @@ void main() {
                     children: [
                       CutawanTopBar(
                         onRefresh: () async {},
-                        onSettings: () {},
                       ),
                       const Expanded(child: SizedBox.expand()),
                     ],

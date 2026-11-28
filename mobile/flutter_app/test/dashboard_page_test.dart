@@ -78,7 +78,6 @@ void main() {
                     onCreate: () {},
                     onOpenJobs: () {},
                     onOpenReview: () {},
-                    onOpenSettings: () {},
                     onOpenProject: (_) {},
                     storageUsageBytes: () async => 2 * 1024 * 1024,
                   ),
@@ -113,7 +112,6 @@ void main() {
   testWidgets('dashboard routes invoke their intended callbacks',
       (tester) async {
     var create = 0;
-    var settings = 0;
     var jobs = 0;
     var review = 0;
     final project = _makeDashboardProject('dashboard-resume');
@@ -130,7 +128,6 @@ void main() {
             onCreate: () => create++,
             onOpenJobs: () => jobs++,
             onOpenReview: () => review++,
-            onOpenSettings: () => settings++,
             onOpenProject: (project) => openedProjectId = project.id,
             storageUsageBytes: () async {
               storageReads++;
@@ -142,12 +139,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // The settings action is in the dashboard header. Tap it before
-    // scrolling the ListView so its lazy child remains mounted.
-    final settingsButton = find.byTooltip('الإعدادات');
-    expect(settingsButton, findsOneWidget);
-    await tester.tap(settingsButton);
-    await tester.pump();
+    expect(find.byTooltip('الإعدادات'), findsNothing);
 
     final createButton = find.byKey(
       const ValueKey('dashboard-create-project'),
@@ -183,7 +175,6 @@ void main() {
     }
 
     expect(create, 1);
-    expect(settings, 1);
     expect(jobs, 1);
     expect(review, 1);
 

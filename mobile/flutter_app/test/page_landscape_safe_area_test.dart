@@ -223,7 +223,6 @@ void main() {
               onCreate: () {},
               onOpenJobs: () {},
               onOpenReview: () {},
-                onOpenSettings: () {},
               onOpenProject: (_) {},
               storageUsageBytes: () async => 4 * 1024 * 1024,
             ),
@@ -236,9 +235,10 @@ void main() {
           find.byKey(const ValueKey('cutawan-dashboard-list')),
           variant,
         );
+        expect(find.byTooltip('الإعدادات'), findsNothing);
         _expectInsideSafeRegion(
           tester,
-          find.byTooltip('الإعدادات'),
+          find.byKey(const ValueKey('dashboard-create-project')),
           variant,
         );
       }

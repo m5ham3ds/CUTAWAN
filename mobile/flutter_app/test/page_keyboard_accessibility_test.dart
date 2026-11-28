@@ -202,7 +202,6 @@ void main() {
             onCreate: () => createCalls++,
             onOpenJobs: () {},
             onOpenReview: () {},
-            onOpenSettings: () {},
             onOpenProject: (_) {},
             storageUsageBytes: () async => 0,
           ),
@@ -342,7 +341,7 @@ void main() {
   });
 
   testWidgets(
-    'Dashboard Tab traversal reaches the settings action with visible focus',
+    'Dashboard Tab traversal reaches the primary create action with visible focus',
     (tester) async {
       tester.view.physicalSize = const Size(390, 844);
       tester.view.devicePixelRatio = 1;
@@ -361,8 +360,7 @@ void main() {
               onCreate: () {},
               onOpenJobs: () {},
               onOpenReview: () {},
-                onOpenSettings: () {},
-              onOpenProject: (_) {},
+                  onOpenProject: (_) {},
               storageUsageBytes: () async => 0,
             ),
           ),
@@ -370,7 +368,10 @@ void main() {
       );
       await tester.pump();
 
-      await _tabUntilFocused(tester, find.byTooltip('الإعدادات'));
+      await _tabUntilFocused(
+        tester,
+        find.byKey(const ValueKey('dashboard-create-project')),
+      );
       expect(tester.takeException(), isNull);
       semantics.dispose();
       await tester.pumpWidget(const SizedBox.shrink());
@@ -610,7 +611,6 @@ void fullPageTabOrderTests() {
             onCreate: () {},
             onOpenJobs: () {},
             onOpenReview: () {},
-            onOpenSettings: () {},
             onOpenProject: (_) {},
             storageUsageBytes: () async => 0,
           ),
@@ -619,8 +619,8 @@ void fullPageTabOrderTests() {
     );
     await tester.pump();
 
+    expect(find.byTooltip('الإعدادات'), findsNothing);
     await expectFullTabOrder(tester, [
-      find.byTooltip('الإعدادات'),
       find.byKey(const ValueKey('dashboard-create-project')),
       find.byKey(const ValueKey('dashboard-refresh-storage')),
       pageTile('المهام والمشاريع'),
