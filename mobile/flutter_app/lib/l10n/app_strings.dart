@@ -443,7 +443,11 @@ const Map<String, String> _dynamicPrefixes = {
 };
 
 String cutawanText(BuildContext context, String arabic) {
-  if (Localizations.localeOf(context).languageCode != 'en') return arabic;
+  final locale = Localizations.localeOf(context);
+  // Standalone page hosts use Flutter's en_US fallback when they do not
+  // configure CUTAWAN's locale policy. Keep the source Arabic copy there;
+  // CutawanApp resolves the system language to the supported Locale('en').
+  if (locale.languageCode != 'en' || locale.countryCode == 'US') return arabic;
   final direct = _english[arabic] ?? _pageEnglish[arabic];
   if (direct != null) return direct;
   for (final entry in _dynamicPrefixes.entries) {

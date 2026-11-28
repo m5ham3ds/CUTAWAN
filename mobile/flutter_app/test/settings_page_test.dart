@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:cutawan_mobile/domain/app_preferences.dart';
@@ -87,6 +88,11 @@ void main() {
           MaterialApp(
             locale: const Locale('ar'),
             supportedLocales: const [Locale('ar'), Locale('en')],
+            localizationsDelegates: const [
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
             theme: item.theme,
             home: MediaQuery(
               data: MediaQueryData(
@@ -128,6 +134,11 @@ void main() {
       MaterialApp(
         locale: const Locale('ar'),
         supportedLocales: const [Locale('ar'), Locale('en')],
+            localizationsDelegates: const [
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
         theme: CutawanTheme.light(),
         home: SettingsPage(
           store: store,
@@ -168,6 +179,11 @@ void main() {
         MaterialApp(
         locale: const Locale('ar'),
         supportedLocales: const [Locale('ar'), Locale('en')],
+            localizationsDelegates: const [
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
           theme: CutawanTheme.light(),
           darkTheme: CutawanTheme.dark(),
           home: SettingsPage(
@@ -207,6 +223,11 @@ void main() {
       MaterialApp(
         locale: const Locale('ar'),
         supportedLocales: const [Locale('ar'), Locale('en')],
+            localizationsDelegates: const [
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
         theme: CutawanTheme.light(),
         darkTheme: CutawanTheme.dark(),
         home: SettingsPage(

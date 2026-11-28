@@ -3,6 +3,7 @@ import 'dart:ui' show SemanticsAction;
 import 'package:flutter/services.dart';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:cutawan_mobile/theme/cutawan_theme.dart';
@@ -49,6 +50,11 @@ Widget _navigationHarness({
   return MaterialApp(
             locale: const Locale('ar'),
             supportedLocales: const [Locale('ar'), Locale('en')],
+            localizationsDelegates: const [
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
     home: Scaffold(
       bottomNavigationBar: CutawanNavigationBar(
         selectedIndex: selectedIndex,
@@ -106,6 +112,11 @@ void main() {
             MaterialApp(
             locale: const Locale('ar'),
             supportedLocales: const [Locale('ar'), Locale('en')],
+            localizationsDelegates: const [
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
               theme: CutawanTheme.light(),
               darkTheme: CutawanTheme.dark(),
               themeMode: brightness == Brightness.dark
@@ -162,6 +173,11 @@ void main() {
         MaterialApp(
             locale: const Locale('ar'),
             supportedLocales: const [Locale('ar'), Locale('en')],
+            localizationsDelegates: const [
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
           theme: CutawanTheme.light(),
           home: Scaffold(
             body: Directionality(
@@ -203,6 +219,11 @@ void main() {
         MaterialApp(
             locale: const Locale('ar'),
             supportedLocales: const [Locale('ar'), Locale('en')],
+            localizationsDelegates: const [
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
           theme: CutawanTheme.light(),
           home: MediaQuery(
             data: const MediaQueryData(
@@ -263,6 +284,11 @@ void main() {
         MaterialApp(
             locale: const Locale('ar'),
             supportedLocales: const [Locale('ar'), Locale('en')],
+            localizationsDelegates: const [
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
           home: Scaffold(
             bottomNavigationBar: CutawanNavigationBar(
               selectedIndex: 4,
@@ -296,6 +322,11 @@ void main() {
         MaterialApp(
             locale: const Locale('ar'),
             supportedLocales: const [Locale('ar'), Locale('en')],
+            localizationsDelegates: const [
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
           theme: CutawanTheme.dark(),
           home: MediaQuery(
             data: const MediaQueryData(
@@ -358,6 +389,11 @@ void main() {
       MaterialApp(
         locale: const Locale('ar'),
         supportedLocales: const [Locale('ar'), Locale('en')],
+            localizationsDelegates: const [
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
         home: Scaffold(
           drawer: CutawanNavigationDrawer(
             selectedIndex: 0,
