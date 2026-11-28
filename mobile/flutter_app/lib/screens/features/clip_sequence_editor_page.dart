@@ -184,7 +184,7 @@ class _ClipSequenceEditorPageState extends State<ClipSequenceEditorPage> {
                     candidate.title.isEmpty ? 'مقطع مقترح' : candidate.title,
                     style: const TextStyle(fontWeight: FontWeight.w800),
                   ),
-                  const SizedBox(height: 3),
+                  SizedBox(height: 3),
                   Text(cutawanText(context, '${_formatTime(candidate.startMs)} – ${_formatTime(candidate.endMs)} · ${candidate.durationMs ~/ 1000} ثانية'),
                     style: Theme.of(dialogContext).textTheme.bodySmall,
                   ),
@@ -518,7 +518,7 @@ class _ClipSequenceEditorPageState extends State<ClipSequenceEditorPage> {
                   backgroundColor: scheme.primaryContainer,
                   child: Icon(_trackIcon(track.type), color: scheme.onPrimaryContainer),
                 ),
-                const SizedBox(width: 10),
+                SizedBox(width: 10),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -534,11 +534,11 @@ class _ClipSequenceEditorPageState extends State<ClipSequenceEditorPage> {
                   key: ValueKey<String>('sequence-add-clip-${track.id}'),
                   tooltip: 'إضافة مقطع إلى ${track.name}',
                   onPressed: _saving ? null : () => _addClip(track.id),
-                  icon: const Icon(Icons.add_circle_outline_rounded),
+                  icon: Icon(Icons.add_circle_outline_rounded),
                 ),
               ],
             ),
-            const Divider(height: 18),
+            Divider(height: 18),
             if (trackClips.isEmpty)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8),
@@ -591,21 +591,21 @@ class _ClipSequenceEditorPageState extends State<ClipSequenceEditorPage> {
             candidate.title.isEmpty ? 'مقطع مقترح' : candidate.title,
             style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
           ),
-          const SizedBox(height: 4),
+          SizedBox(height: 4),
           Text(cutawanText(context, 'المصدر ${_formatTime(item.sourceStartMs)}–${_formatTime(item.sourceEndMs)}  ·  التسلسل ${_formatTime(item.timelineStartMs)}–${_formatTime(item.timelineEndMs)}'),
             style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
           ),
-          const SizedBox(height: 3),
+          SizedBox(height: 3),
           Text(cutawanText(context, 'المدة ${item.durationMs ~/ 1000} ثانية'),
             style: theme.textTheme.labelSmall?.copyWith(color: scheme.onSurfaceVariant),
           ),
           if (item.transitionAfter != null) ...[
-            const SizedBox(height: 4),
+            SizedBox(height: 4),
             Text(cutawanText(context, 'انتقال تعتيم إلى المقطع التالي · ${item.transitionAfter!.durationMs} ms'),
               style: theme.textTheme.labelSmall?.copyWith(color: scheme.onSurfaceVariant),
             ),
           ],
-          const SizedBox(height: 4),
+          SizedBox(height: 4),
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
@@ -634,21 +634,21 @@ class _ClipSequenceEditorPageState extends State<ClipSequenceEditorPage> {
                       child: Text(cutawanText(context, 'تعتيم 1200 ms')),
                     ),
                   ],
-                  icon: const Icon(Icons.swap_horiz_rounded),
+                  icon: Icon(Icons.swap_horiz_rounded),
                 ),
               IconButton(
                 key: ValueKey<String>('sequence-move-left-${item.id}'),
                 tooltip: 'تقديم 0.5 ثانية',
                 visualDensity: VisualDensity.compact,
                 onPressed: _saving ? null : () => _moveClip(item, -500),
-                icon: const Icon(Icons.chevron_right_rounded),
+                icon: Icon(Icons.chevron_right_rounded),
               ),
               IconButton(
                 key: ValueKey<String>('sequence-move-right-${item.id}'),
                 tooltip: 'تأخير 0.5 ثانية',
                 visualDensity: VisualDensity.compact,
                 onPressed: _saving ? null : () => _moveClip(item, 500),
-                icon: const Icon(Icons.chevron_left_rounded),
+                icon: Icon(Icons.chevron_left_rounded),
               ),
               IconButton(
                 key: ValueKey<String>('sequence-remove-${item.id}'),
@@ -692,12 +692,12 @@ class _ClipSequenceEditorPageState extends State<ClipSequenceEditorPage> {
                     height: 20,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
-                : const Icon(Icons.save_outlined),
+                : Icon(Icons.save_outlined),
           ),
         ],
       ),
       body: _loading
-          ? const Center(child: CircularProgressIndicator())
+          ? Center(child: CircularProgressIndicator())
           : _error != null
               ? Center(
                   child: Padding(
@@ -705,13 +705,13 @@ class _ClipSequenceEditorPageState extends State<ClipSequenceEditorPage> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.error_outline_rounded, size: 36),
-                        const SizedBox(height: 10),
+                        Icon(Icons.error_outline_rounded, size: 36),
+                        SizedBox(height: 10),
                         Text(_error!, textAlign: TextAlign.center),
-                        const SizedBox(height: 12),
+                        SizedBox(height: 12),
                         OutlinedButton.icon(
                           onPressed: _loadSequence,
-                          icon: const Icon(Icons.refresh_rounded),
+                          icon: Icon(Icons.refresh_rounded),
                           label: Text(cutawanText(context, 'إعادة المحاولة')),
                         ),
                       ],
@@ -725,18 +725,18 @@ class _ClipSequenceEditorPageState extends State<ClipSequenceEditorPage> {
                       widget.project.title,
                       style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
                     ),
-                    const SizedBox(height: 6),
+                    SizedBox(height: 6),
                     Text(cutawanText(context, 'رتّب المقاطع على المسارات ثم صدّرها كفيديو واحد عبر Media3. يمكن إضافة تعتيم بصري إلى الأسود بين مقطعين متجاورين.'),
                       style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant, height: 1.4),
                     ),
-                    const SizedBox(height: 14),
+                    SizedBox(height: 14),
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
                         color: scheme.tertiaryContainer.withValues(alpha: 0.45),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Row(
+                      child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Icon(Icons.info_outline_rounded),
@@ -748,11 +748,11 @@ class _ClipSequenceEditorPageState extends State<ClipSequenceEditorPage> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16),
                     Text(cutawanText(context, 'إضافة مسار'),
                       style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: 8),
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
@@ -760,24 +760,24 @@ class _ClipSequenceEditorPageState extends State<ClipSequenceEditorPage> {
                         OutlinedButton.icon(
                           key: const ValueKey('sequence-add-track-video'),
                           onPressed: _saving ? null : () => _addTrack(ClipSequenceTrackType.video),
-                          icon: const Icon(Icons.movie_outlined),
+                          icon: Icon(Icons.movie_outlined),
                           label: Text(cutawanText(context, 'فيديو')),
                         ),
                         OutlinedButton.icon(
                           key: const ValueKey('sequence-add-track-audio'),
                           onPressed: _saving ? null : () => _addTrack(ClipSequenceTrackType.audio),
-                          icon: const Icon(Icons.graphic_eq_rounded),
+                          icon: Icon(Icons.graphic_eq_rounded),
                           label: Text(cutawanText(context, 'صوت')),
                         ),
                         OutlinedButton.icon(
                           key: const ValueKey('sequence-add-track-overlay'),
                           onPressed: _saving ? null : () => _addTrack(ClipSequenceTrackType.overlay),
-                          icon: const Icon(Icons.layers_outlined),
+                          icon: Icon(Icons.layers_outlined),
                           label: Text(cutawanText(context, 'طبقة')),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: 8),
                     Row(
                       children: [
                         Expanded(
@@ -791,14 +791,14 @@ class _ClipSequenceEditorPageState extends State<ClipSequenceEditorPage> {
                       ],
                     ),
                     for (final track in orderedTracks) _buildTrackCard(track),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16),
                     FilledButton.icon(
                       key: const ValueKey('sequence-save-bottom-button'),
                       onPressed: _saving || _exporting || !_dirty ? null : _saveSequence,
-                      icon: const Icon(Icons.save_rounded),
+                      icon: Icon(Icons.save_rounded),
                       label: Text(_saving ? 'جارٍ الحفظ…' : 'حفظ التسلسل'),
                     ),
-                    const SizedBox(height: 10),
+                    SizedBox(height: 10),
                     FilledButton.icon(
                       key: const ValueKey('sequence-export-button'),
                       onPressed: _saving || _exporting || !canExportSequence
@@ -810,21 +810,21 @@ class _ClipSequenceEditorPageState extends State<ClipSequenceEditorPage> {
                               height: 18,
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
-                          : const Icon(Icons.video_file_rounded),
+                          : Icon(Icons.video_file_rounded),
                       label: Text(
                         _exporting ? 'جارٍ تصدير المسارات…' : 'تصدير MP4 مركّب',
                       ),
                     ),
                     if (_exporting) ...[
-                      const SizedBox(height: 8),
+                      SizedBox(height: 8),
                       LinearProgressIndicator(value: _exportProgress),
-                      const SizedBox(height: 6),
+                      SizedBox(height: 6),
                       Align(
                         alignment: AlignmentDirectional.centerEnd,
                         child: TextButton.icon(
                           key: const ValueKey('sequence-cancel-export-button'),
                           onPressed: () => setState(() => _cancelExportRequested = true),
-                          icon: const Icon(Icons.stop_circle_outlined),
+                          icon: Icon(Icons.stop_circle_outlined),
                           label: Text(cutawanText(context, 'إلغاء التصدير')),
                         ),
                       ),
