@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:video_player/video_player.dart';
 
 import 'domain/app_preferences.dart';
 import 'screens/cutawan_intro_screen.dart';
@@ -17,12 +18,14 @@ class CutawanApp extends StatefulWidget {
     this.storageUsageBytes,
     this.settingsStore,
     this.showIntro = false,
+    this.introController,
   });
 
   final LocalProjectRepository? repository;
   final Future<int> Function()? storageUsageBytes;
   final AppPreferencesStore? settingsStore;
   final bool showIntro;
+  final VideoPlayerController? introController;
 
   @override
   State<CutawanApp> createState() => _CutawanAppState();
@@ -95,8 +98,9 @@ class _CutawanAppState extends State<CutawanApp> {
               child: child ?? const SizedBox.shrink(),
             );
           },
-          home: widget.showIntro
+          home: widget.showIntro && widget.introController != null
               ? _CutawanLaunchGate(
+                  controller: widget.introController!,
                   child: HomeShell(
                     repository: widget.repository,
                     storageUsageBytes: widget.storageUsageBytes,
@@ -115,9 +119,13 @@ class _CutawanAppState extends State<CutawanApp> {
 }
 
 class _CutawanLaunchGate extends StatefulWidget {
-  const _CutawanLaunchGate({required this.child});
+  const _CutawanLaunchGate({
+    required this.child,
+    required this.controller,
+  });
 
   final Widget child;
+  final VideoPlayerController controller;
 
   @override
   State<_CutawanLaunchGate> createState() => _CutawanLaunchGateState();
@@ -130,6 +138,7 @@ class _CutawanLaunchGateState extends State<_CutawanLaunchGate> {
   Widget build(BuildContext context) {
     if (_introFinished) return widget.child;
     return CutawanIntroScreen(
+      controller: widget.controller,
       onFinished: () {
         if (mounted) setState(() => _introFinished = true);
       },
