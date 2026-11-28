@@ -253,11 +253,7 @@ void main() {
       var pinnedTitleTop = tester.getTopLeft(previewTitle).dy;
       expect(pinnedTitleTop, inInclusiveRange(0, 40));
 
-      await tester.scrollUntilVisible(
-        find.byKey(const ValueKey('caption-editor-section-tabs')),
-        320,
-        scrollable: scrollable,
-      );
+      await tester.drag(scrollable, const Offset(0, -3600));
       await tester.pumpAndSettle();
       pinnedTitleTop = tester.getTopLeft(previewTitle).dy;
       expect(pinnedTitleTop, inInclusiveRange(0, 40));
