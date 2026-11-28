@@ -600,9 +600,11 @@ class _CaptionStudioPageState extends State<CaptionStudioPage>
           Row(
             children: [
               Expanded(
-                child: Text(cutawanText(context, 'المجموعة ${_previewGroupIndex + 1} من ${_previewGroups.length} · ')
-                  '${_formatPreviewTime(_previewGroup!.startMs)}–'
-                  '${_formatPreviewTime(_previewGroup!.endMs)}',
+                child: Text(
+                  cutawanText(
+                    context,
+                    'المجموعة ${_previewGroupIndex + 1} من ${_previewGroups.length} · ${_formatPreviewTime(_previewGroup!.startMs)}–${_formatPreviewTime(_previewGroup!.endMs)}',
+                  ),
                   key: const ValueKey('caption-timed-group-label'),
                   style: theme.textTheme.bodySmall,
                 ),
