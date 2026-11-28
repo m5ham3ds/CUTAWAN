@@ -12,6 +12,7 @@ import 'device_acceptance_page.dart';
 import 'features/dashboard_page.dart';
 import 'features/settings_page.dart';
 import 'home_shell/navigation_components.dart';
+import '../l10n/app_strings.dart';
 import 'home_shell/models_page.dart';
 import 'home_shell/create_page.dart';
 import 'home_shell/jobs_page.dart';
@@ -34,17 +35,18 @@ class _HomeShellState extends State<HomeShell> with SingleTickerProviderStateMix
   late final bool _ownsSettingsStore;
   final ValueNotifier<List<CutawanProject>> _projects = ValueNotifier<List<CutawanProject>>([]);
   late final AnimationController _navigationGlow;
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   int _selectedIndex = 0;
   bool _didRecoverJobs = false;
   String? _requestedReviewProjectId;
 
-  static const List<CutawanNavigationDestination> _destinations = [
-    (label: 'الرئيسية', icon: Icons.space_dashboard_outlined, selected: Icons.space_dashboard_rounded, hint: 'Dashboard'),
-    (label: 'إنشاء', icon: Icons.add_circle_outline_rounded, selected: Icons.add_circle_rounded, hint: 'Create'),
-    (label: 'المهام', icon: Icons.grid_view_rounded, selected: Icons.grid_view_rounded, hint: 'Projects'),
-    (label: 'المراجعة', icon: Icons.movie_filter_outlined, selected: Icons.movie_filter_rounded, hint: 'Review'),
-    (label: 'الاستوديو', icon: Icons.closed_caption_outlined, selected: Icons.closed_caption_rounded, hint: 'Captions'),
-  ];
+  List<CutawanNavigationDestination> _navigationDestinations(BuildContext context) => [
+        (label: cutawanText(context, 'الرئيسية'), icon: Icons.space_dashboard_outlined, selected: Icons.space_dashboard_rounded, hint: 'Dashboard'),
+        (label: cutawanText(context, 'إنشاء'), icon: Icons.add_circle_outline_rounded, selected: Icons.add_circle_rounded, hint: 'Create'),
+        (label: cutawanText(context, 'المهام'), icon: Icons.grid_view_rounded, selected: Icons.grid_view_rounded, hint: 'Projects'),
+        (label: cutawanText(context, 'المراجعة'), icon: Icons.movie_filter_outlined, selected: Icons.movie_filter_rounded, hint: 'Review'),
+        (label: cutawanText(context, 'الاستوديو'), icon: Icons.closed_caption_outlined, selected: Icons.closed_caption_rounded, hint: 'Captions'),
+      ];
 
   @override
   void initState() {
@@ -152,6 +154,7 @@ class _HomeShellState extends State<HomeShell> with SingleTickerProviderStateMix
 
   @override
   Widget build(BuildContext context) {
+    final destinations = _navigationDestinations(context);
     final pages = <Widget>[
       TickerMode(
         enabled: _selectedIndex == 0,
@@ -195,11 +198,21 @@ class _HomeShellState extends State<HomeShell> with SingleTickerProviderStateMix
       ),
     ];
     return Directionality(
-      textDirection: TextDirection.rtl,
+      textDirection: Localizations.localeOf(context).languageCode == 'ar' ? TextDirection.rtl : TextDirection.ltr,
       child: Scaffold(
+        key: _scaffoldKey,
         extendBody: true,
+        drawer: CutawanNavigationDrawer(
+          selectedIndex: _selectedIndex,
+          destinations: destinations,
+          onSelect: _selectDestination,
+          onSettings: _openSettings,
+          onDiagnostics: _openDeviceDiagnostics,
+          onModels: _openModels,
+        ),
         body: SafeArea(bottom: false, child: Column(children: [
           CutawanTopBar(
+            onMenu: () => _scaffoldKey.currentState?.openDrawer(),
             onRefresh: _reloadProjects,
             onSettings: _openSettings,
           ),
@@ -215,7 +228,7 @@ class _HomeShellState extends State<HomeShell> with SingleTickerProviderStateMix
             child: KeyedSubtree(key: ValueKey<int>(_selectedIndex), child: pages[_selectedIndex]),
           )),
         ])),
-        bottomNavigationBar: CutawanNavigationBar(selectedIndex: _selectedIndex, onSelected: _selectDestination, destinations: _destinations, animation: _navigationGlow),
+        bottomNavigationBar: CutawanNavigationBar(selectedIndex: _selectedIndex, onSelected: _selectDestination, destinations: destinations, animation: _navigationGlow),
       ),
     );
   }
