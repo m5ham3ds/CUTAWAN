@@ -1367,7 +1367,7 @@ class _ClipEditorPageState extends State<ClipEditorPage> {
               ),
             ),
             const SizedBox(height: 8),
-            Text(cutawanText(context, 'مزامنة التوقيت · ${_draftPreferences.captionTimingOffsetMs > 0 ? ')+' : ''}${_draftPreferences.captionTimingOffsetMs} ms',
+            Text(cutawanText(context, "مزامنة التوقيت · ${_draftPreferences.captionTimingOffsetMs > 0 ? '+' : ''}${_draftPreferences.captionTimingOffsetMs} ms"),
               style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w800),
             ),
             Slider(
